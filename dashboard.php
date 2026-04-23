@@ -18,7 +18,7 @@ $panelStatusClass = $viewData['panelStatusClass'];
     <title>NUCARE | Dashboard</title>
     <link rel="stylesheet" href="assets/css/app.css">
 </head>
-<body>
+<body data-active-panel="<?php echo htmlspecialchars($activePanel); ?>">
     <div class="app-shell">
         <aside class="sidebar">
             <div class="sidebar-brand">
@@ -61,13 +61,9 @@ $panelStatusClass = $viewData['panelStatusClass'];
         <main class="main-content">
             <header class="page-header">
                 <div>
-                    <p class="breadcrumb"><?php echo $activePanel === 'patientsPanel' ? 'Home / Patients / Add Patient' : 'Home / Dashboard'; ?></p>
-                    <h2><?php echo $activePanel === 'patientsPanel' ? 'Patient Intake' : 'NUCARE Clinic Portal'; ?></h2>
-                    <p class="page-description">
-                        <?php echo $activePanel === 'patientsPanel'
-                            ? 'Use the patient form to capture intake information aligned with your database schema.'
-                            : 'Manage patients, records, reports, and clinical workflows from one polished interface.'; ?>
-                    </p>
+                    <p class="breadcrumb">Home / Dashboard</p>
+                    <h2>NUCARE Clinic Portal</h2>
+                    <p class="page-description">Manage patients, records, reports, and clinical workflows from one polished interface.</p>
                 </div>
                 <div class="header-actions">
                     <button class="header-button accent" id="newPatientButton" type="button">New Patient</button>
@@ -75,7 +71,7 @@ $panelStatusClass = $viewData['panelStatusClass'];
                 </div>
             </header>
 
-            <section id="dashboardPanel" class="panel <?php echo $activePanel === 'dashboardPanel' ? 'active' : ''; ?>">
+            <section id="dashboardPanel" class="panel active">
                 <div class="cards-grid">
                     <article class="status-card">
                         <h3>Patients</h3>
@@ -122,13 +118,13 @@ $panelStatusClass = $viewData['panelStatusClass'];
                 </div>
             </section>
 
-            <section id="patientsPanel" class="panel <?php echo $activePanel === 'patientsPanel' ? 'active' : ''; ?>">
+            <section id="patientsPanel" class="panel">
                 <div class="panel-overview">
                     <div>
                         <h3>Add Patient</h3>
                         <p>Capture patient details in a form that matches your `patients` table.</p>
                     </div>
-                    <span class="panel-status <?php echo $panelStatusClass; ?>"><?php echo htmlspecialchars($panelStatusText); ?></span>
+                    <span class="panel-status">UI only</span>
                 </div>
 
                 <?php if ($successMessage !== ''): ?>
@@ -163,9 +159,6 @@ $panelStatusClass = $viewData['panelStatusClass'];
                                     </option>
                                 <?php endforeach; ?>
                             </select>
-                            <?php if (empty($programOptions)): ?>
-                                <small class="input-help">Program is optional right now because the `programs` table has no records yet.</small>
-                            <?php endif; ?>
                         </div>
                         <div class="input-group">
                             <label for="patientSex">Sex</label>
@@ -205,25 +198,25 @@ $panelStatusClass = $viewData['panelStatusClass'];
 
                 <div class="placeholder-panel">
                     <h4>Patients Module</h4>
-                    <p>The patient intake form is now connected to the database and saves new records to the `patients` table in `nucaredb`.</p>
+                    <p>This module is a UI placeholder only. The patient intake form fields are laid out to match your `patients` table structure from `nucaredb.sql`.</p>
                 </div>
             </section>
 
-            <section id="recordsPanel" class="panel <?php echo $activePanel === 'recordsPanel' ? 'active' : ''; ?>">
+            <section id="recordsPanel" class="panel">
                 <div class="placeholder-panel large">
                     <h3>Records</h3>
                     <p>Placeholder area for patient records, medical transactions, and exam summaries. Backend integration will connect this to your database tables later.</p>
                 </div>
             </section>
 
-            <section id="reportsPanel" class="panel <?php echo $activePanel === 'reportsPanel' ? 'active' : ''; ?>">
+            <section id="reportsPanel" class="panel">
                 <div class="placeholder-panel large">
                     <h3>Reports</h3>
                     <p>Placeholder area for reports, analytics, and health summaries. This panel is styled for future data visualizations and export workflows.</p>
                 </div>
             </section>
 
-            <section id="settingsPanel" class="panel <?php echo $activePanel === 'settingsPanel' ? 'active' : ''; ?>">
+            <section id="settingsPanel" class="panel">
                 <div class="placeholder-panel large">
                     <h3>Settings</h3>
                     <p>Placeholder area for profile settings, account preferences, and system configurations.</p>

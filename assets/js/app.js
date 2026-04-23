@@ -3,6 +3,7 @@
    ============================================ */
 
 document.addEventListener('DOMContentLoaded', function() {
+    const activePanelFromServer = document.body.dataset.activePanel || 'dashboardPanel';
     const navItems = document.querySelectorAll('.nav-item');
     const panels = document.querySelectorAll('.panel');
     const headerBreadcrumb = document.querySelector('.breadcrumb');
@@ -65,4 +66,8 @@ document.addEventListener('DOMContentLoaded', function() {
             window.activateDashboardPanel(this.dataset.panel);
         });
     });
+
+    if (activePanelFromServer && activePanelFromServer !== 'dashboardPanel') {
+        window.activateDashboardPanel(activePanelFromServer);
+    }
 });
