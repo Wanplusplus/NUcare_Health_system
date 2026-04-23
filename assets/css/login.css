@@ -70,10 +70,10 @@ html, body {
     margin-bottom: 30px;
 }
 
-.logo-icon {
-    width: 120px;
-    height: 120px;
-    filter: drop-shadow(0 4px 10px rgba(255, 199, 44, 0.3));
+.logo-icon{
+    width: 150px;
+    height: 150px;
+    filter: drop-shadow(0 3px 2px rgba(255, 255, 255, 0.3));
     animation: float 3s ease-in-out infinite;
 }
 

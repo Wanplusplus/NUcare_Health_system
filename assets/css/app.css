@@ -69,6 +69,13 @@ body {
     font-size: 22px;
     font-weight: 800;
 }
+.logo-icon img {
+    width: 60px;   /* control image size */
+    height: auto;
+
+    filter: drop-shadow(0 0 8px white)
+            drop-shadow(0 0 16px white);
+}
 
 .sidebar-brand h1 {
     font-size: 20px;

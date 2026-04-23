@@ -12,12 +12,12 @@
         <div class="login-left">
             <div class="logo-section">
                 <div class="logo-placeholder">
-                    <svg class="logo-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <img src="assets/image/nucarelogo.png" alt="NUCARE Logo" class="logo-icon" style="width: 200px; height: auto;">
                         <!-- Medical cross icon -->
-                        <circle cx="50" cy="50" r="45" fill="none" stroke="#FFC72C" stroke-width="2"/>
-                        <rect x="45" y="25" width="10" height="50" fill="#FFC72C"/>
-                        <rect x="25" y="45" width="50" height="10" fill="#FFC72C"/>
-                        <text x="50" y="75" font-size="12" text-anchor="middle" fill="#00205B" font-weight="bold">NUCARE</text>
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="#ffffff" stroke-width="2"/>
+                        <rect x="45" y="25" width="10" height="50" fill="#ffffff"/>
+                        <rect x="25" y="45" width="50" height="10" fill="#ffffff"/>
+                        
                     </svg>
                 </div>
                 <h1 class="brand-name">NUCARE</h1>
@@ -94,7 +94,7 @@
 
                 <!-- Footer -->
                 <div class="form-footer">
-                    <p>Don't have an account? <a href="#" class="signup-link">Contact Administrator</a></p>
+                    <p>Don't have an account? <a href="#" class="signup-link">Sign Up</a></p>
                 </div>
             </div>
         </div>
