@@ -346,6 +346,42 @@ body {
     font-weight: 700;
 }
 
+.panel-status.status-ready {
+    background-color: #e8f1ff;
+    color: #1944a3;
+}
+
+.panel-status.status-success {
+    background-color: #e8f8ee;
+    color: #1f7a3f;
+}
+
+.panel-status.status-error {
+    background-color: #fdebec;
+    color: #b43b49;
+}
+
+.feedback-message {
+    margin-bottom: 18px;
+    padding: 14px 18px;
+    border-radius: 16px;
+    border: 1px solid transparent;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.feedback-message.success-message {
+    background-color: #eefaf2;
+    border-color: #ccebd7;
+    color: #1f7a3f;
+}
+
+.feedback-message.error-message {
+    background-color: #fff1f3;
+    border-color: #f3cbd1;
+    color: #b43b49;
+}
+
 .patient-form {
     background: var(--bg-panel);
     border: 1px solid var(--border);
@@ -374,6 +410,11 @@ body {
 .input-group label {
     font-size: 14px;
     font-weight: 600;
+    color: var(--text-muted);
+}
+
+.input-help {
+    font-size: 12px;
     color: var(--text-muted);
 }
 

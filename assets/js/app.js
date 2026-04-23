@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const headerBreadcrumb = document.querySelector('.breadcrumb');
     const headerTitle = document.querySelector('.page-header h2');
     const descriptionText = document.querySelector('.page-description');
-    const newPatientButton = document.querySelector('.header-button.accent');
 
     const panelTitles = {
         dashboardPanel: {
@@ -38,26 +37,32 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
+    window.activateDashboardPanel = function(panelId) {
+        navItems.forEach(nav => nav.classList.remove('active'));
+        panels.forEach(panel => panel.classList.remove('active'));
+
+        const selectedNav = document.querySelector(`[data-panel="${panelId}"]`);
+        const targetPanel = document.getElementById(panelId);
+        const panelConfig = panelTitles[panelId];
+
+        if (selectedNav) {
+            selectedNav.classList.add('active');
+        }
+
+        if (targetPanel) {
+            targetPanel.classList.add('active');
+        }
+
+        if (panelConfig) {
+            headerBreadcrumb.textContent = panelConfig.breadcrumb;
+            headerTitle.textContent = panelConfig.title;
+            descriptionText.textContent = panelConfig.description;
+        }
+    };
+
     navItems.forEach(item => {
         item.addEventListener('click', function() {
-            navItems.forEach(nav => nav.classList.remove('active'));
-            panels.forEach(panel => panel.classList.remove('active'));
-
-            this.classList.add('active');
-            const targetPanel = document.getElementById(this.dataset.panel);
-            if (targetPanel) {
-                targetPanel.classList.add('active');
-                const panelConfig = panelTitles[this.dataset.panel];
-                headerBreadcrumb.textContent = panelConfig.breadcrumb;
-                headerTitle.textContent = panelConfig.title;
-                descriptionText.textContent = panelConfig.description;
-            }
+            window.activateDashboardPanel(this.dataset.panel);
         });
     });
-
-    if (newPatientButton) {
-        newPatientButton.addEventListener('click', function() {
-            document.querySelector('[data-panel="patientsPanel"]').click();
-        });
-    }
 });
