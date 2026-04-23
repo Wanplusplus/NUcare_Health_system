@@ -8,92 +8,27 @@
 </head>
 <body>
     <div class="login-container">
+        <!-- Left Section: Logo -->
         <div class="login-left">
-            <div class="medical-grid" aria-hidden="true"></div>
-            <div class="medical-building" aria-hidden="true"></div>
             <div class="logo-section">
                 <div class="logo-placeholder">
-                    <img src="assets/image/nucarelogo.png" alt="NUCARE Logo" class="logo-icon" style="width: 200px; height: auto;">
+                        <img src="assets/image/nucarelogo.png" alt="NUCARE Logo" class="logo-icon" style="width: 200px; height: auto;">
+                        <!-- Medical cross icon -->
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="#ffffff" stroke-width="2"/>
+                        <rect x="45" y="25" width="10" height="50" fill="#ffffff"/>
+                        <rect x="25" y="45" width="50" height="10" fill="#ffffff"/>
+                        
+                    </svg>
                 </div>
                 <h1 class="brand-name">NUCARE</h1>
-                <p class="brand-subtitle">Health Management System</p>
-                <div class="brand-divider" aria-hidden="true">
-                    <span></span>
-                    <i></i>
-                    <span></span>
-                </div>
-                <p class="brand-tagline">Your <strong>Health</strong>, Our Priority</p>
-                <p class="brand-description">
-                    Empowering better healthcare through innovation, compassion, and excellence.
-                </p>
-                <div class="feature-list">
-                    <div class="feature-item">
-                        <span class="feature-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                                <path d="M4 12h4l2-4 4 8 2-4h4"></path>
-                                <path d="M6 18h12"></path>
-                            </svg>
-                        </span>
-                        <div>
-                            <strong>Trusted Care</strong>
-                            <p>You can rely on</p>
-                        </div>
-                    </div>
-                    <div class="feature-item">
-                        <span class="feature-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                                <path d="M12 3l7 4v5c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V7l7-4z"></path>
-                                <path d="M12 8v6"></path>
-                                <path d="M9 11h6"></path>
-                            </svg>
-                        </span>
-                        <div>
-                            <strong>Secure &amp; Safe</strong>
-                            <p>Your data is protected</p>
-                        </div>
-                    </div>
-                    <div class="feature-item">
-                        <span class="feature-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                                <circle cx="9" cy="8" r="4"></circle>
-                                <circle cx="17" cy="8" r="3"></circle>
-                                <path d="M3 20a6 6 0 0 1 12 0"></path>
-                                <path d="M14 20a5 5 0 0 1 7 0"></path>
-                            </svg>
-                        </span>
-                        <div>
-                            <strong>Patient First</strong>
-                            <p>Always putting you at the center</p>
-                        </div>
-                    </div>
-                    <div class="feature-item">
-                        <span class="feature-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                                <path d="M12 21s-6-3.8-8.5-8.1C1.7 9.8 3.3 6 7 6c2 0 3.2 1 4 2 0.8-1 2-2 4-2 3.7 0 5.3 3.8 3.5 6.9C18 17.2 12 21 12 21z"></path>
-                                <path d="M12 8v4"></path>
-                                <path d="M10 10h4"></path>
-                            </svg>
-                        </span>
-                        <div>
-                            <strong>Compassionate</strong>
-                            <p>We care with heart</p>
-                        </div>
-                    </div>
-                </div>
+                <p class="brand-tagline">Health Management System</p>
             </div>
         </div>
 
         <div class="login-right">
             <div class="form-container">
-                <div class="card-badge" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                        <path d="M20 21a8 8 0 0 0-16 0"></path>
-                        <circle cx="12" cy="8" r="4"></circle>
-                    </svg>
-                </div>
                 <h2 class="form-title">Welcome Back</h2>
                 <p class="form-subtitle">Sign in to your account</p>
-                <div class="title-underline" aria-hidden="true"></div>
 
                 <form id="loginForm" class="login-form" onsubmit="handleLogin(event)">
                     <div class="form-group">
