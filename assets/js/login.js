@@ -117,34 +117,11 @@ function handleLogin(event) {
         remember_me: rememberMe
     };
 
-    // Send login request to backend
-    // Note: Replace 'controllers/auth.php' with your actual login controller
-    fetch('controllers/auth.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(loginData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Login successful - redirect to dashboard
-            console.log('Login successful:', data.message);
-            window.location.href = 'views/dashboard.php'; // Adjust redirect path as needed
-        } else {
-            // Login failed - show error
-            showErrorMessage(data.message || 'Invalid username or password');
-            loginButton.disabled = false;
-            loginButton.innerHTML = originalText;
-        }
-    })
-    .catch(error => {
-        console.error('Login error:', error);
-        showErrorMessage('An error occurred during login. Please try again.');
-        loginButton.disabled = false;
-        loginButton.innerHTML = originalText;
-    });
+    // For demo purposes, redirect to dashboard directly
+    // In production, replace with actual authentication
+    setTimeout(() => {
+        window.location.href = 'dashboard.php';
+    }, 1000);
 }
 
 /**
