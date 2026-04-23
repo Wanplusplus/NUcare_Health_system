@@ -191,6 +191,11 @@ html, body {
     position: relative;
     display: flex;
     align-items: center;
+    width: 100%;
+}
+
+.password-wrapper .form-input {
+    width: 100%;
 }
 
 .password-toggle {
@@ -199,7 +204,6 @@ html, body {
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -210,6 +214,13 @@ html, body {
 
 .password-toggle:hover {
     color: var(--nu-blue);
+}
+
+.eye-icon {
+    width: 20px;
+    height: 20px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 /* Error Messages */

@@ -63,8 +63,12 @@
                                 class="password-toggle" 
                                 onclick="togglePasswordVisibility()"
                                 aria-label="Toggle password visibility"
+                                id="passwordToggleBtn"
                             >
-                                <span class="eye-icon">👁️</span>
+                                <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
                             </button>
                         </div>
                         <span class="form-error" id="passwordError"></span>
