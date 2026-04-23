@@ -8,41 +8,96 @@
 </head>
 <body>
     <div class="login-container">
+        <div class="page-glow page-glow-one"></div>
+        <div class="page-glow page-glow-two"></div>
+
         <!-- Left Section: Logo -->
         <div class="login-left">
+            <div class="medical-grid" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <div class="medical-particles" aria-hidden="true">
+                <span class="particle particle-one"></span>
+                <span class="particle particle-two"></span>
+                <span class="particle particle-three"></span>
+                <span class="particle particle-four"></span>
+            </div>
+            <div class="medical-building" aria-hidden="true"></div>
             <div class="logo-section">
                 <div class="logo-placeholder">
-                        <img src="assets/image/nucarelogo.png" alt="NUCARE Logo" class="logo-icon" style="width: 200px; height: auto;">
-                        <!-- Medical cross icon -->
-                        <circle cx="50" cy="50" r="45" fill="none" stroke="#ffffff" stroke-width="2"/>
-                        <rect x="45" y="25" width="10" height="50" fill="#ffffff"/>
-                        <rect x="25" y="45" width="50" height="10" fill="#ffffff"/>
-                        
-                    </svg>
+                    <div class="logo-halo"></div>
+                    <img src="assets/image/nucarelogo.png" alt="NUCARE Logo" class="logo-icon" style="width: 200px; height: auto;">
                 </div>
                 <h1 class="brand-name">NUCARE</h1>
-                <p class="brand-tagline">Health Management System</p>
+                <p class="brand-tagline">Your Health, Our Priority</p>
+                <p class="brand-description">
+                    Delivering trusted digital healthcare with modern workflows, secure access, and a patient-first experience built for precision, compassion, and long-term care.
+                </p>
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <span class="feature-icon">+</span>
+                        <div>
+                            <strong>Trusted Care</strong>
+                            <p>Reliable clinical coordination for every patient interaction.</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">#</span>
+                        <div>
+                            <strong>Secure &amp; Safe</strong>
+                            <p>Protected records and controlled access for healthcare teams.</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">&#9825;</span>
+                        <div>
+                            <strong>Patient First</strong>
+                            <p>Designed around clarity, empathy, and faster service delivery.</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">&#10010;</span>
+                        <div>
+                            <strong>Compassionate</strong>
+                            <p>Innovation grounded in trust, wellness, and human connection.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Right Section: Login Form -->
         <div class="login-right">
             <div class="form-container">
+                <div class="card-reflection" aria-hidden="true"></div>
                 <h2 class="form-title">Welcome Back</h2>
-                <p class="form-subtitle">Sign in to your account</p>
+                <p class="form-subtitle">Sign in to access the NUcare Health System dashboard.</p>
 
                 <form id="loginForm" class="login-form" onsubmit="handleLogin(event)">
                     <!-- Username Field -->
                     <div class="form-group">
                         <label for="username" class="form-label">Username</label>
-                        <input 
-                            type="text" 
-                            id="username" 
-                            name="username" 
-                            class="form-input" 
-                            placeholder="Enter your username"
-                            required
-                        >
+                        <div class="input-shell">
+                            <span class="input-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21a8 8 0 0 0-16 0"></path>
+                                    <circle cx="12" cy="8" r="4"></circle>
+                                </svg>
+                            </span>
+                            <input 
+                                type="text" 
+                                id="username" 
+                                name="username" 
+                                class="form-input" 
+                                placeholder="Enter your username"
+                                required
+                            >
+                        </div>
                         <span class="form-error" id="usernameError"></span>
                     </div>
 
@@ -50,6 +105,12 @@
                     <div class="form-group">
                         <label for="password" class="form-label">Password</label>
                         <div class="password-wrapper">
+                            <span class="input-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="4" y="11" width="16" height="9" rx="2"></rect>
+                                    <path d="M8 11V8a4 4 0 1 1 8 0v3"></path>
+                                </svg>
+                            </span>
                             <input 
                                 type="password" 
                                 id="password" 
