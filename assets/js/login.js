@@ -1,0 +1,209 @@
+/* ============================================
+   NUCARE Login Page JavaScript
+   ============================================ */
+
+/**
+ * Toggle password visibility
+ */
+function togglePasswordVisibility() {
+    const passwordInput = document.getElementById('password');
+    const passwordToggle = document.querySelector('.password-toggle');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        passwordToggle.textContent = '🙈';
+    } else {
+        passwordInput.type = 'password';
+        passwordToggle.textContent = '👁️';
+    }
+}
+
+/**
+ * Validate login form
+ */
+function validateLoginForm() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    let isValid = true;
+
+    // Clear previous errors
+    clearErrors();
+
+    // Username validation
+    if (username === '') {
+        showError('usernameError', 'Username is required');
+        isValid = false;
+    } else if (username.length < 3) {
+        showError('usernameError', 'Username must be at least 3 characters');
+        isValid = false;
+    }
+
+    // Password validation
+    if (password === '') {
+        showError('passwordError', 'Password is required');
+        isValid = false;
+    } else if (password.length < 6) {
+        showError('passwordError', 'Password must be at least 6 characters');
+        isValid = false;
+    }
+
+    return isValid;
+}
+
+/**
+ * Show field-specific error
+ */
+function showError(elementId, message) {
+    const errorElement = document.getElementById(elementId);
+    if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.classList.add('show');
+    }
+}
+
+/**
+ * Clear all error messages
+ */
+function clearErrors() {
+    const errorElements = document.querySelectorAll('.form-error');
+    errorElements.forEach(element => {
+        element.textContent = '';
+        element.classList.remove('show');
+    });
+
+    const errorMessage = document.getElementById('errorMessage');
+    if (errorMessage) {
+        errorMessage.textContent = '';
+        errorMessage.classList.remove('show');
+    }
+}
+
+/**
+ * Show general error message
+ */
+function showErrorMessage(message) {
+    const errorMessage = document.getElementById('errorMessage');
+    if (errorMessage) {
+        errorMessage.textContent = message;
+        errorMessage.classList.add('show');
+    }
+}
+
+/**
+ * Handle login form submission
+ */
+function handleLogin(event) {
+    event.preventDefault();
+
+    // Validate form
+    if (!validateLoginForm()) {
+        return;
+    }
+
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const rememberMe = document.querySelector('input[name="remember"]').checked;
+    const loginButton = document.querySelector('.login-button');
+
+    // Disable button and show loading state
+    loginButton.disabled = true;
+    const originalText = loginButton.innerHTML;
+    loginButton.innerHTML = '<span>Signing in...</span>';
+
+    // Prepare login data
+    const loginData = {
+        username: username,
+        password: password,
+        remember_me: rememberMe
+    };
+
+    // Send login request to backend
+    // Note: Replace 'controllers/auth.php' with your actual login controller
+    fetch('controllers/auth.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(loginData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Login successful - redirect to dashboard
+            console.log('Login successful:', data.message);
+            window.location.href = 'views/dashboard.php'; // Adjust redirect path as needed
+        } else {
+            // Login failed - show error
+            showErrorMessage(data.message || 'Invalid username or password');
+            loginButton.disabled = false;
+            loginButton.innerHTML = originalText;
+        }
+    })
+    .catch(error => {
+        console.error('Login error:', error);
+        showErrorMessage('An error occurred during login. Please try again.');
+        loginButton.disabled = false;
+        loginButton.innerHTML = originalText;
+    });
+}
+
+/**
+ * Initialize form with event listeners
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    const loginForm = document.getElementById('loginForm');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+
+    // Clear error messages on input
+    usernameInput.addEventListener('input', function() {
+        if (this.value.length > 0) {
+            const errorElement = document.getElementById('usernameError');
+            if (errorElement) {
+                errorElement.textContent = '';
+                errorElement.classList.remove('show');
+            }
+        }
+    });
+
+    passwordInput.addEventListener('input', function() {
+        if (this.value.length > 0) {
+            const errorElement = document.getElementById('passwordError');
+            if (errorElement) {
+                errorElement.textContent = '';
+                errorElement.classList.remove('show');
+            }
+        }
+    });
+
+    // Forgot password link handler
+    const forgotPasswordLink = document.querySelector('.forgot-password');
+    if (forgotPasswordLink) {
+        forgotPasswordLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Forgot password clicked - implement password reset flow');
+            // TODO: Implement forgot password flow
+        });
+    }
+
+    // Signup/Contact Admin link handler
+    const signupLink = document.querySelector('.signup-link');
+    if (signupLink) {
+        signupLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Contact administrator clicked');
+            // TODO: Implement contact form or admin notification
+        });
+    }
+
+    // Allow Enter key to submit form
+    loginForm.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            loginForm.dispatchEvent(new Event('submit'));
+        }
+    });
+
+    // Set focus on username input on page load
+    usernameInput.focus();
+});
