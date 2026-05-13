@@ -89,48 +89,11 @@ $panelStatusClass = $viewData['panelStatusClass'];
             </div>
         </section>
 
-<<<<<<< HEAD
-            <nav class="nav-menu">
-                <button class="nav-item <?php echo $activePanel === 'dashboardPanel' ? 'active' : ''; ?>" data-panel="dashboardPanel" type="button">
-                    <span class="nav-dot"></span>
-                    Dashboard
-                </button>
-                <a class="nav-item <?php echo $activePanel === 'consultationPanel' ? 'active' : ''; ?>" href="consultation.php" style="text-decoration:none;">
-                    <span class="nav-dot"></span>
-                    Consultation
-                </a>
-                <button class="nav-item <?php echo $activePanel === 'patientsPanel' ? 'active' : ''; ?>" data-panel="patientsPanel" type="button">
-                    <span class="nav-dot"></span>
-                    Patients
-                </button>
-                <button class="nav-item <?php echo $activePanel === 'recordsPanel' ? 'active' : ''; ?>" data-panel="recordsPanel" type="button">
-                    <span class="nav-dot"></span>
-                    Records
-                </button>
-                <button class="nav-item <?php echo $activePanel === 'reportsPanel' ? 'active' : ''; ?>" data-panel="reportsPanel" type="button">
-                    <span class="nav-dot"></span>
-                    Reports
-                </button>
-                <button class="nav-item <?php echo $activePanel === 'medicinePanel' ? 'active' : ''; ?>" data-panel="medicinePanel" type="button">
-                    <span class="nav-dot"></span>
-                    Medicine
-                </button>
-                    <button class="nav-item <?php echo $activePanel === 'schedulePanel' ? 'active' : ''; ?>" data-panel="schedulePanel" type="button">
-                    <span class="nav-dot"></span>
-                    Schedule
-                </button>
-            </nav>
-
-            <div class="sidebar-footer">
-                <p class="footer-title">System Status</p>
-                <div class="status-pill status-good">Operational</div>
-=======
         <!-- ═══════════════════════════════════ PATIENTS ═══════════════════════════════════ -->
         <section id="patientsPanel" class="panel">
             <div class="panel-overview">
                 <div><h3>Add Patient</h3><p>Capture patient details in a form that matches your <code>patients</code> table.</p></div>
                 <span class="panel-status <?php echo htmlspecialchars($panelStatusClass); ?>"><?php echo htmlspecialchars($panelStatusText); ?></span>
->>>>>>> f2b5551eed4f7b29e1aaf410975a46ab192ba58a
             </div>
             <?php if ($successMessage !== ''): ?>
                 <div class="feedback-message success-message"><?php echo htmlspecialchars($successMessage); ?></div>
@@ -198,35 +161,6 @@ $panelStatusClass = $viewData['panelStatusClass'];
             <!-- Toast notification -->
             <div id="consultToast" class="consult-toast" aria-live="polite"></div>
 
-<<<<<<< HEAD
-            <section id="recordsPanel" class="panel">
-                <div class="placeholder-panel large">
-                    <h3>Records</h3>
-                    <p>Placeholder area for patient records, medical transactions, and exam summaries. Backend integration will connect this to your database tables later.</p>
-                </div>
-            </section>
-
-            <section id="reportsPanel" class="panel">
-                <div class="placeholder-panel large">
-                    <h3>Reports</h3>
-                    <p>Placeholder area for reports, analytics, and health summaries. This panel is styled for future data visualizations and export workflows.</p>
-                </div>
-            </section>
-
-            <section id="settingsPanel" class="panel">
-                <div class="placeholder-panel large">
-                    <h3>Settings</h3>
-                    <p>Placeholder area for profile settings, account preferences, and system configurations.</p>
-                </div>
-            </section>
-            
-            
-        </main>
-    </div>
-
-    <script src="assets/js/app.js"></script>
-    <script src="assets/js/patientadd.js"></script>
-=======
             <!-- ── Search Patient Card ── -->
             <div class="consult-search-card">
                 <div class="consult-search-header">
@@ -437,6 +371,5 @@ function toggleOtherService(sel) {
     if (w) w.style.display = sel.value === 'Other' ? '' : 'none';
 }
 </script>
->>>>>>> f2b5551eed4f7b29e1aaf410975a46ab192ba58a
 </body>
 </html>
