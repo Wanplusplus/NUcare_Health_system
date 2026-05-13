@@ -34,6 +34,10 @@ $panelStatusClass = $viewData['panelStatusClass'];
                     <span class="nav-dot"></span>
                     Dashboard
                 </button>
+                <button class="nav-item <?php echo $activePanel === 'consultationPanel' ? 'active' : ''; ?>" data-panel="consultationPanel" type="button">
+                    <span class="nav-dot"></span>
+                    Consultation 
+                </button>
                 <button class="nav-item <?php echo $activePanel === 'patientsPanel' ? 'active' : ''; ?>" data-panel="patientsPanel" type="button">
                     <span class="nav-dot"></span>
                     Patients
@@ -46,9 +50,13 @@ $panelStatusClass = $viewData['panelStatusClass'];
                     <span class="nav-dot"></span>
                     Reports
                 </button>
-                <button class="nav-item <?php echo $activePanel === 'settingsPanel' ? 'active' : ''; ?>" data-panel="settingsPanel" type="button">
+                <button class="nav-item <?php echo $activePanel === 'medicinePanel' ? 'active' : ''; ?>" data-panel="medicinePanel" type="button">
                     <span class="nav-dot"></span>
-                    Settings
+                    Medicine
+                </button>
+                    <button class="nav-item <?php echo $activePanel === 'schedulePanel' ? 'active' : ''; ?>" data-panel="schedulePanel" type="button">
+                    <span class="nav-dot"></span>
+                    Schedule
                 </button>
             </nav>
 
@@ -222,6 +230,831 @@ $panelStatusClass = $viewData['panelStatusClass'];
                     <p>Placeholder area for profile settings, account preferences, and system configurations.</p>
                 </div>
             </section>
+            
+            <section id="consultationPanel" class="panel">
+
+                <style>
+                    /* ── Consultation Panel ── */
+                    #consultationPanel {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 18px;
+                        padding: 24px;
+                        font-family: 'Segoe UI', sans-serif;
+                    }
+
+                    /* Search bar */
+                    .consult-search-card {
+                        background: #fff;
+                        border: 0.5px solid #dce4f0;
+                        border-radius: 12px;
+                        padding: 16px 18px;
+                    }
+                    .consult-search-title {
+                        font-size: 11px;
+                        font-weight: 700;
+                        color: #1a2c5b;
+                        letter-spacing: 0.07em;
+                        text-transform: uppercase;
+                        margin-bottom: 10px;
+                        display: flex;
+                        align-items: center;
+                        gap: 7px;
+                    }
+                    .consult-search-title i { font-size: 15px; color: #d4a700; }
+                    .consult-search-row {
+                        display: flex;
+                        gap: 10px;
+                        align-items: flex-end;
+                    }
+                    .consult-search-row .input-group { flex: 1; margin: 0; }
+                    .consult-search-row .input-group label {
+                        font-size: 11px;
+                        font-weight: 600;
+                        color: #6b7a99;
+                        letter-spacing: 0.05em;
+                        text-transform: uppercase;
+                        display: block;
+                        margin-bottom: 4px;
+                    }
+                    .consult-search-row .input-group input {
+                        width: 100%;
+                        padding: 8px 11px;
+                        border: 1px solid #dce4f0;
+                        border-radius: 8px;
+                        font-size: 13px;
+                        color: #1a2c5b;
+                        background: #fafbfd;
+                        outline: none;
+                        font-family: inherit;
+                        transition: border 0.15s, box-shadow 0.15s;
+                    }
+                    .consult-search-row .input-group input:focus {
+                        border-color: #7a9edc;
+                        box-shadow: 0 0 0 3px rgba(122,158,220,0.18);
+                    }
+                    .search-patient-btn {
+                        padding: 9px 20px;
+                        border-radius: 8px;
+                        border: none;
+                        background: #1a2c5b;
+                        color: #fff;
+                        font-size: 13px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        gap: 7px;
+                        font-family: inherit;
+                        white-space: nowrap;
+                        transition: background 0.15s;
+                        flex-shrink: 0;
+                    }
+                    .search-patient-btn:hover { background: #243570; }
+                    .search-patient-btn i { font-size: 15px; }
+
+                    /* Search feedback */
+                    .search-feedback {
+                        margin-top: 10px;
+                        font-size: 12px;
+                        display: none;
+                        align-items: center;
+                        gap: 6px;
+                        padding: 8px 12px;
+                        border-radius: 8px;
+                    }
+                    .search-feedback.not-found {
+                        display: flex;
+                        background: #fdf0ef;
+                        color: #c0392b;
+                        border: 1px solid #f3c0bc;
+                    }
+                    .search-feedback.found {
+                        display: flex;
+                        background: #eaf5ef;
+                        color: #1a7a4a;
+                        border: 1px solid #b2dcc4;
+                    }
+
+                    /* Patient card */
+                    .consult-patient-card {
+                        background: #fff;
+                        border: 0.5px solid #dce4f0;
+                        border-radius: 12px;
+                        padding: 14px 18px;
+                        display: none;
+                        gap: 16px;
+                        align-items: flex-start;
+                    }
+                    .consult-patient-card.visible { display: flex; }
+                    .cpc-avatar {
+                        width: 62px;
+                        height: 62px;
+                        border-radius: 50%;
+                        background: #dce4f0;
+                        border: 2px solid #dce4f0;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        flex-shrink: 0;
+                        color: #6b7a99;
+                        font-size: 26px;
+                    }
+                    .cpc-grid {
+                        flex: 1;
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 4px 20px;
+                    }
+                    .cpc-field { display: flex; flex-direction: column; gap: 1px; }
+                    .cpc-label {
+                        font-size: 10px;
+                        font-weight: 600;
+                        color: #6b7a99;
+                        letter-spacing: 0.06em;
+                        text-transform: uppercase;
+                    }
+                    .cpc-value {
+                        font-size: 13px;
+                        color: #1a2c5b;
+                        font-weight: 500;
+                        border-bottom: 1px solid #dce4f0;
+                        padding-bottom: 2px;
+                        min-height: 18px;
+                    }
+                    .cpc-status {
+                        flex-shrink: 0;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: flex-end;
+                        gap: 6px;
+                    }
+                    .badge-active {
+                        padding: 3px 10px;
+                        border-radius: 20px;
+                        font-size: 11px;
+                        font-weight: 600;
+                        background: #eaf5ef;
+                        color: #1a7a4a;
+                    }
+                    .cpc-time { font-size: 11px; color: #6b7a99; }
+
+                    /* Disabled overlay state */
+                    .consult-form-area {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 14px;
+                        position: relative;
+                    }
+                    .consult-form-area.disabled {
+                        pointer-events: none;
+                        user-select: none;
+                    }
+                    .consult-form-area.disabled .section-card,
+                    .consult-form-area.disabled .form-actions-card {
+                        opacity: 0.4;
+                        filter: grayscale(0.3);
+                    }
+                    .disabled-overlay {
+                        display: none;
+                        position: absolute;
+                        inset: 0;
+                        z-index: 10;
+                        background: rgba(240,244,251,0.55);
+                        border-radius: 12px;
+                        align-items: center;
+                        justify-content: center;
+                        flex-direction: column;
+                        gap: 10px;
+                    }
+                    .disabled-overlay.show { display: flex; }
+                    .disabled-overlay i { font-size: 32px; color: #6b7a99; }
+                    .disabled-overlay p { font-size: 13px; color: #6b7a99; font-weight: 500; }
+
+                    /* Section cards */
+                    .section-card {
+                        background: #fff;
+                        border: 0.5px solid #dce4f0;
+                        border-radius: 12px;
+                        padding: 14px 18px;
+                    }
+                    .section-label {
+                        font-size: 11px;
+                        font-weight: 700;
+                        color: #1a2c5b;
+                        letter-spacing: 0.07em;
+                        text-transform: uppercase;
+                        margin-bottom: 10px;
+                        display: flex;
+                        align-items: center;
+                        gap: 7px;
+                    }
+                    .section-label i { font-size: 15px; color: #d4a700; }
+
+                    /* Form grid */
+                    .form-grid {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 10px;
+                    }
+                    .input-group {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 4px;
+                    }
+                    .input-group.full-width { grid-column: span 2; }
+                    .input-group label {
+                        font-size: 11px;
+                        font-weight: 600;
+                        color: #6b7a99;
+                        letter-spacing: 0.05em;
+                        text-transform: uppercase;
+                    }
+                    .input-group input,
+                    .input-group select,
+                    .input-group textarea {
+                        width: 100%;
+                        padding: 8px 11px;
+                        border: 1px solid #dce4f0;
+                        border-radius: 8px;
+                        font-size: 13px;
+                        color: #1a2c5b;
+                        background: #fafbfd;
+                        outline: none;
+                        font-family: inherit;
+                        transition: border 0.15s, box-shadow 0.15s;
+                    }
+                    .input-group input:focus,
+                    .input-group select:focus,
+                    .input-group textarea:focus {
+                        border-color: #7a9edc;
+                        box-shadow: 0 0 0 3px rgba(122,158,220,0.18);
+                    }
+                    .input-group input.error,
+                    .input-group select.error,
+                    .input-group textarea.error {
+                        border-color: #c0392b;
+                        background: #fdf0ef;
+                    }
+                    .input-group textarea { resize: none; min-height: 72px; }
+                    .input-group select { cursor: pointer; }
+
+                    /* Error messages */
+                    .err-msg {
+                        font-size: 11px;
+                        color: #c0392b;
+                        font-weight: 500;
+                        display: none;
+                        align-items: center;
+                        gap: 4px;
+                        margin-top: 2px;
+                    }
+                    .err-msg.show { display: flex; }
+
+                    /* Medicine rows */
+                    .meds-list { display: flex; flex-direction: column; gap: 8px; }
+                    .med-entry {
+                        display: grid;
+                        grid-template-columns: 1fr 100px 30px;
+                        gap: 8px;
+                        align-items: end;
+                    }
+                    .remove-med {
+                        width: 30px;
+                        height: 36px;
+                        border: 1px solid #dce4f0;
+                        border-radius: 8px;
+                        background: none;
+                        cursor: pointer;
+                        color: #6b7a99;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 15px;
+                        transition: background 0.12s, color 0.12s;
+                    }
+                    .remove-med:hover { background: #fdf0ef; color: #c0392b; border-color: #c0392b; }
+                    .add-med-btn {
+                        background: none;
+                        border: 1px dashed #dce4f0;
+                        border-radius: 8px;
+                        padding: 6px 12px;
+                        font-size: 12px;
+                        color: #6b7a99;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        gap: 5px;
+                        margin-top: 8px;
+                        font-family: inherit;
+                        transition: background 0.15s, border-color 0.15s;
+                    }
+                    .add-med-btn:hover { background: #f0f4fb; border-color: #b0bed4; }
+
+                    /* Form actions */
+                    .form-actions-card {
+                        background: #fff;
+                        border: 0.5px solid #dce4f0;
+                        border-radius: 12px;
+                        padding: 12px 18px;
+                        display: flex;
+                        justify-content: flex-end;
+                        gap: 10px;
+                    }
+                    .primary-button {
+                        padding: 9px 28px;
+                        border-radius: 8px;
+                        border: none;
+                        background: #f5c842;
+                        color: #111e3f;
+                        font-size: 13px;
+                        font-weight: 700;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        font-family: inherit;
+                        transition: background 0.15s, transform 0.1s;
+                    }
+                    .primary-button:hover { background: #d4a700; color: #fff; }
+                    .primary-button:active { transform: scale(0.97); }
+                    .secondary-button {
+                        padding: 9px 20px;
+                        border-radius: 8px;
+                        border: 1px solid #dce4f0;
+                        background: none;
+                        font-size: 13px;
+                        color: #6b7a99;
+                        cursor: pointer;
+                        font-family: inherit;
+                        transition: background 0.15s;
+                    }
+                    .secondary-button:hover { background: #f0f4fb; }
+
+                    /* Toast */
+                    #consultToast {
+                        position: fixed;
+                        top: 20px;
+                        right: 24px;
+                        padding: 10px 16px;
+                        border-radius: 10px;
+                        font-size: 13px;
+                        font-weight: 600;
+                        display: none;
+                        align-items: center;
+                        gap: 8px;
+                        z-index: 9999;
+                        font-family: 'Segoe UI', sans-serif;
+                    }
+                    #consultToast.success { background: #eaf5ef; color: #1a7a4a; border: 1px solid #b2dcc4; display: flex; }
+                    #consultToast.error-toast { background: #fdf0ef; color: #c0392b; border: 1px solid #f3c0bc; display: flex; }
+                </style>
+
+                <div id="consultToast"></div>
+
+                <!-- ── Search Patient ── -->
+                <div class="consult-search-card">
+                    <div class="consult-search-title">
+                        <i class="ti ti-search" aria-hidden="true"></i>Find Patient
+                    </div>
+                    <div class="consult-search-row">
+                        <div class="input-group">
+                            <label for="consultSearchInput">Patient ID or Name</label>
+                            <input type="text" id="consultSearchInput" name="consultSearchInput"
+                                placeholder="Enter patient ID or full name&hellip;"
+                                onkeydown="if(event.key==='Enter'){searchPatient();}">
+                        </div>
+                        <button class="search-patient-btn" type="button" onclick="searchPatient()">
+                            <i class="ti ti-search" aria-hidden="true"></i>Search
+                        </button>
+                    </div>
+                    <div class="search-feedback" id="searchFeedback"></div>
+                </div>
+
+                <!-- ── Patient Info Card (hidden until found) ── -->
+                <div class="consult-patient-card" id="consultPatientCard">
+                    <div class="cpc-avatar">
+                        <i class="ti ti-user" aria-hidden="true"></i>
+                    </div>
+                    <div class="cpc-grid">
+                        <div class="cpc-field">
+                            <span class="cpc-label">ID #</span>
+                            <span class="cpc-value" id="cpcID"></span>
+                        </div>
+                        <div class="cpc-field">
+                            <span class="cpc-label">Sex</span>
+                            <span class="cpc-value" id="cpcSex"></span>
+                        </div>
+                        <div class="cpc-field">
+                            <span class="cpc-label">Name</span>
+                            <span class="cpc-value" id="cpcName"></span>
+                        </div>
+                        <div class="cpc-field">
+                            <span class="cpc-label">Birthday</span>
+                            <span class="cpc-value" id="cpcBday"></span>
+                        </div>
+                        <div class="cpc-field">
+                            <span class="cpc-label">Program</span>
+                            <span class="cpc-value" id="cpcProgram"></span>
+                        </div>
+                        <div class="cpc-field">
+                            <span class="cpc-label">Tel No.</span>
+                            <span class="cpc-value" id="cpcTel"></span>
+                        </div>
+                    </div>
+                    <div class="cpc-status">
+                        <span class="badge-active">Active</span>
+                        <span class="cpc-time" id="cpcTime"></span>
+                    </div>
+                </div>
+
+                <!-- ── Consultation Form (disabled until patient found) ── -->
+                <form id="consultationForm" class="consultation-form" method="post" action="consultation_save_record.php">
+
+                    <input type="hidden" name="consultPatientID" id="consultPatientID" value="">
+
+                    <div class="consult-form-area disabled" id="consultFormArea">
+
+                        <!-- Disabled overlay -->
+                        <div class="disabled-overlay show" id="disabledOverlay">
+                            <i class="ti ti-user-search" aria-hidden="true"></i>
+                            <p>Search and select a patient to begin consultation</p>
+                        </div>
+
+                        <!-- Vital Signs -->
+                        <div class="section-card">
+                            <div class="section-label">
+                                <i class="ti ti-heartbeat" aria-hidden="true"></i>Vital Signs
+                            </div>
+                            <div class="form-grid">
+                                <div class="input-group">
+                                    <label for="consultBP">Blood Pressure</label>
+                                    <input type="text" id="consultBP" name="consultBP" placeholder="e.g. 120/80">
+                                </div>
+                                <div class="input-group">
+                                    <label for="consultTemp">Temperature (&deg;C)</label>
+                                    <input type="text" id="consultTemp" name="consultTemp" placeholder="e.g. 36.6">
+                                </div>
+                                <div class="input-group">
+                                    <label for="consultPulse">Pulse Rate</label>
+                                    <input type="text" id="consultPulse" name="consultPulse" placeholder="e.g. 75 bpm">
+                                </div>
+                                <div class="input-group">
+                                    <label for="consultWeight">Weight (kg)</label>
+                                    <input type="text" id="consultWeight" name="consultWeight" placeholder="e.g. 55">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chief Complaint -->
+                        <div class="section-card">
+                            <div class="section-label">
+                                <i class="ti ti-message-dots" aria-hidden="true"></i>Concern / Chief Complaint
+                            </div>
+                            <div class="form-grid">
+                                <div class="input-group full-width">
+                                    <label for="consultConcern">Chief Complaint</label>
+                                    <textarea id="consultConcern" name="consultConcern"
+                                        placeholder="Describe the patient's chief complaint or reason for consultation&hellip;"></textarea>
+                                    <span class="err-msg" id="consultConcernErr">
+                                        <i class="ti ti-alert-circle" aria-hidden="true"></i>This field is required
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Medicine(s) Dispensed -->
+                        <div class="section-card">
+                            <div class="section-label">
+                                <i class="ti ti-pill" aria-hidden="true"></i>Medicine(s) Dispensed
+                            </div>
+                            <div class="meds-list" id="medsList">
+                                <div class="med-entry" id="med-0">
+                                    <div class="input-group">
+                                        <label for="consultMedName0">Medicine Name</label>
+                                        <input type="text" id="consultMedName0" name="consultMedName[]"
+                                            placeholder="Medicine name (optional)">
+                                        <span class="err-msg" id="medNameErr0"></span>
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="consultMedQty0">Qty</label>
+                                        <input type="number" id="consultMedQty0" name="consultMedQty[]"
+                                            placeholder="0" min="1">
+                                        <span class="err-msg" id="medQtyErr0"></span>
+                                    </div>
+                                    <div></div><!-- spacer -->
+                                </div>
+                            </div>
+                            <button class="add-med-btn" type="button" onclick="addConsultMed()">
+                                <i class="ti ti-plus" aria-hidden="true"></i>Add another medicine
+                            </button>
+                        </div>
+
+                        <!-- Service Rendered -->
+                        <div class="section-card">
+                            <div class="section-label">
+                                <i class="ti ti-clipboard-list" aria-hidden="true"></i>Service Rendered
+                            </div>
+                            <div class="form-grid">
+                                <div class="input-group full-width">
+                                    <label for="consultService">Service</label>
+                                    <select id="consultService" name="consultService">
+                                        <option value="">&mdash; Select service &mdash;</option>
+                                        <option value="Consultation">Consultation</option>
+                                        <option value="First Aid / Wound Care">First Aid / Wound Care</option>
+                                        <option value="Medicine Dispensing">Medicine Dispensing</option>
+                                        <option value="Blood Pressure Monitoring">Blood Pressure Monitoring</option>
+                                        <option value="Medical Certificate">Medical Certificate Issuance</option>
+                                        <option value="Referral to Hospital">Referral to Hospital</option>
+                                        <option value="Health Counseling">Health Counseling</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                    <span class="err-msg" id="consultServiceErr">
+                                        <i class="ti ti-alert-circle" aria-hidden="true"></i>This field is required
+                                    </span>
+                                </div>
+                                <div class="input-group full-width" id="otherServiceWrap" style="display:none;">
+                                    <label for="consultServiceOther">Please specify</label>
+                                    <input type="text" id="consultServiceOther" name="consultServiceOther"
+                                        placeholder="Describe the service&hellip;">
+                                </div>
+                                <div class="input-group full-width">
+                                    <label for="consultNotes">Additional Notes</label>
+                                    <textarea id="consultNotes" name="consultNotes"
+                                        placeholder="Additional notes or clinical findings (optional)&hellip;"
+                                        style="min-height:52px;"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div><!-- /.consult-form-area -->
+
+                    <!-- Form Actions -->
+                    <div class="form-actions-card" id="consultFormActions" style="opacity:0.4;pointer-events:none;">
+                        <button type="submit" class="primary-button" id="consultSaveBtn">
+                            <i class="ti ti-device-floppy" aria-hidden="true"></i>Save Record
+                        </button>
+                        <button type="reset" class="secondary-button" id="clearConsultForm">Clear Form</button>
+                    </div>
+
+                </form>
+
+            </section>
+
+            <script>
+            (function () {
+
+                /* ── Timestamp ── */
+                const now = new Date();
+                const ts  = now.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
+                        + ' ' + now.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
+
+                /* ── Search patient ── */
+                window.searchPatient = function () {
+                    const query    = document.getElementById('consultSearchInput').value.trim();
+                    const feedback = document.getElementById('searchFeedback');
+
+                    if (!query) {
+                        feedback.className  = 'search-feedback not-found';
+                        feedback.innerHTML  = '<i class="ti ti-alert-circle"></i> Please enter a patient ID or name.';
+                        return;
+                    }
+
+                    feedback.className = 'search-feedback';
+                    feedback.innerHTML = '';
+
+                    /*
+                    * ── AJAX lookup ──────────────────────────────────────────────────────
+                    * Replace the fetch() below with your actual endpoint.
+                    * Expected JSON response:
+                    *   Found:     { found: true,  patientID, patientFname, patientMname,
+                    *                              patientLname, patientSex, patientBirthday,
+                    *                              patientProgram, patientPhone }
+                    *   Not found: { found: false }
+                    * ─────────────────────────────────────────────────────────────────────
+                    */
+                    fetch('consultation_search_patient.php?q=' + encodeURIComponent(query))
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.found) {
+                                loadPatient(data);
+                            } else {
+                                patientNotFound();
+                            }
+                        })
+                        .catch(() => {
+                            /*
+                            * Remove the demo block below once the real endpoint is ready.
+                            * This lets you test the UI without a backend.
+                            */
+                            const demo = {
+                                found          : true,
+                                patientID      : '2024-00142',
+                                patientFname   : 'Maria',
+                                patientMname   : 'L.',
+                                patientLname   : 'Santos',
+                                patientSex     : 'Female',
+                                patientBirthday: 'March 14, 2003',
+                                patientProgram : 'BS Nursing',
+                                patientPhone   : '09XX-XXX-XXXX',
+                            };
+                            loadPatient(demo);
+                        });
+                };
+
+                function loadPatient(data) {
+                    /* Populate read-only card */
+                    document.getElementById('cpcID').textContent      = data.patientID;
+                    document.getElementById('cpcSex').textContent     = data.patientSex;
+                    document.getElementById('cpcName').textContent    = [data.patientFname, data.patientMname, data.patientLname].filter(Boolean).join(' ');
+                    document.getElementById('cpcBday').textContent    = data.patientBirthday;
+                    document.getElementById('cpcProgram').textContent = data.patientProgram;
+                    document.getElementById('cpcTel').textContent     = data.patientPhone;
+                    document.getElementById('cpcTime').textContent    = ts;
+
+                    /* Pass ID into form */
+                    document.getElementById('consultPatientID').value = data.patientID;
+
+                    /* Show card */
+                    document.getElementById('consultPatientCard').classList.add('visible');
+
+                    /* Enable form */
+                    const area    = document.getElementById('consultFormArea');
+                    const actions = document.getElementById('consultFormActions');
+                    const overlay = document.getElementById('disabledOverlay');
+                    area.classList.remove('disabled');
+                    overlay.classList.remove('show');
+                    actions.style.opacity       = '1';
+                    actions.style.pointerEvents = 'auto';
+
+                    /* Feedback */
+                    const feedback      = document.getElementById('searchFeedback');
+                    feedback.className  = 'search-feedback found';
+                    feedback.innerHTML  = '<i class="ti ti-circle-check"></i> Patient found — consultation form is now active.';
+                }
+
+                function patientNotFound() {
+                    /* Hide card, disable form */
+                    document.getElementById('consultPatientCard').classList.remove('visible');
+                    document.getElementById('consultPatientID').value = '';
+
+                    const area    = document.getElementById('consultFormArea');
+                    const actions = document.getElementById('consultFormActions');
+                    const overlay = document.getElementById('disabledOverlay');
+                    area.classList.add('disabled');
+                    overlay.classList.add('show');
+                    actions.style.opacity       = '0.4';
+                    actions.style.pointerEvents = 'none';
+
+                    const feedback      = document.getElementById('searchFeedback');
+                    feedback.className  = 'search-feedback not-found';
+                    feedback.innerHTML  = '<i class="ti ti-alert-circle"></i> No patient found. Please check the ID or name and try again.';
+                }
+
+                /* ── Medicine rows ── */
+                let medCount = 1;
+
+                window.addConsultMed = function () {
+                    const i   = medCount++;
+                    const div = document.createElement('div');
+                    div.className = 'med-entry';
+                    div.id        = 'med-' + i;
+                    div.innerHTML = `
+                        <div class="input-group">
+                            <label for="consultMedName${i}">Medicine Name</label>
+                            <input type="text" id="consultMedName${i}" name="consultMedName[]"
+                                placeholder="Medicine name (optional)">
+                            <span class="err-msg" id="medNameErr${i}"></span>
+                        </div>
+                        <div class="input-group">
+                            <label for="consultMedQty${i}">Qty</label>
+                            <input type="number" id="consultMedQty${i}" name="consultMedQty[]"
+                                placeholder="0" min="1">
+                            <span class="err-msg" id="medQtyErr${i}"></span>
+                        </div>
+                        <button class="remove-med" type="button" onclick="removeConsultMed('med-${i}')" title="Remove">
+                            <i class="ti ti-x"></i>
+                        </button>`;
+                    document.getElementById('medsList').appendChild(div);
+                };
+
+                window.removeConsultMed = function (id) {
+                    const el = document.getElementById(id);
+                    if (el) el.remove();
+                };
+
+                /* ── Other service toggle ── */
+                document.getElementById('consultService').addEventListener('change', function () {
+                    document.getElementById('otherServiceWrap').style.display =
+                        this.value === 'Other' ? 'block' : 'none';
+                });
+
+                /* ── Validation helpers ── */
+                function showErr(id, msg) {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    el.textContent = msg;
+                    el.classList.add('show');
+                }
+                function clearErr(id) {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    el.textContent = '';
+                    el.classList.remove('show');
+                }
+                function setInputErr(el, isErr) {
+                    if (!el) return;
+                    isErr ? el.classList.add('error') : el.classList.remove('error');
+                }
+
+                /* ── Toast ── */
+                function showToast(msg, type) {
+                    const t    = document.getElementById('consultToast');
+                    t.textContent = msg;
+                    t.className   = 'toast ' + (type === 'success' ? 'success' : 'error-toast');
+                    clearTimeout(window._cToastTimer);
+                    window._cToastTimer = setTimeout(() => { t.className = ''; }, 3200);
+                }
+
+                /* ── Form submit validation ── */
+                document.getElementById('consultationForm').addEventListener('submit', function (e) {
+                    let valid = true;
+
+                    const concern = document.getElementById('consultConcern');
+                    const service = document.getElementById('consultService');
+
+                    clearErr('consultConcernErr');
+                    clearErr('consultServiceErr');
+                    setInputErr(concern, false);
+                    setInputErr(service, false);
+
+                    if (!concern.value.trim()) {
+                        showErr('consultConcernErr', 'This field is required');
+                        setInputErr(concern, true);
+                        valid = false;
+                    }
+                    if (!service.value) {
+                        showErr('consultServiceErr', 'This field is required');
+                        setInputErr(service, true);
+                        valid = false;
+                    }
+
+                    document.querySelectorAll('.med-entry').forEach(entry => {
+                        const idx    = entry.id.split('-')[1];
+                        const nm     = document.getElementById('consultMedName' + idx);
+                        const qty    = document.getElementById('consultMedQty'  + idx);
+                        clearErr('medNameErr' + idx);
+                        clearErr('medQtyErr'  + idx);
+                        setInputErr(nm,  false);
+                        setInputErr(qty, false);
+
+                        const hasName = nm  && nm.value.trim()  !== '';
+                        const hasQty  = qty && qty.value.trim() !== '' && parseInt(qty.value) >= 1;
+
+                        if (hasName && !hasQty) {
+                            showErr('medQtyErr'  + idx, 'Must be a positive number');
+                            setInputErr(qty, true);
+                            valid = false;
+                        }
+                        if (hasQty && !hasName) {
+                            showErr('medNameErr' + idx, 'Medicine name required if qty is set');
+                            setInputErr(nm, true);
+                            valid = false;
+                        }
+                    });
+
+                    if (!valid) {
+                        e.preventDefault();
+                        showToast('Please fix the errors before saving', 'error');
+                    }
+                });
+
+                /* ── Clear form ── */
+                document.getElementById('clearConsultForm').addEventListener('click', function () {
+                    ['consultBP','consultTemp','consultPulse','consultWeight',
+                    'consultConcern','consultService','consultNotes','consultServiceOther']
+                        .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+
+                    ['consultConcernErr','consultServiceErr'].forEach(clearErr);
+                    ['consultConcern','consultService'].forEach(id => setInputErr(document.getElementById(id), false));
+
+                    document.getElementById('otherServiceWrap').style.display = 'none';
+
+                    const list = document.getElementById('medsList');
+                    Array.from(list.querySelectorAll('.med-entry')).forEach((entry, i) => {
+                        if (i > 0) { entry.remove(); return; }
+                        const n = document.getElementById('consultMedName0');
+                        const q = document.getElementById('consultMedQty0');
+                        if (n) { n.value = ''; setInputErr(n, false); }
+                        if (q) { q.value = ''; setInputErr(q, false); }
+                        clearErr('medNameErr0');
+                        clearErr('medQtyErr0');
+                    });
+                });
+
+            })();
+            </script>
+                        
         </main>
     </div>
 
