@@ -20,7 +20,11 @@ $panelStatusClass = $viewData['panelStatusClass'];
 </head>
 <body data-active-panel="<?php echo htmlspecialchars($activePanel); ?>">
     <div class="app-shell">
-        <aside class="sidebar">
+        <button class="hamburger-btn" id="hamburgerBtn" type="button" aria-label="Toggle menu">
+            ☰
+        </button>
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-brand">
                 <div class="brand-mark">NU</div>
                 <div>

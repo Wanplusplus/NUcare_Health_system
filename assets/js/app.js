@@ -10,6 +10,37 @@ document.addEventListener('DOMContentLoaded', function() {
     const headerTitle = document.querySelector('.page-header h2');
     const descriptionText = document.querySelector('.page-description');
 
+    // Hamburger menu functionality
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    function toggleSidebar() {
+        sidebar.classList.toggle('active');
+        sidebarOverlay.classList.toggle('active');
+    }
+
+    function closeSidebar() {
+        sidebar.classList.remove('active');
+        sidebarOverlay.classList.remove('active');
+    }
+
+    if (hamburgerBtn) {
+        hamburgerBtn.addEventListener('click', toggleSidebar);
+    }
+
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', closeSidebar);
+    }
+
+    // Close sidebar when a nav item is clicked (mobile)
+    navItems.forEach(item => {
+        item.addEventListener('click', function() {
+            window.activateDashboardPanel(this.dataset.panel);
+            closeSidebar();
+        });
+    });
+
     const panelTitles = {
         dashboardPanel: {
             breadcrumb: 'Home / Dashboard',
@@ -60,12 +91,6 @@ document.addEventListener('DOMContentLoaded', function() {
             descriptionText.textContent = panelConfig.description;
         }
     };
-
-    navItems.forEach(item => {
-        item.addEventListener('click', function() {
-            window.activateDashboardPanel(this.dataset.panel);
-        });
-    });
 
     if (activePanelFromServer && activePanelFromServer !== 'dashboardPanel') {
         window.activateDashboardPanel(activePanelFromServer);
