@@ -10,6 +10,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const headerTitle = document.querySelector('.page-header h2');
     const descriptionText = document.querySelector('.page-description');
 
+    // Disable browser scroll restoration
+    if ('scrollRestoration' in window.history) {
+        window.history.scrollRestoration = 'manual';
+    }
+
     // Hamburger menu functionality
     const hamburgerBtn = document.getElementById('hamburgerBtn');
     const sidebar = document.getElementById('sidebar');
@@ -69,6 +74,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
+    const mainContent = document.querySelector('.main-content');
+
+    function scrollToTop() {
+        if (mainContent) {
+            mainContent.scrollTop = 0;
+        }
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        window.scrollTo(0, 0);
+    }
+
     window.activateDashboardPanel = function(panelId) {
         navItems.forEach(nav => nav.classList.remove('active'));
         panels.forEach(panel => panel.classList.remove('active'));
@@ -90,6 +106,11 @@ document.addEventListener('DOMContentLoaded', function() {
             headerTitle.textContent = panelConfig.title;
             descriptionText.textContent = panelConfig.description;
         }
+
+        // Scroll main-content to top
+        scrollToTop();
+        requestAnimationFrame(scrollToTop);
+        setTimeout(scrollToTop, 10);
     };
 
     if (activePanelFromServer && activePanelFromServer !== 'dashboardPanel') {
