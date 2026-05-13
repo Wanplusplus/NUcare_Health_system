@@ -21,7 +21,6 @@ $panelStatusClass = $viewData['panelStatusClass'];
 <body data-active-panel="<?php echo htmlspecialchars($activePanel); ?>">
     <div class="app-shell">
         <button class="hamburger-btn" id="hamburgerBtn" type="button" aria-label="Toggle menu">
-            ☰
         </button>
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
         <aside class="sidebar" id="sidebar">
