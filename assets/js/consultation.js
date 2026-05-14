@@ -4,6 +4,10 @@
     const ts  = now.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) +
                 ' ' + now.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
 
+    /* ── Resolve the AJAX endpoint from the DOM (set by PHP, never hardcoded in JS) ── */
+    const searchBtn = document.querySelector('[data-search-url]');
+    const SEARCH_URL = searchBtn ? searchBtn.dataset.searchUrl : 'consultation_search_patient.ajax.php';
+
     /* ── Search patient ── */
     window.searchPatient = function () {
         const query    = document.getElementById('consultSearchInput').value.trim();
@@ -18,13 +22,13 @@
         feedback.className = 'search-feedback';
         feedback.innerHTML = 'Searching…';
 
-        // ✅ Fixed: filename matches the actual PHP file on disk
-        fetch('consultation_search_patient.php?q=' + encodeURIComponent(query))
+        fetch(SEARCH_URL + '?q=' + encodeURIComponent(query))
             .then(r => {
-                if (!r.ok) throw new Error('Server error: ' + r.status);
+                if (!r.ok) throw new Error('HTTP ' + r.status + ' — ' + r.statusText);
                 return r.json();
             })
             .then(data => {
+                if (data.error) throw new Error(data.error);   // DB error from PHP
                 if (data.found) {
                     loadPatient(data);
                 } else {
@@ -33,7 +37,7 @@
             })
             .catch(err => {
                 feedback.className = 'search-feedback not-found';
-                feedback.innerHTML = 'Could not reach the server. Please try again.';
+                feedback.innerHTML = 'Error: ' + err.message + '. Check the browser console for details.';
                 console.error('Patient search error:', err);
             });
     };
