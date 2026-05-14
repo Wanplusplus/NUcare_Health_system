@@ -4,7 +4,7 @@
     const ts  = now.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) +
                 ' ' + now.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
 
-    /* ── Resolve the AJAX endpoint from the DOM (set by PHP, never hardcoded in JS) ── */
+    /* ── Resolve AJAX endpoint from the DOM (set by PHP) ── */
     const searchBtn = document.querySelector('[data-search-url]');
     const SEARCH_URL = searchBtn ? searchBtn.dataset.searchUrl : 'consultation_search_patient.ajax.php';
 
@@ -22,26 +22,98 @@
         feedback.className = 'search-feedback';
         feedback.innerHTML = 'Searching…';
 
+        // Hide any previous results dropdown
+        closeResultsList();
+
         fetch(SEARCH_URL + '?q=' + encodeURIComponent(query))
             .then(r => {
                 if (!r.ok) throw new Error('HTTP ' + r.status + ' — ' + r.statusText);
                 return r.json();
             })
             .then(data => {
-                if (data.error) throw new Error(data.error);   // DB error from PHP
-                if (data.found) {
-                    loadPatient(data);
-                } else {
+                if (data.error) throw new Error(data.error);
+                if (!data.found) {
                     patientNotFound();
+                } else if (data.single) {
+                    // Exact or only one match — load directly
+                    loadPatient(data.patients[0]);
+                } else {
+                    // Multiple matches — show picker list
+                    showResultsList(data.patients);
                 }
             })
             .catch(err => {
                 feedback.className = 'search-feedback not-found';
-                feedback.innerHTML = 'Error: ' + err.message + '. Check the browser console for details.';
+                feedback.innerHTML = 'Error: ' + err.message;
                 console.error('Patient search error:', err);
             });
     };
 
+    /* ── Results picker list ── */
+    function showResultsList(patients) {
+        closeResultsList();
+
+        const feedback = document.getElementById('searchFeedback');
+        feedback.className = 'search-feedback found';
+        feedback.innerHTML = patients.length + ' patient(s) found. Select one below.';
+
+        const wrapper = document.getElementById('consultSearchInput').closest('.search-input-wrapper') ||
+                        document.getElementById('consultSearchInput').parentElement;
+
+        const list = document.createElement('ul');
+        list.id = 'patientResultsList';
+        list.className = 'patient-results-list';
+
+        patients.forEach(p => {
+            const fullName = [p.patientFname, p.patientMname, p.patientLname].filter(Boolean).join(' ');
+            const li = document.createElement('li');
+            li.className = 'patient-result-item';
+            li.innerHTML =
+                '<span class="pri-name">' + escHtml(fullName) + '</span>' +
+                '<span class="pri-meta">' + escHtml(p.patientID) + ' · ' + escHtml(p.patientProgram) + ' · ' + escHtml(p.patientSex) + '</span>';
+            li.addEventListener('click', () => {
+                loadPatient(p);
+                closeResultsList();
+                document.getElementById('consultSearchInput').value = fullName;
+            });
+            list.appendChild(li);
+        });
+
+        // Insert right after the search row
+        const searchRow = document.querySelector('.consult-search-row');
+        if (searchRow) {
+            searchRow.insertAdjacentElement('afterend', list);
+        }
+
+        // Close on outside click
+        setTimeout(() => {
+            document.addEventListener('click', outsideClickClose);
+        }, 0);
+    }
+
+    function closeResultsList() {
+        const existing = document.getElementById('patientResultsList');
+        if (existing) existing.remove();
+        document.removeEventListener('click', outsideClickClose);
+    }
+
+    function outsideClickClose(e) {
+        const list  = document.getElementById('patientResultsList');
+        const input = document.getElementById('consultSearchInput');
+        if (list && !list.contains(e.target) && e.target !== input) {
+            closeResultsList();
+        }
+    }
+
+    function escHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    /* ── Load a selected patient into the card + unlock form ── */
     function loadPatient(data) {
         document.getElementById('cpcID').textContent      = data.patientID;
         document.getElementById('cpcSex').textContent     = data.patientSex;
@@ -64,7 +136,7 @@
 
         const feedback = document.getElementById('searchFeedback');
         feedback.className = 'search-feedback found';
-        feedback.innerHTML = 'Patient found — consultation form is now active.';
+        feedback.innerHTML = 'Patient loaded — consultation form is now active.';
     }
 
     function patientNotFound() {

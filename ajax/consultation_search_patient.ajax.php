@@ -1,15 +1,15 @@
 <?php
-// consultation_search_patient.php
-// Returns JSON: { found: true, ...fields } or { found: false }
+// consultation_search_patient_ajax.php
+// Returns JSON: { found: true, patients: [...] } or { found: false }
 
 header('Content-Type: application/json');
 session_start();
 
 // ── DB credentials ──────────────────────────────────────────────
-$host   = 'localhost';
-$db     = 'nucaredb';
-$user   = 'root';
-$pass   = '';
+$host    = 'localhost';
+$db      = 'nucaredb';
+$user    = 'root';
+$pass    = '';
 $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
@@ -32,7 +32,7 @@ if ($q === '') {
     exit;
 }
 
-// ── Query: match PatientID exactly, or partial name match ───────
+// ── Query: exact PatientID OR partial name match, up to 10 results ──
 $stmt = $pdo->prepare("
     SELECT
         p.PatientID,
@@ -49,7 +49,8 @@ $stmt = $pdo->prepare("
         p.PatientID = :exact
         OR CONCAT_WS(' ', p.PatientFname, p.PatientMname, p.PatientLname) LIKE :name
         OR CONCAT_WS(' ', p.PatientFname, p.PatientLname) LIKE :name
-    LIMIT 1
+    ORDER BY p.PatientLname, p.PatientFname
+    LIMIT 10
 ");
 
 $stmt->execute([
@@ -57,28 +58,36 @@ $stmt->execute([
     ':name'  => '%' . $q . '%',
 ]);
 
-$row = $stmt->fetch();
+$rows = $stmt->fetchAll();
 
-if (!$row) {
+if (!$rows) {
     echo json_encode(['found' => false]);
     exit;
 }
 
-// ── Format birthday ─────────────────────────────────────────────
-$birthday = '';
-if (!empty($row['PatientBirthday'])) {
-    $dt = DateTime::createFromFormat('Y-m-d', $row['PatientBirthday']);
-    $birthday = $dt ? $dt->format('F j, Y') : $row['PatientBirthday'];
+// ── Format each row ─────────────────────────────────────────────
+$patients = [];
+foreach ($rows as $row) {
+    $birthday = '';
+    if (!empty($row['PatientBirthday'])) {
+        $dt = DateTime::createFromFormat('Y-m-d', $row['PatientBirthday']);
+        $birthday = $dt ? $dt->format('F j, Y') : $row['PatientBirthday'];
+    }
+    $patients[] = [
+        'patientID'      => $row['PatientID'],
+        'patientFname'   => $row['PatientFname'],
+        'patientMname'   => $row['PatientMname'] ?? '',
+        'patientLname'   => $row['PatientLname'],
+        'patientSex'     => $row['PatientSex'],
+        'patientBirthday'=> $birthday,
+        'patientProgram' => $row['ProgramName'] ?? '—',
+        'patientPhone'   => $row['PatientPhone'] ?? '—',
+    ];
 }
 
+// If exact PatientID match and only one result, auto-select it
 echo json_encode([
-    'found'          => true,
-    'patientID'      => $row['PatientID'],
-    'patientFname'   => $row['PatientFname'],
-    'patientMname'   => $row['PatientMname'] ?? '',
-    'patientLname'   => $row['PatientLname'],
-    'patientSex'     => $row['PatientSex'],
-    'patientBirthday'=> $birthday,
-    'patientProgram' => $row['ProgramName'] ?? '—',
-    'patientPhone'   => $row['PatientPhone'] ?? '—',
+    'found'    => true,
+    'patients' => $patients,
+    'single'   => count($patients) === 1,  // JS auto-loads when true
 ]);
