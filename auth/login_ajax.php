@@ -1,4 +1,7 @@
 <?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
 session_start();
 header('Content-Type: application/json');
 
@@ -33,7 +36,7 @@ $stmt = mysqli_prepare($conn, $sql);
 if (!$stmt) {
     echo json_encode([
         'status' => 'error',
-        'message' => 'Failed to prepare login query.'
+        'message' => 'Failed to prepare login query: ' . mysqli_error($conn)
     ]);
     exit;
 }

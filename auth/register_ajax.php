@@ -1,4 +1,7 @@
 <?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config/db.php';
 
@@ -10,14 +13,16 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$full_name = trim($_POST['full_name'] ?? '');
+$first_name = trim($_POST['first_name'] ?? '');
+$last_name = trim($_POST['last_name'] ?? '');
+$middle_name = trim($_POST['middle_name'] ?? '');
 $sex = trim($_POST['sex'] ?? '');
 $school_id = trim($_POST['school_id'] ?? '');
 $password = $_POST['password'] ?? '';
 $confirm_password = $_POST['confirm_password'] ?? '';
 $role = 'Patient';
 
-if ($full_name === '' || $sex === '' || $school_id === '' || $password === '' || $confirm_password === '') {
+if ($first_name === '' || $last_name === '' || $sex === '' || $school_id === '' || $password === '' || $confirm_password === '') {
     echo json_encode([
         'status' => 'error',
         'message' => 'All fields are required.'
@@ -49,18 +54,13 @@ if ($sex !== 'Male' && $sex !== 'Female') {
     exit;
 }
 
-$nameParts = preg_split('/\s+/', $full_name);
-$firstName = $nameParts[0] ?? '';
-$lastName = count($nameParts) > 1 ? $nameParts[count($nameParts) - 1] : '';
-$middleName = count($nameParts) > 2 ? implode(' ', array_slice($nameParts, 1, -1)) : null;
-
 $checkSql = "SELECT PatientID FROM patients WHERE SchoolID = ? LIMIT 1";
 $checkStmt = mysqli_prepare($conn, $checkSql);
 
 if (!$checkStmt) {
     echo json_encode([
         'status' => 'error',
-        'message' => 'Database error during validation.'
+        'message' => 'Check query failed: ' . mysqli_error($conn)
     ]);
     exit;
 }
@@ -81,6 +81,7 @@ if ($checkResult && mysqli_num_rows($checkResult) > 0) {
 mysqli_stmt_close($checkStmt);
 
 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+$middle_name = $middle_name !== '' ? $middle_name : null;
 
 $insertSql = "INSERT INTO patients (PatientFname, PatientLname, PatientMname, SchoolID, Password, Role, Sex)
               VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -90,12 +91,12 @@ $insertStmt = mysqli_prepare($conn, $insertSql);
 if (!$insertStmt) {
     echo json_encode([
         'status' => 'error',
-        'message' => 'Failed to prepare registration query.'
+        'message' => 'Insert query prepare failed: ' . mysqli_error($conn)
     ]);
     exit;
 }
 
-mysqli_stmt_bind_param($insertStmt, 'sssssss', $firstName, $lastName, $middleName, $school_id, $hashedPassword, $role, $sex);
+mysqli_stmt_bind_param($insertStmt, 'sssssss', $first_name, $last_name, $middle_name, $school_id, $hashedPassword, $role, $sex);
 
 if (mysqli_stmt_execute($insertStmt)) {
     echo json_encode([
@@ -105,7 +106,7 @@ if (mysqli_stmt_execute($insertStmt)) {
 } else {
     echo json_encode([
         'status' => 'error',
-        'message' => 'Failed to register account.'
+        'message' => 'Insert failed: ' . mysqli_stmt_error($insertStmt)
     ]);
 }
 

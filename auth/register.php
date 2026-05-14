@@ -1,3 +1,12 @@
+<?php
+session_start();
+
+if (isset($_SESSION['patient_id'])) {
+    header('Location: ../modules/dashboard/dashboard.php');
+    exit;
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -45,9 +54,21 @@
 
                 <form id="registerForm" class="register-form">
                     <div class="form-group">
-                        <label for="full_name" class="form-label">Full Name</label>
-                        <input type="text" id="full_name" name="full_name" class="form-input" placeholder="Enter your full name" required>
-                        <span class="form-error" id="fullNameError"></span>
+                        <label for="first_name" class="form-label">First Name</label>
+                        <input type="text" id="first_name" name="first_name" class="form-input" placeholder="Enter your first name" required>
+                        <span class="form-error" id="firstNameError"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="last_name" class="form-label">Last Name</label>
+                        <input type="text" id="last_name" name="last_name" class="form-input" placeholder="Enter your last name" required>
+                        <span class="form-error" id="lastNameError"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="middle_name" class="form-label">Middle Name (Optional)</label>
+                        <input type="text" id="middle_name" name="middle_name" class="form-input" placeholder="Enter your middle name">
+                        <span class="form-error" id="middleNameError"></span>
                     </div>
 
                     <div class="form-group">
@@ -91,6 +112,6 @@
         </div>
     </div>
 
-    <script src="../assets/js/register.js?v=1"></script>
+    <script src="../assets/js/register.js?v=2"></script>
 </body>
 </html>

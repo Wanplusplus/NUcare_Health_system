@@ -10,7 +10,9 @@ document.addEventListener('DOMContentLoaded', () => {
         successMessage.style.display = 'none';
         errorMessage.style.display = 'none';
 
-        const fullName = document.getElementById('full_name').value.trim();
+        const firstName = document.getElementById('first_name').value.trim();
+        const lastName = document.getElementById('last_name').value.trim();
+        const middleName = document.getElementById('middle_name').value.trim();
         const sex = document.getElementById('sex').value;
         const schoolId = document.getElementById('school_id').value.trim();
         const password = document.getElementById('password').value;
@@ -18,8 +20,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let hasError = false;
 
-        if (fullName === '') {
-            document.getElementById('fullNameError').textContent = 'Full name is required.';
+        if (firstName === '') {
+            document.getElementById('firstNameError').textContent = 'First name is required.';
+            hasError = true;
+        }
+
+        if (lastName === '') {
+            document.getElementById('lastNameError').textContent = 'Last name is required.';
             hasError = true;
         }
 
@@ -46,7 +53,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (hasError) return;
 
         const formData = new FormData();
-        formData.append('full_name', fullName);
+        formData.append('first_name', firstName);
+        formData.append('last_name', lastName);
+        formData.append('middle_name', middleName);
         formData.append('sex', sex);
         formData.append('school_id', schoolId);
         formData.append('password', password);
@@ -58,7 +67,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: formData
             });
 
-            const result = await response.json();
+            const rawText = await response.text();
+            console.log('RAW RESPONSE:', rawText);
+
+            const result = JSON.parse(rawText);
 
             if (result.status === 'success') {
                 successMessage.textContent = result.message;
@@ -73,13 +85,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 errorMessage.style.display = 'block';
             }
         } catch (error) {
+            console.error('REGISTER ERROR:', error);
             errorMessage.textContent = 'Something went wrong. Please try again.';
             errorMessage.style.display = 'block';
         }
     });
 
     function clearErrors() {
-        document.getElementById('fullNameError').textContent = '';
+        document.getElementById('firstNameError').textContent = '';
+        document.getElementById('lastNameError').textContent = '';
+        document.getElementById('middleNameError').textContent = '';
         document.getElementById('sexError').textContent = '';
         document.getElementById('schoolIdError').textContent = '';
         document.getElementById('passwordError').textContent = '';

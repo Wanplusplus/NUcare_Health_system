@@ -109,7 +109,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: formData
             });
 
-            const result = await response.json();
+            const rawText = await response.text();
+            console.log('LOGIN RAW RESPONSE:', rawText);
+
+            const result = JSON.parse(rawText);
 
             if (result.status === 'success') {
                 window.location.href = result.redirect;
@@ -117,6 +120,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 showErrorMessage(result.message);
             }
         } catch (error) {
+            console.error('LOGIN ERROR:', error);
             showErrorMessage('Something went wrong. Please try again.');
         } finally {
             loginButton.disabled = false;
