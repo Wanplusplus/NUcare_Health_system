@@ -1,7 +1,13 @@
 <?php
-session_start();
-// Optional: guard page
-// if (!isset($_SESSION['user'])) { header('Location: index.php'); exit; }
+/**
+ * consultation.php - Patient consultation module
+ * 
+ * Allows medical staff to record patient consultations, vitals, and dispensed medicines.
+ */
+require_once __DIR__ . '/includes/auth_guard.php';
+require_once __DIR__ . '/db_connect.php';
+
+$activePage = 'consultation';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -17,48 +23,8 @@ session_start();
 <body>
 <div class="app-shell">
 
-    <!-- ── Sidebar (mirrors dashboard) ── -->
-    <button class="hamburger-btn" id="hamburgerBtn" type="button" aria-label="Toggle menu"></button>
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-brand">
-            <div class="brand-mark">NU</div>
-            <div>
-                <h1>NUCARE</h1>
-                <p>Clinic Management</p>
-            </div>
-        </div>
-
-        <nav class="nav-menu">
-            <a class="nav-item" href="dashboard.php?panel=dashboardPanel">
-                <span class="nav-dot"></span>Dashboard
-            </a>
-            <a class="nav-item active" href="consultation.php">
-                <span class="nav-dot"></span>Consultation
-            </a>
-            <a class="nav-item" href="dashboard.php?panel=patientsPanel">
-                <span class="nav-dot"></span>Patients
-            </a>
-            <a class="nav-item" href="dashboard.php?panel=recordsPanel">
-                <span class="nav-dot"></span>Records
-            </a>
-            <a class="nav-item" href="dashboard.php?panel=reportsPanel">
-                <span class="nav-dot"></span>Reports
-            </a>
-            <a class="nav-item" href="dashboard.php?panel=medicinePanel">
-                <span class="nav-dot"></span>Medicine
-            </a>
-            <a class="nav-item" href="dashboard.php?panel=schedulePanel">
-                <span class="nav-dot"></span>Schedule
-            </a>
-        </nav>
-
-        <div class="sidebar-footer">
-            <p class="footer-title">System Status</p>
-            <div class="status-pill status-good">Operational</div>
-        </div>
-    </aside>
+    <!-- ── Sidebar ── -->
+    <?php require_once __DIR__ . '/includes/sidebar.php'; ?>
 
     <!-- ── Main content ── -->
     <main class="main-content">
@@ -72,10 +38,12 @@ session_start();
                 <p class="page-description">Search for a patient, record vitals, log concerns, and dispense medicines.</p>
             </div>
             <div class="header-actions">
-                <a href="dashboard.php?panel=patientsPanel">
+                <a href="patients.php">
                     <button class="header-button accent" type="button">New Patient</button>
                 </a>
-                <button class="header-button outline" type="button">Logout</button>
+                <a href="logout.php">
+                    <button class="header-button outline" type="button">Logout</button>
+                </a>
             </div>
         </header>
 
@@ -91,7 +59,7 @@ session_start();
                         <div class="input-group">
                             <label for="consultSearchInput">Patient ID or Name</label>
                             <input type="text" id="consultSearchInput"
-                                   placeholder="e.g. 2024-00142 or Maria Santos"
+                                   placeholder="e.g. 1 or Maria Santos"
                                    onkeydown="if(event.key==='Enter') searchPatient()">
                         </div>
                         <button class="primary-button" type="button" onclick="searchPatient()">
@@ -137,6 +105,7 @@ session_start();
             <!-- Consultation form -->
             <form id="consultationForm" method="post" action="consultation_save.php">
                 <input type="hidden" id="consultPatientID" name="consultPatientID" value="">
+                <input type="hidden" id="consultMedProfID" name="consultMedProfID" value="<?php echo $_SESSION['user_id'] ?? 1; ?>">
 
                 <div class="consult-form-outer">
                     <div id="disabledOverlay" class="show">
@@ -166,6 +135,10 @@ session_start();
                                         <label for="consultWeight">Weight (kg)</label>
                                         <input type="text" id="consultWeight" name="consultWeight" placeholder="e.g. 58">
                                     </div>
+                                    <div class="input-group">
+                                        <label for="consultHeight">Height (cm)</label>
+                                        <input type="text" id="consultHeight" name="consultHeight" placeholder="e.g. 165">
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -176,7 +149,7 @@ session_start();
                             <div class="panel-card-body">
                                 <div class="form-grid">
                                     <div class="input-group full-width">
-                                        <label for="consultConcern">Chief Concern <span style="color:#ef4444">*</span></label>
+                                        <label for="consultConcern">Chief Concern / Complaint <span style="color:#ef4444">*</span></label>
                                         <textarea id="consultConcern" name="consultConcern" rows="3"
                                                   placeholder="Describe the patient's complaint or reason for visit..."></textarea>
                                         <span class="err-msg" id="consultConcernErr"></span>
@@ -200,9 +173,9 @@ session_start();
                                                placeholder="Describe the service">
                                     </div>
                                     <div class="input-group full-width">
-                                        <label for="consultNotes">Clinical Notes</label>
+                                        <label for="consultNotes">Diagnosis & Clinical Notes</label>
                                         <textarea id="consultNotes" name="consultNotes" rows="3"
-                                                  placeholder="Optional: diagnosis, treatment plan, observations..."></textarea>
+                                                  placeholder="Diagnosis, treatment plan, observations..."></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -223,17 +196,36 @@ session_start();
                                     <div class="med-entry" id="med-0">
                                         <div class="input-group">
                                             <label for="consultMedName0">Medicine Name</label>
-                                            <input type="text" id="consultMedName0" name="consultMedName[]"
-                                                   placeholder="Medicine name (optional)">
+                                            <select id="consultMedName0" name="consultMedName[]" class="medicine-select"
+                                                    onchange="checkMedicineStock(this, 0)">
+                                                <option value="">Select medicine</option>
+                                                <?php
+                                                // Load medicines from medicineandstuffs table
+                                                $medResult = $conn->query(
+                                                    "SELECT ItemID, ItemName, ItemStockQuantity 
+                                                     FROM medicineandstuffs 
+                                                     WHERE ItemStockQuantity > 0 
+                                                     ORDER BY ItemName"
+                                                );
+                                                if ($medResult && $medResult->num_rows > 0) {
+                                                    while ($med = $medResult->fetch_assoc()) {
+                                                        echo '<option value="' . htmlspecialchars($med['ItemName']) . 
+                                                             '" data-id="' . $med['ItemID'] . 
+                                                             '" data-stock="' . $med['ItemStockQuantity'] . '">' . 
+                                                             htmlspecialchars($med['ItemName']) . 
+                                                             ' (Stock: ' . $med['ItemStockQuantity'] . ')</option>';
+                                                    }
+                                                }
+                                                ?>
+                                            </select>
                                             <span class="err-msg" id="medNameErr0"></span>
                                         </div>
                                         <div class="input-group" style="max-width:120px;">
                                             <label for="consultMedQty0">Qty</label>
                                             <input type="number" id="consultMedQty0" name="consultMedQty[]"
-                                                   placeholder="0" min="1">
+                                                   placeholder="0" min="1" onchange="validateMedQty(this, 0)">
                                             <span class="err-msg" id="medQtyErr0"></span>
                                         </div>
-                                        <!-- no remove on first row -->
                                         <div style="width:34px;flex-shrink:0;"></div>
                                     </div>
                                 </div>
@@ -261,6 +253,193 @@ session_start();
 <div class="toast" id="consultToast"></div>
 
 <script src="assets/js/app.js"></script>
-<script src="assets/js/consultation.js"></script>
+<script>
+// consultation.js functionality embedded here for completeness
+
+let currentPatientId = null;
+let medRowCount = 1;
+
+function searchPatient() {
+    const searchTerm = document.getElementById('consultSearchInput').value.trim();
+    const feedback = document.getElementById('searchFeedback');
+    
+    if (!searchTerm) {
+        feedback.innerHTML = '<span class="error-text">Please enter a patient ID or name</span>';
+        return;
+    }
+    
+    // AJAX call to search for patient
+    fetch(`api/search_patient.php?q=${encodeURIComponent(searchTerm)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.patient) {
+                // Populate patient card
+                document.getElementById('cpcID').textContent = data.patient.PatientID;
+                document.getElementById('cpcName').textContent = data.patient.FullName;
+                document.getElementById('cpcSex').textContent = data.patient.Sex || '—';
+                document.getElementById('cpcBday').textContent = data.patient.Birthday || '—';
+                document.getElementById('cpcProgram').textContent = data.patient.ProgramName || '—';
+                document.getElementById('cpcTel').textContent = data.patient.PhoneNum || '—';
+                document.getElementById('cpcTime').textContent = new Date().toLocaleTimeString();
+                
+                // Set hidden field
+                document.getElementById('consultPatientID').value = data.patient.PatientID;
+                currentPatientId = data.patient.PatientID;
+                
+                // Enable form
+                document.getElementById('disabledOverlay').classList.remove('show');
+                document.getElementById('consultFormArea').classList.remove('disabled');
+                document.getElementById('consultFormActions').style.opacity = '1';
+                document.getElementById('consultFormActions').style.pointerEvents = 'auto';
+                
+                feedback.innerHTML = '<span class="success-text">✓ Patient found: ' + 
+                                    data.patient.FullName + '</span>';
+            } else {
+                feedback.innerHTML = '<span class="error-text">✗ Patient not found</span>';
+                resetPatientSelection();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            feedback.innerHTML = '<span class="error-text">Error searching for patient</span>';
+        });
+}
+
+function resetPatientSelection() {
+    document.getElementById('cpcID').textContent = '—';
+    document.getElementById('cpcName').textContent = '—';
+    document.getElementById('cpcSex').textContent = '—';
+    document.getElementById('cpcBday').textContent = '—';
+    document.getElementById('cpcProgram').textContent = '—';
+    document.getElementById('cpcTel').textContent = '—';
+    document.getElementById('consultPatientID').value = '';
+    currentPatientId = null;
+    
+    document.getElementById('disabledOverlay').classList.add('show');
+    document.getElementById('consultFormArea').classList.add('disabled');
+    document.getElementById('consultFormActions').style.opacity = '.4';
+    document.getElementById('consultFormActions').style.pointerEvents = 'none';
+}
+
+function addConsultMed() {
+    const medsList = document.getElementById('medsList');
+    const newRow = document.createElement('div');
+    newRow.className = 'med-entry';
+    newRow.id = `med-${medRowCount}`;
+    
+    newRow.innerHTML = `
+        <div class="input-group">
+            <label for="consultMedName${medRowCount}">Medicine Name</label>
+            <select id="consultMedName${medRowCount}" name="consultMedName[]" class="medicine-select"
+                    onchange="checkMedicineStock(this, ${medRowCount})">
+                <option value="">Select medicine</option>
+                ${document.querySelector('#med-0 select').innerHTML}
+            </select>
+            <span class="err-msg" id="medNameErr${medRowCount}"></span>
+        </div>
+        <div class="input-group" style="max-width:120px;">
+            <label for="consultMedQty${medRowCount}">Qty</label>
+            <input type="number" id="consultMedQty${medRowCount}" name="consultMedQty[]"
+                   placeholder="0" min="1" onchange="validateMedQty(this, ${medRowCount})">
+            <span class="err-msg" id="medQtyErr${medRowCount}"></span>
+        </div>
+        <button type="button" class="remove-med-btn" onclick="removeConsultMed(${medRowCount})">
+            <i class="ti ti-trash"></i>
+        </button>
+    `;
+    
+    medsList.appendChild(newRow);
+    medRowCount++;
+}
+
+function removeConsultMed(rowId) {
+    const row = document.getElementById(`med-${rowId}`);
+    if (row) row.remove();
+}
+
+function checkMedicineStock(select, rowId) {
+    const selectedOption = select.options[select.selectedIndex];
+    const maxStock = selectedOption.getAttribute('data-stock') || 0;
+    const qtyInput = document.getElementById(`consultMedQty${rowId}`);
+    
+    if (qtyInput) {
+        qtyInput.setAttribute('max', maxStock);
+        qtyInput.placeholder = `Max: ${maxStock}`;
+    }
+}
+
+function validateMedQty(input, rowId) {
+    const qty = parseInt(input.value);
+    const max = parseInt(input.getAttribute('max')) || 0;
+    const errorSpan = document.getElementById(`medQtyErr${rowId}`);
+    
+    if (qty > max) {
+        errorSpan.textContent = `Quantity exceeds available stock (${max})`;
+        input.value = max;
+    } else if (qty < 1 && input.value !== '') {
+        errorSpan.textContent = 'Quantity must be at least 1';
+    } else {
+        errorSpan.textContent = '';
+    }
+}
+
+// Form validation before submit
+document.getElementById('consultationForm').addEventListener('submit', function(e) {
+    const concern = document.getElementById('consultConcern').value.trim();
+    const service = document.getElementById('consultService').value;
+    let hasError = false;
+    
+    if (!concern) {
+        document.getElementById('consultConcernErr').textContent = 'Chief concern is required';
+        hasError = true;
+    } else {
+        document.getElementById('consultConcernErr').textContent = '';
+    }
+    
+    if (!service) {
+        document.getElementById('consultServiceErr').textContent = 'Service type is required';
+        hasError = true;
+    } else {
+        document.getElementById('consultServiceErr').textContent = '';
+    }
+    
+    if (hasError) {
+        e.preventDefault();
+        showToast('Please fill in all required fields', 'error');
+    }
+});
+
+// Clear form
+document.getElementById('clearConsultForm').addEventListener('click', function() {
+    if (confirm('Clear all form data? This cannot be undone.')) {
+        document.getElementById('consultationForm').reset();
+        // Reset medicine rows to just one
+        const medsList = document.getElementById('medsList');
+        medsList.innerHTML = medsList.children[0].outerHTML;
+        medRowCount = 1;
+        showToast('Form cleared', 'info');
+    }
+});
+
+// Show/hide "Other Service" field
+document.getElementById('consultService').addEventListener('change', function() {
+    const otherWrap = document.getElementById('otherServiceWrap');
+    if (this.value === 'Other') {
+        otherWrap.style.display = 'block';
+    } else {
+        otherWrap.style.display = 'none';
+    }
+});
+
+function showToast(message, type) {
+    const toast = document.getElementById('consultToast');
+    toast.textContent = message;
+    toast.className = `toast toast-${type}`;
+    toast.style.display = 'block';
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 3000);
+}
+</script>
 </body>
 </html>
