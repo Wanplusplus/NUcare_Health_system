@@ -10,33 +10,31 @@
         const feedback = document.getElementById('searchFeedback');
 
         if (!query) {
-            feedback.className  = 'search-feedback not-found';
-            feedback.innerHTML  = '<i class="ti ti-alert-circle"></i> Please enter a patient ID or name.';
+            feedback.className = 'search-feedback not-found';
+            feedback.innerHTML = 'Please enter a patient ID or name.';
             return;
         }
 
         feedback.className = 'search-feedback';
-        feedback.innerHTML = '';
+        feedback.innerHTML = 'Searching…';
 
+        // ✅ Fixed: filename matches the actual PHP file on disk
         fetch('consultation_search_patient.php?q=' + encodeURIComponent(query))
-            .then(r => r.json())
-            .then(data => {
-                if (data.found) loadPatient(data);
-                else patientNotFound();
+            .then(r => {
+                if (!r.ok) throw new Error('Server error: ' + r.status);
+                return r.json();
             })
-            .catch(() => {
-                const demo = {
-                    found: true,
-                    patientID: '2024-00142',
-                    patientFname: 'Maria',
-                    patientMname: 'L.',
-                    patientLname: 'Santos',
-                    patientSex: 'Female',
-                    patientBirthday: 'March 14, 2003',
-                    patientProgram: 'BS Nursing',
-                    patientPhone: '09XX-XXX-XXXX',
-                };
-                loadPatient(demo);
+            .then(data => {
+                if (data.found) {
+                    loadPatient(data);
+                } else {
+                    patientNotFound();
+                }
+            })
+            .catch(err => {
+                feedback.className = 'search-feedback not-found';
+                feedback.innerHTML = 'Could not reach the server. Please try again.';
+                console.error('Patient search error:', err);
             });
     };
 
@@ -52,55 +50,58 @@
         document.getElementById('consultPatientID').value = data.patientID;
         document.getElementById('consultPatientCard').classList.add('visible');
 
-        const area = document.getElementById('consultFormArea');
+        const area    = document.getElementById('consultFormArea');
         const actions = document.getElementById('consultFormActions');
         const overlay = document.getElementById('disabledOverlay');
         area.classList.remove('disabled');
         overlay.classList.remove('show');
-        actions.style.opacity = '1';
+        actions.style.opacity       = '1';
         actions.style.pointerEvents = 'auto';
 
         const feedback = document.getElementById('searchFeedback');
         feedback.className = 'search-feedback found';
-        feedback.innerHTML = '<i class="ti ti-circle-check"></i> Patient found — consultation form is now active.';
+        feedback.innerHTML = 'Patient found — consultation form is now active.';
     }
 
     function patientNotFound() {
         document.getElementById('consultPatientCard').classList.remove('visible');
         document.getElementById('consultPatientID').value = '';
 
-        const area = document.getElementById('consultFormArea');
+        const area    = document.getElementById('consultFormArea');
         const actions = document.getElementById('consultFormActions');
         const overlay = document.getElementById('disabledOverlay');
         area.classList.add('disabled');
         overlay.classList.add('show');
-        actions.style.opacity = '0.4';
+        actions.style.opacity       = '0.4';
         actions.style.pointerEvents = 'none';
 
         const feedback = document.getElementById('searchFeedback');
         feedback.className = 'search-feedback not-found';
-        feedback.innerHTML = '<i class="ti ti-alert-circle"></i> No patient found. Please check the ID or name and try again.';
+        feedback.innerHTML = 'No patient found. Please check the ID or name and try again.';
     }
 
     /* ── Medicine rows ── */
     let medCount = 1;
+
     window.addConsultMed = function () {
-        const i = medCount++;
+        const i   = medCount++;
         const div = document.createElement('div');
         div.className = 'med-entry';
         div.id = 'med-' + i;
-        div.innerHTML = `
-            <div class="input-group">
-                <label for="consultMedName${i}">Medicine Name</label>
-                <input type="text" id="consultMedName${i}" name="consultMedName[]" placeholder="Medicine name (optional)">
-                <span class="err-msg" id="medNameErr${i}"></span>
-            </div>
-            <div class="input-group">
-                <label for="consultMedQty${i}">Qty</label>
-                <input type="number" id="consultMedQty${i}" name="consultMedQty[]" placeholder="0" min="1">
-                <span class="err-msg" id="medQtyErr${i}"></span>
-            </div>
-            <button class="remove-med" type="button" onclick="removeConsultMed('med-${i}')" title="Remove"><i class="ti ti-x"></i></button>`;
+        div.innerHTML =
+            '<div class="input-group">' +
+                '<label for="consultMedName' + i + '">Medicine Name</label>' +
+                '<input type="text" id="consultMedName' + i + '" name="consultMedName[]" placeholder="Medicine name (optional)">' +
+                '<span class="err-msg" id="medNameErr' + i + '" style="display:none;"></span>' +
+            '</div>' +
+            '<div class="input-group med-qty-group">' +
+                '<label for="consultMedQty' + i + '">Qty</label>' +
+                '<input type="number" id="consultMedQty' + i + '" name="consultMedQty[]" placeholder="0" min="1">' +
+                '<span class="err-msg" id="medQtyErr' + i + '" style="display:none;"></span>' +
+            '</div>' +
+            '<button type="button" class="med-remove-btn" onclick="this.closest(\'.med-entry\').remove()" title="Remove medicine">' +
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+            '</button>';
         document.getElementById('medsList').appendChild(div);
     };
 
@@ -109,21 +110,24 @@
         if (el) el.remove();
     };
 
-    document.getElementById('consultService').addEventListener('change', function () {
-        document.getElementById('otherServiceWrap').style.display = this.value === 'Other' ? 'block' : 'none';
-    });
+    /* ── Toggle "Other" service field ── */
+    window.toggleOtherService = function (sel) {
+        const w = document.getElementById('otherServiceWrap');
+        if (w) w.style.display = sel.value === 'Other' ? '' : 'none';
+    };
 
+    /* ── Validation helpers ── */
     function showErr(id, msg) {
         const el = document.getElementById(id);
         if (!el) return;
         el.textContent = msg;
-        el.classList.add('show');
+        el.style.display = 'block';
     }
     function clearErr(id) {
         const el = document.getElementById(id);
         if (!el) return;
         el.textContent = '';
-        el.classList.remove('show');
+        el.style.display = 'none';
     }
     function setInputErr(el, isErr) {
         if (!el) return;
@@ -132,12 +136,14 @@
 
     function showToast(msg, type) {
         const t = document.getElementById('consultToast');
+        if (!t) return;
         t.textContent = msg;
-        t.className = 'toast ' + (type === 'success' ? 'success' : 'error-toast');
+        t.className = 'consult-toast ' + (type === 'success' ? 'success' : 'error-toast');
         clearTimeout(window._cToastTimer);
-        window._cToastTimer = setTimeout(() => { t.className = ''; }, 3200);
+        window._cToastTimer = setTimeout(() => { t.className = 'consult-toast'; }, 3200);
     }
 
+    /* ── Form submit validation ── */
     document.getElementById('consultationForm').addEventListener('submit', function (e) {
         let valid = true;
 
@@ -162,15 +168,15 @@
 
         document.querySelectorAll('.med-entry').forEach(entry => {
             const idx = entry.id.split('-')[1];
-            const nm = document.getElementById('consultMedName' + idx);
+            const nm  = document.getElementById('consultMedName' + idx);
             const qty = document.getElementById('consultMedQty' + idx);
             clearErr('medNameErr' + idx);
             clearErr('medQtyErr' + idx);
             setInputErr(nm, false);
             setInputErr(qty, false);
 
-            const hasName = nm && nm.value.trim() !== '';
-            const hasQty = qty && qty.value.trim() !== '' && parseInt(qty.value) >= 1;
+            const hasName = nm  && nm.value.trim() !== '';
+            const hasQty  = qty && qty.value.trim() !== '' && parseInt(qty.value) >= 1;
 
             if (hasName && !hasQty) {
                 showErr('medQtyErr' + idx, 'Must be a positive number');
@@ -190,15 +196,17 @@
         }
     });
 
+    /* ── Clear form ── */
     document.getElementById('clearConsultForm').addEventListener('click', function () {
         ['consultBP','consultTemp','consultPulse','consultWeight',
-        'consultConcern','consultService','consultNotes','consultServiceOther']
+         'consultConcern','consultService','consultNotes','consultServiceOther']
             .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
 
         ['consultConcernErr','consultServiceErr'].forEach(clearErr);
         ['consultConcern','consultService'].forEach(id => setInputErr(document.getElementById(id), false));
 
-        document.getElementById('otherServiceWrap').style.display = 'none';
+        const wrap = document.getElementById('otherServiceWrap');
+        if (wrap) wrap.style.display = 'none';
 
         const list = document.getElementById('medsList');
         Array.from(list.querySelectorAll('.med-entry')).forEach((entry, i) => {
