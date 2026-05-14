@@ -66,7 +66,7 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                         <path d="M20 21a8 8 0 0 0-16 0"></path>
                         <circle cx="12" cy="8" r="4"></circle>
-                    </svg>
+                    </svg>g
                 </div>
                 <h2 class="form-title">Welcome Back</h2>
                 <p class="form-subtitle">Sign in to your account</p>
