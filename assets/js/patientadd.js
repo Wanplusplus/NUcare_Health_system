@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (firstPatientField) {
             window.setTimeout(function() {
                 firstPatientField.focus();
-            }, 200);
+            }, 200); 
         }
     }
 

@@ -1,0 +1,24 @@
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /NUcare_Health_system/
+
+    # If the request is an existing file or folder, load it normally
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Otherwise, send everything to index.php
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Protect hidden files like .htaccess
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Block direct access to sensitive files
+<FilesMatch "\.(sql|log|ini)$">
+    Require all denied
+</FilesMatch>

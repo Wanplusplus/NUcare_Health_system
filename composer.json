@@ -1,0 +1,7 @@
+{
+  "name": "nucare/health-system",
+  "description": "NUCARE Health Management System",
+  "require": {
+    "phpmailer/phpmailer": "^7.0"
+  }
+}

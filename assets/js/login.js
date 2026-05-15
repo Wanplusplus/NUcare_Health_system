@@ -1,15 +1,8 @@
-/* ============================================
-   NUCARE Login Page JavaScript
-   ============================================ */
-
-/**
- * Toggle password visibility
- */
 function togglePasswordVisibility() {
     const passwordInput = document.getElementById('password');
     const passwordToggle = document.querySelector('.password-toggle');
     const eyeIcon = passwordToggle.querySelector('.eye-icon');
-    
+
     if (passwordInput.type === 'password') {
         passwordInput.type = 'text';
         passwordToggle.setAttribute('aria-label', 'Hide password');
@@ -21,27 +14,49 @@ function togglePasswordVisibility() {
     }
 }
 
-/**
- * Validate login form
- */
+function showError(elementId, message) {
+    const errorElement = document.getElementById(elementId);
+    if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.classList.add('show');
+    }
+}
+
+function clearErrors() {
+    document.querySelectorAll('.form-error').forEach(element => {
+        element.textContent = '';
+        element.classList.remove('show');
+    });
+
+    const errorMessage = document.getElementById('errorMessage');
+    if (errorMessage) {
+        errorMessage.textContent = '';
+        errorMessage.classList.remove('show');
+        errorMessage.style.display = 'none';
+    }
+}
+
+function showErrorMessage(message) {
+    const errorMessage = document.getElementById('errorMessage');
+    if (errorMessage) {
+        errorMessage.textContent = message;
+        errorMessage.style.display = 'block';
+        errorMessage.classList.add('show');
+    }
+}
+
 function validateLoginForm() {
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value.trim();
     let isValid = true;
 
-    // Clear previous errors
     clearErrors();
 
-    // Username validation
     if (username === '') {
-        showError('usernameError', 'Username is required');
-        isValid = false;
-    } else if (username.length < 3) {
-        showError('usernameError', 'Username must be at least 3 characters');
+        showError('usernameError', 'School ID is required');
         isValid = false;
     }
 
-    // Password validation
     if (password === '') {
         showError('passwordError', 'Password is required');
         isValid = false;
@@ -53,137 +68,65 @@ function validateLoginForm() {
     return isValid;
 }
 
-/**
- * Show field-specific error
- */
-function showError(elementId, message) {
-    const errorElement = document.getElementById(elementId);
-    if (errorElement) {
-        errorElement.textContent = message;
-        errorElement.classList.add('show');
-    }
-}
-
-/**
- * Clear all error messages
- */
-function clearErrors() {
-    const errorElements = document.querySelectorAll('.form-error');
-    errorElements.forEach(element => {
-        element.textContent = '';
-        element.classList.remove('show');
-    });
-
-    const errorMessage = document.getElementById('errorMessage');
-    if (errorMessage) {
-        errorMessage.textContent = '';
-        errorMessage.classList.remove('show');
-    }
-}
-
-/**
- * Show general error message
- */
-function showErrorMessage(message) {
-    const errorMessage = document.getElementById('errorMessage');
-    if (errorMessage) {
-        errorMessage.textContent = message;
-        errorMessage.classList.add('show');
-    }
-}
-
-/**
- * Handle login form submission
- */
-function handleLogin(event) {
-    event.preventDefault();
-
-    // Validate form
-    if (!validateLoginForm()) {
-        return;
-    }
-
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value.trim();
-    const rememberMe = document.querySelector('input[name="remember"]').checked;
-    const loginButton = document.querySelector('.login-button');
-
-    // Disable button and show loading state
-    loginButton.disabled = true;
-    const originalText = loginButton.innerHTML;
-    loginButton.innerHTML = '<span>Signing in...</span>';
-
-    // Prepare login data
-    const loginData = {
-        username: username,
-        password: password,
-        remember_me: rememberMe
-    };
-
-    // For demo purposes, redirect to dashboard directly
-    // In production, replace with actual authentication
-    setTimeout(() => {
-        window.location.href = 'dashboard.php';
-    }, 1000);
-}
-
-/**
- * Initialize form with event listeners
- */
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
+    const loginButton = document.querySelector('.login-button');
 
-    // Clear error messages on input
     usernameInput.addEventListener('input', function() {
-        if (this.value.length > 0) {
-            const errorElement = document.getElementById('usernameError');
-            if (errorElement) {
-                errorElement.textContent = '';
-                errorElement.classList.remove('show');
-            }
-        }
+        document.getElementById('usernameError').textContent = '';
     });
 
     passwordInput.addEventListener('input', function() {
-        if (this.value.length > 0) {
-            const errorElement = document.getElementById('passwordError');
-            if (errorElement) {
-                errorElement.textContent = '';
-                errorElement.classList.remove('show');
-            }
-        }
+        document.getElementById('passwordError').textContent = '';
     });
 
-    // Forgot password link handler
     const forgotPasswordLink = document.querySelector('.forgot-password');
     if (forgotPasswordLink) {
         forgotPasswordLink.addEventListener('click', function(e) {
             e.preventDefault();
-            console.log('Forgot password clicked - implement password reset flow');
-            // TODO: Implement forgot password flow
+            alert('Forgot password flow is not yet available.');
         });
     }
 
-    // Signup/Contact Admin link handler
-    const signupLink = document.querySelector('.signup-link');
-    if (signupLink) {
-        signupLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            console.log('Contact administrator clicked');
-            // TODO: Implement contact form or admin notification
-        });
-    }
+    loginForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
 
-    // Allow Enter key to submit form
-    loginForm.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            loginForm.dispatchEvent(new Event('submit'));
+        if (!validateLoginForm()) {
+            return;
+        }
+
+        const originalButtonHTML = loginButton.innerHTML;
+        loginButton.disabled = true;
+        loginButton.innerHTML = '<span>Signing in...</span>';
+
+        const formData = new FormData(loginForm);
+
+        try {
+            const response = await fetch('login_ajax.php', {
+                method: 'POST',
+                body: formData
+            });
+
+            const rawText = await response.text();
+            console.log('LOGIN RAW RESPONSE:', rawText);
+
+            const result = JSON.parse(rawText);
+
+            if (result.status === 'success') {
+                window.location.href = result.redirect;
+            } else {
+                showErrorMessage(result.message);
+            }
+        } catch (error) {
+            console.error('LOGIN ERROR:', error);
+            showErrorMessage('Something went wrong. Please try again.');
+        } finally {
+            loginButton.disabled = false;
+            loginButton.innerHTML = originalButtonHTML;
         }
     });
 
-    // Set focus on username input on page load
     usernameInput.focus();
 });

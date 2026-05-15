@@ -1,0 +1,164 @@
+/* ── consultation.css ── Consultation page styles ── */
+
+/* Search bar */
+.consult-search-wrap {
+    display: flex;
+    gap: .6rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+.consult-search-wrap .input-group {
+    flex: 1;
+    min-width: 220px;
+    margin-bottom: 0;
+}
+.search-feedback {
+    font-size: .82rem;
+    margin-top: .45rem;
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    min-height: 1.2rem;
+}
+.search-feedback.found    { color: #22c55e; }
+.search-feedback.not-found { color: #ef4444; }
+
+/* Patient summary card */
+.consult-patient-card {
+    display: none;
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: .5rem .9rem;
+}
+.consult-patient-card.visible { display: grid; }
+
+.cpc-field label {
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--text-muted, #6b7280);
+    display: block;
+    margin-bottom: .1rem;
+}
+.cpc-field span {
+    font-size: .9rem;
+    font-weight: 600;
+    color: var(--text, #111827);
+}
+
+/* Form area wrapper & disabled overlay */
+.consult-form-outer {
+    position: relative;
+}
+.consult-form-area.disabled {
+    pointer-events: none;
+    user-select: none;
+}
+#disabledOverlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, .55);
+    z-index: 10;
+    border-radius: 10px;
+    backdrop-filter: blur(2px);
+    justify-content: center;
+    align-items: center;
+    font-size: .9rem;
+    color: #6b7280;
+    gap: .4rem;
+}
+#disabledOverlay.show { display: flex; }
+
+/* Vitals grid */
+.vitals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: .75rem 1rem;
+    margin-bottom: 1rem;
+}
+
+/* Medicine entries */
+.med-entry {
+    display: flex;
+    gap: .6rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    margin-bottom: .55rem;
+}
+.med-entry .input-group {
+    margin-bottom: 0;
+    flex: 1;
+    min-width: 140px;
+}
+.remove-med {
+    background: #fee2e2;
+    border: none;
+    color: #dc2626;
+    border-radius: 6px;
+    width: 34px;
+    height: 34px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.remove-med:hover { background: #fecaca; }
+
+/* Form action buttons */
+#consultFormActions {
+    display: flex;
+    gap: .7rem;
+    margin-top: 1.25rem;
+    transition: opacity .3s;
+}
+
+/* Inline validation */
+.err-msg {
+    font-size: .75rem;
+    color: #ef4444;
+    display: none;
+}
+.err-msg.show { display: block; }
+
+input.error,
+select.error,
+textarea.error {
+    border-color: #ef4444 !important;
+}
+
+/* Toast notification */
+.toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    padding: .7rem 1.1rem;
+    border-radius: 8px;
+    font-size: .85rem;
+    font-weight: 500;
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s;
+}
+.toast.success     { background: #dcfce7; color: #15803d; opacity: 1; }
+.toast.error-toast { background: #fee2e2; color: #b91c1c; opacity: 1; }
+
+/* Back link */
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    font-size: .82rem;
+    color: var(--text-muted, #6b7280);
+    text-decoration: none;
+    margin-bottom: .25rem;
+    transition: color .2s;
+}
+.back-link:hover { color: var(--accent, #2563eb); }
