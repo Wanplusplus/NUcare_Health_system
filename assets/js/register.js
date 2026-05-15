@@ -1,15 +1,39 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('registerForm');
+    const successMessage = document.getElementById('successMessage');
+    const errorMessage = document.getElementById('errorMessage');
+    const emailInput = document.getElementById('email');
 
-    const form            = document.getElementById('registerForm');
-    const successMessage  = document.getElementById('successMessage');
-    const errorMessage    = document.getElementById('errorMessage');
-    const emailInput      = document.getElementById('email'); // ✅ NEW
+    const emailError = document.getElementById('emailError');
+    const firstNameError = document.getElementById('firstNameError');
+    const lastNameError = document.getElementById('lastNameError');
+    const middleNameError = document.getElementById('middleNameError');
+    const sexError = document.getElementById('sexError');
+    const schoolIdError = document.getElementById('schoolIdError');
+    const passwordError = document.getElementById('passwordError');
+    const confirmPasswordError = document.getElementById('confirmPasswordError');
 
-    // ─── Real-time email validation ──────────────────────────────────────────
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    function clearErrors() {
+        firstNameError.textContent = '';
+        lastNameError.textContent = '';
+        middleNameError.textContent = '';
+        sexError.textContent = '';
+        schoolIdError.textContent = '';
+        emailError.textContent = '';
+        passwordError.textContent = '';
+        confirmPasswordError.textContent = '';
+    }
+
+    function setMessage(el, text, show = true) {
+        el.textContent = text;
+        el.style.display = show ? 'block' : 'none';
+    }
+
+    // Real-time email validation
     emailInput.addEventListener('input', () => {
-        const emailError = document.getElementById('emailError');
         const value = emailInput.value.trim();
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
         if (value === '') {
             emailError.textContent = '';
@@ -20,81 +44,74 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ─── Form submit ─────────────────────────────────────────────────────────
     form.addEventListener('submit', async function (e) {
         e.preventDefault();
 
         clearErrors();
-        successMessage.style.display = 'none';
-        errorMessage.style.display   = 'none';
+        setMessage(successMessage, '', false);
+        setMessage(errorMessage, '', false);
 
-        // Collect values
-        const firstName       = document.getElementById('first_name').value.trim();
-        const lastName        = document.getElementById('last_name').value.trim();
-        const middleName      = document.getElementById('middle_name').value.trim();
-        const sex             = document.getElementById('sex').value;
-        const schoolId        = document.getElementById('school_id').value.trim();
-        const email           = emailInput.value.trim(); // ✅ NEW
-        const password        = document.getElementById('password').value;
+        const firstName = document.getElementById('first_name').value.trim();
+        const lastName = document.getElementById('last_name').value.trim();
+        const middleName = document.getElementById('middle_name').value.trim();
+        const sex = document.getElementById('sex').value;
+        const schoolId = document.getElementById('school_id').value.trim();
+        const email = emailInput.value.trim();
+        const password = document.getElementById('password').value;
         const confirmPassword = document.getElementById('confirm_password').value;
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         let hasError = false;
 
-        // ─── Client-side validation ──────────────────────────────────────────
         if (firstName === '') {
-            document.getElementById('firstNameError').textContent = 'First name is required.';
+            firstNameError.textContent = 'First name is required.';
             hasError = true;
         }
 
         if (lastName === '') {
-            document.getElementById('lastNameError').textContent = 'Last name is required.';
+            lastNameError.textContent = 'Last name is required.';
             hasError = true;
         }
 
         if (sex === '') {
-            document.getElementById('sexError').textContent = 'Sex is required.';
+            sexError.textContent = 'Sex is required.';
             hasError = true;
         }
 
         if (schoolId === '') {
-            document.getElementById('schoolIdError').textContent = 'School ID is required.';
+            schoolIdError.textContent = 'School ID is required.';
             hasError = true;
         }
 
-        // ✅ NEW: Email validation
         if (email === '') {
-            document.getElementById('emailError').textContent = 'Email address is required.';
+            emailError.textContent = 'Email address is required.';
             hasError = true;
         } else if (!emailRegex.test(email)) {
-            document.getElementById('emailError').textContent = 'Please enter a valid email address.';
+            emailError.textContent = 'Please enter a valid email address.';
             hasError = true;
         }
 
         if (password.length < 6) {
-            document.getElementById('passwordError').textContent = 'Password must be at least 6 characters.';
+            passwordError.textContent = 'Password must be at least 6 characters.';
             hasError = true;
         }
 
         if (password !== confirmPassword) {
-            document.getElementById('confirmPasswordError').textContent = 'Passwords do not match.';
+            confirmPasswordError.textContent = 'Passwords do not match.';
             hasError = true;
         }
 
         if (hasError) return;
 
-        // ─── Build FormData ──────────────────────────────────────────────────
         const formData = new FormData();
-        formData.append('first_name',       firstName);
-        formData.append('last_name',        lastName);
-        formData.append('middle_name',      middleName);
-        formData.append('sex',              sex);
-        formData.append('school_id',        schoolId);
-        formData.append('email',            email); // ✅ NEW
-        formData.append('password',         password);
+        formData.append('first_name', firstName);
+        formData.append('last_name', lastName);
+        formData.append('middle_name', middleName);
+        formData.append('sex', sex);
+        formData.append('school_id', schoolId);
+        formData.append('email', email);
+        formData.append('password', password);
         formData.append('confirm_password', confirmPassword);
 
-        // ─── Send AJAX request ───────────────────────────────────────────────
         try {
             const response = await fetch('register_ajax.php', {
                 method: 'POST',
@@ -104,41 +121,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const rawText = await response.text();
             console.log('RAW RESPONSE:', rawText);
 
-            const result = JSON.parse(rawText);
+            let result;
+            try {
+                result = JSON.parse(rawText);
+            } catch (jsonError) {
+                console.error('Invalid JSON response:', rawText);
+                throw new Error('Server returned invalid JSON. Check PHP errors.');
+            }
 
             if (result.status === 'success') {
-                successMessage.textContent    = result.message;
-                successMessage.style.display  = 'block';
+                setMessage(successMessage, result.message, true);
                 form.reset();
 
-                // Redirect to login after 1.5 seconds
                 setTimeout(() => {
                     window.location.href = 'login.php';
                 }, 1500);
-
             } else {
-                errorMessage.textContent   = result.message;
-                errorMessage.style.display = 'block';
+                setMessage(errorMessage, result.message || 'Registration failed.', true);
             }
-
         } catch (error) {
             console.error('REGISTER ERROR:', error);
-            errorMessage.textContent   = 'Something went wrong. Please try again.';
-            errorMessage.style.display = 'block';
+            setMessage(errorMessage, error.message || 'Something went wrong. Please try again.', true);
         }
     });
-
-    // ─── Clear all error messages ────────────────────────────────────────────
-    function clearErrors() {
-        const ids = [
-            'firstNameError', 'lastNameError', 'middleNameError',
-            'sexError', 'schoolIdError', 'emailError',
-            'passwordError', 'confirmPasswordError'
-        ];
-        ids.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.textContent = '';
-        });
-    }
-
 });

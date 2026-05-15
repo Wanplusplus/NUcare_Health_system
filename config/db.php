@@ -1,6 +1,6 @@
 <?php
 $host = 'localhost';
-$dbname = 'nucare_db';
+$dbname = 'nucaredb';
 $username = 'root';
 $password = '';
 
