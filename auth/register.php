@@ -53,24 +53,32 @@ if (isset($_SESSION['patient_id'])) {
                 <div class="title-underline" aria-hidden="true"></div>
 
                 <form id="registerForm" class="register-form">
+
+                    <!-- First Name -->
                     <div class="form-group">
                         <label for="first_name" class="form-label">First Name</label>
-                        <input type="text" id="first_name" name="first_name" class="form-input" placeholder="Enter your first name" required>
+                        <input type="text" id="first_name" name="first_name" class="form-input"
+                               placeholder="Enter your first name" required>
                         <span class="form-error" id="firstNameError"></span>
                     </div>
 
+                    <!-- Last Name -->
                     <div class="form-group">
                         <label for="last_name" class="form-label">Last Name</label>
-                        <input type="text" id="last_name" name="last_name" class="form-input" placeholder="Enter your last name" required>
+                        <input type="text" id="last_name" name="last_name" class="form-input"
+                               placeholder="Enter your last name" required>
                         <span class="form-error" id="lastNameError"></span>
                     </div>
 
+                    <!-- Middle Name -->
                     <div class="form-group">
                         <label for="middle_name" class="form-label">Middle Name (Optional)</label>
-                        <input type="text" id="middle_name" name="middle_name" class="form-input" placeholder="Enter your middle name">
+                        <input type="text" id="middle_name" name="middle_name" class="form-input"
+                               placeholder="Enter your middle name">
                         <span class="form-error" id="middleNameError"></span>
                     </div>
 
+                    <!-- Sex -->
                     <div class="form-group">
                         <label for="sex" class="form-label">Sex</label>
                         <select id="sex" name="sex" class="form-input" required>
@@ -81,21 +89,35 @@ if (isset($_SESSION['patient_id'])) {
                         <span class="form-error" id="sexError"></span>
                     </div>
 
+                    <!-- School ID -->
                     <div class="form-group">
                         <label for="school_id" class="form-label">School ID</label>
-                        <input type="text" id="school_id" name="school_id" class="form-input" placeholder="Enter your school ID" required>
+                        <input type="text" id="school_id" name="school_id" class="form-input"
+                               placeholder="Enter your school ID" required>
                         <span class="form-error" id="schoolIdError"></span>
                     </div>
 
+                    <!-- ✅ NEW: Email Address -->
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" id="email" name="email" class="form-input"
+                               placeholder="Enter your email address" required autocomplete="email">
+                        <span class="form-error" id="emailError"></span>
+                    </div>
+
+                    <!-- Password -->
                     <div class="form-group">
                         <label for="password" class="form-label">Password</label>
-                        <input type="password" id="password" name="password" class="form-input" placeholder="Enter your password" required>
+                        <input type="password" id="password" name="password" class="form-input"
+                               placeholder="Enter your password" required>
                         <span class="form-error" id="passwordError"></span>
                     </div>
 
+                    <!-- Confirm Password -->
                     <div class="form-group">
                         <label for="confirm_password" class="form-label">Confirm Password</label>
-                        <input type="password" id="confirm_password" name="confirm_password" class="form-input" placeholder="Confirm your password" required>
+                        <input type="password" id="confirm_password" name="confirm_password" class="form-input"
+                               placeholder="Confirm your password" required>
                         <span class="form-error" id="confirmPasswordError"></span>
                     </div>
 
@@ -112,6 +134,6 @@ if (isset($_SESSION['patient_id'])) {
         </div>
     </div>
 
-    <script src="../assets/js/register.js?v=2"></script>
+    <script src="../assets/js/register.js?v=3"></script>
 </body>
 </html>

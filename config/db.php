@@ -1,13 +1,18 @@
 <?php
+// Database connection for NUcare Health System
+$host     = 'localhost';
+$dbname   = 'nucaredb';      // ← Change to your actual database name
+$username = 'root';
+$password = '';
 
-$host = "localhost";
-$user = "root";
-$password = "";
-$database = "nucaredb";
-
-$conn = new mysqli($host, $user, $password, $database);
+$conn = new mysqli($host, $username, $password, $dbname);
 
 if ($conn->connect_error) {
-    die("Database Connection Failed: " . $conn->connect_error);
+    die(json_encode([
+        'status'  => 'error',
+        'message' => 'Database connection failed: ' . $conn->connect_error
+    ]));
 }
+
+$conn->set_charset('utf8mb4');
 ?>
