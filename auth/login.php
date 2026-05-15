@@ -151,7 +151,9 @@ if (isset($_SESSION['patient_id'])) {
                             <input type="checkbox" name="remember" class="checkbox">
                             <span>Remember me</span>
                         </label>
-                        <a href="#" class="forgot-password">Forgot password?</a>
+                        <a href="forgot_password.php" class="forgot-link">
+                                Forgot Password?
+                            </a>
                     </div>
 
                     <button type="submit" class="login-button">

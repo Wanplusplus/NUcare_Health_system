@@ -15,13 +15,13 @@ function sendResetEmail($email, $resetLink)
         $mail->Host = 'smtp.gmail.com';
         $mail->SMTPAuth = true;
 
-        $mail->Username = 'yourgmail@gmail.com';
-        $mail->Password = 'YOUR_APP_PASSWORD';
+        $mail->Username = 'seanjhanz111@gmail.com';
+        $mail->Password = 'ibwl otru owny rvtc';
 
         $mail->SMTPSecure = 'tls';
         $mail->Port = 587;
 
-        $mail->setFrom('yourgmail@gmail.com', 'NUCARE Health System');
+        $mail->setFrom('seanjhanz111@gmail.com', 'NUCARE Health System');
 
         $mail->addAddress($email);
 
