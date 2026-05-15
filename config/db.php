@@ -1,12 +1,13 @@
 <?php
+
 $host = "localhost";
-$username = "root";
+$user = "root";
 $password = "";
 $database = "nucaredb";
 
-$conn = mysqli_connect($host, $username, $password, $database);
+$conn = new mysqli($host, $user, $password, $database);
 
-if (!$conn) {
-    die("Database connection failed: " . mysqli_connect_error());
+if ($conn->connect_error) {
+    die("Database Connection Failed: " . $conn->connect_error);
 }
 ?>
