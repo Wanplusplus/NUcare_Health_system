@@ -66,7 +66,6 @@ $patientName = $_SESSION['patient_name'] ?? 'User';
                 </p>
             </div>
             <div class="header-actions">
-                <a href="../patients.php" class="header-button accent">New Patient</a>
                 <a href="../../auth/logout.php" class="header-button outline">Logout</a>
             </div>
         </header>

@@ -265,7 +265,7 @@
     text-transform: uppercase;
     letter-spacing: .05em;
     background: var(--navy);
-    border: 2px solid rgba(255, 255, 255, 0.5);
+    border: none; /* ✅ remove white borders */
     white-space: nowrap;
 }
 
@@ -437,7 +437,7 @@
 /* ---------- Responsive ---------- */
 @media (max-width: 900px) {
     .med-body { grid-template-columns: 1fr; }
-    .med-summary { display: none; }
+    .med-summary { display: none; } 
 }
 
 @media (max-width: 640px) {
