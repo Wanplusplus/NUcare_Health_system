@@ -48,7 +48,7 @@ $patientName = $_SESSION['patient_name'] ?? 'User';
 <div class="app-shell">
 
     <?php
-    $sidebarPath = __DIR__ . '/includes/sidebar.php';
+    $sidebarPath = __DIR__ . '/../../includes/sidebar.php';
     if (file_exists($sidebarPath)) {
         require_once $sidebarPath;
     }
