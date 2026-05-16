@@ -1,12 +1,9 @@
-CREATE DATABASE IF NOT EXISTS nucaredb;
-USE nucaredb;
-
 -- phpMyAdmin SQL Dump
 -- version 5.2.3
 -- https://www.phpmyadmin.net/
 --
--- Host: localhost
--- Generation Time: Apr 23, 2026 at 02:04 AM
+-- Host: localhost:3306
+-- Generation Time: May 15, 2026 at 05:11 PM
 -- Server version: 8.4.3
 -- PHP Version: 8.3.30
 
@@ -121,6 +118,24 @@ CREATE TABLE `emergency` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `enrolled_students`
+--
+
+CREATE TABLE `enrolled_students` (
+  `StudentID` int NOT NULL,
+  `SchoolID` varchar(50) NOT NULL,
+  `FullName` varchar(255) NOT NULL,
+  `Program` varchar(150) NOT NULL,
+  `Email` varchar(255) NOT NULL,
+  `EnrollmentStatus` enum('Enrolled','Not Enrolled') NOT NULL DEFAULT 'Enrolled',
+  `AcademicYear` varchar(20) NOT NULL,
+  `Semester` varchar(20) NOT NULL,
+  `CreatedAt` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `medicalcertificates`
 --
 
@@ -189,15 +204,29 @@ CREATE TABLE `patients` (
   `PatientLname` varchar(150) NOT NULL,
   `PatientMname` varchar(150) DEFAULT NULL,
   `ProgramID` int DEFAULT NULL,
+  `SchoolID` varchar(50) DEFAULT NULL,
+  `Email` varchar(255) DEFAULT NULL,
+  `Password` varchar(255) DEFAULT NULL,
+  `reset_token` varchar(255) DEFAULT NULL,
+  `token_expiry` datetime DEFAULT NULL,
+  `Role` varchar(50) NOT NULL DEFAULT 'Patient',
   `Sex` enum('Male','Female') NOT NULL,
-  `Birthday` date DEFAULT NULL,
-  `EmailAdd` varchar(150) DEFAULT NULL,
-  `PhoneNum` varchar(11) DEFAULT NULL,
-  `Address` varchar(255) DEFAULT NULL,
-  `Religion` varchar(100) DEFAULT NULL,
   `CreatedAt` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `UpdatedAt` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ;
+  `UpdatedAt` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `enrollment_verified` tinyint(1) NOT NULL DEFAULT '0',
+  `enrollment_student_id` int DEFAULT NULL,
+  `enrollment_checked_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `patients`
+--
+
+INSERT INTO `patients` (`PatientID`, `PatientFname`, `PatientLname`, `PatientMname`, `ProgramID`, `SchoolID`, `Email`, `Password`, `reset_token`, `token_expiry`, `Role`, `Sex`, `CreatedAt`, `UpdatedAt`, `enrollment_verified`, `enrollment_student_id`, `enrollment_checked_at`) VALUES
+(7, 'Wanny', 'Jaranilla', 'd', NULL, '2024-1116363', NULL, '$2y$10$MuvbyHtk2WHic31Dy5Jq2.WkL9VIEqPi8okX0uySdkRQaXS.CNaly', NULL, NULL, 'Patient', 'Male', '2026-05-14 13:42:39', '2026-05-14 13:42:39', 0, NULL, NULL),
+(8, 'Glycka', 'Mabag', 'D', NULL, '2024-1116464', NULL, '$2y$10$p6AoOslX1UorDIb/cSvwCun9A0PiZFyrFk9Yr.6BsLzng900GRdWu', NULL, NULL, 'Patient', 'Female', '2026-05-15 00:32:08', '2026-05-15 00:32:08', 0, NULL, NULL),
+(9, 'Isaiah', 'Garcia', 'Pescadero', NULL, '2024-1116565', 'isaiahphilip2006@gmail.com', '$2y$10$RwJn4XHTYqmiEopXifsfduv31ICa/lpmsXyjvN5HVbkfB57eOe2m6', NULL, NULL, 'Patient', 'Male', '2026-05-15 14:55:10', '2026-05-15 14:55:10', 0, NULL, NULL),
+(11, 'Sean Jhanz', 'Nisperos', 'Diason', NULL, '2024-1116666', 'seanjhanz111@gmail.com', '$2y$10$ZejS3tXdHQIGG1RwwhNKeOyWy971LTUBUImRqQIW3f6i/K.gWZjGO', NULL, NULL, 'Patient', 'Male', '2026-05-15 15:51:14', '2026-05-15 15:52:18', 0, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -307,6 +336,17 @@ ALTER TABLE `emergency`
   ADD KEY `PatientID` (`PatientID`);
 
 --
+-- Indexes for table `enrolled_students`
+--
+ALTER TABLE `enrolled_students`
+  ADD PRIMARY KEY (`StudentID`),
+  ADD UNIQUE KEY `SchoolID` (`SchoolID`),
+  ADD KEY `idx_schoolid` (`SchoolID`),
+  ADD KEY `idx_email` (`Email`),
+  ADD KEY `idx_status` (`EnrollmentStatus`),
+  ADD KEY `idx_term` (`AcademicYear`,`Semester`);
+
+--
 -- Indexes for table `medicalcertificates`
 --
 ALTER TABLE `medicalcertificates`
@@ -339,6 +379,8 @@ ALTER TABLE `patientdiseases`
 --
 ALTER TABLE `patients`
   ADD PRIMARY KEY (`PatientID`),
+  ADD UNIQUE KEY `unique_school_id` (`SchoolID`),
+  ADD UNIQUE KEY `Email` (`Email`),
   ADD KEY `fk_patient_program` (`ProgramID`);
 
 --
@@ -404,6 +446,12 @@ ALTER TABLE `emergency`
   MODIFY `EmergencyID` int NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `enrolled_students`
+--
+ALTER TABLE `enrolled_students`
+  MODIFY `StudentID` int NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `medicalcertificates`
 --
 ALTER TABLE `medicalcertificates`
@@ -431,7 +479,7 @@ ALTER TABLE `patientdiseases`
 -- AUTO_INCREMENT for table `patients`
 --
 ALTER TABLE `patients`
-  MODIFY `PatientID` int NOT NULL AUTO_INCREMENT;
+  MODIFY `PatientID` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `physicalexamination`
