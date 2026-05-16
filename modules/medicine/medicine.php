@@ -14,8 +14,7 @@ $patientName = $_SESSION['patient_name'] ?? 'User';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NUCARE | Medicine</title>
-
-    <!-- Main App Styles -->
+    <link rel="icon" href="/NUcare_Health_system/assets/image/nucarelogo.png">
     <link rel="stylesheet" href="../../assets/css/app.css?v=1">
 
     <!-- Medicine Styles -->
@@ -268,6 +267,7 @@ $patientName = $_SESSION['patient_name'] ?? 'User';
 
 <!-- Main App JS -->
 <script src="../../assets/js/app.js"></script>
+<script src="../../assets/js/medicine.js"></script>
 
 </body>
-</html>s
+</html>
