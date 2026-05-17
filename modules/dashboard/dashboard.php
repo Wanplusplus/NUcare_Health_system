@@ -1,10 +1,13 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['patient_id'])) {
+if (!isset($_SESSION['patient_id']) && !isset($_SESSION['UserID'])) {
     header('Location: ../../auth/login.php');
     exit;
 }
+
+require_once __DIR__ . '/../../includes/module_guard.php';
+requireModule('Dashboard', 'access');
 
 require_once __DIR__ . '/../../config/db.php';
 
