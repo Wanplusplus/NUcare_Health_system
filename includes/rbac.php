@@ -157,7 +157,7 @@ function requirePermission(string $moduleName, string $permissionName): void {
 
     if (!hasPermission($userId, $moduleName, $permissionName)) {
         http_response_code(403);
-        echo 'Access denied: insufficient permissions.';
+        header('Location: ../../modules/dashboard/dashboard.php');
         exit;
     }
 }

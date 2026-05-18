@@ -1,4 +1,4 @@
-CREATE DATABASE nucaredb;
+CREATE DATABASE IF NOT EXISTS nucaredb;
 USE nucaredb;
 
 -- =========================================================

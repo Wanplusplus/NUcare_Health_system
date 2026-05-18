@@ -21,9 +21,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $school_id = trim((string)($_POST['username'] ?? ''));
-$password = (string)($_POST['password'] ?? '');
+$loginPassword = (string)($_POST['password'] ?? '');
 
-if ($school_id === '' || $password === '') {
+if ($school_id === '' || $loginPassword === '') {
     echo json_encode([
         'status' => 'error',
         'message' => 'Please enter your School ID and password.',
@@ -82,7 +82,7 @@ try {
     }
 
     // 3) Password verify
-    if (empty($user['PasswordHash']) || !password_verify($password, (string)$user['PasswordHash'])) {
+    if (empty($user['PasswordHash']) || !password_verify($loginPassword, (string)$user['PasswordHash'])) {
         auditLog((int)$user['UserID'], (int)$sp['SchoolPersonID'], 'failed_login', 'auth', $school_id, 'Password mismatch', $ip);
         echo json_encode([
             'status' => 'error',
@@ -143,11 +143,16 @@ try {
     // 7) Audit login
     auditLog($userId, $schoolPersonId, 'login', 'auth', $school_id, null, $ip);
 
-    // Minimal redirect strategy: keep current dashboard redirect for compatibility.
+    $redirect = '../modules/dashboard/dashboard.php';
+    $roles = $_SESSION['Roles'] ?? [];
+    if (is_array($roles) && array_intersect($roles, ['Admin', 'Super Admin']) !== []) {
+        $redirect = '../modules/dashboard/admin_dashboard.php';
+    }
+
     echo json_encode([
         'status' => 'success',
         'message' => 'Login successful.',
-        'redirect' => '../modules/dashboard/dashboard.php',
+        'redirect' => $redirect,
     ]);
 } catch (Throwable $e) {
     auditLog(null, null, 'failed_login', 'auth', $school_id, 'Exception during login: ' . $e->getMessage(), $ip);
