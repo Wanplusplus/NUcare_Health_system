@@ -228,6 +228,27 @@ ON DUPLICATE KEY UPDATE
 RoleID = VALUES(RoleID);
 
 -- =========================================================
+-- DEMO STUDENT USERS
+-- Password for demo student accounts: DemoPass123!
+-- =========================================================
+INSERT INTO users (SchoolPersonID, PasswordHash, IsActive)
+SELECT sp.SchoolPersonID, '$2y$10$MbHUvivnEtPN9vR/CIY7DezcYUW80wm8QBkvCqaB1EZXJmXUi6.9C', 1
+FROM school_people sp
+WHERE sp.SchoolID IN ('SCH-1001', 'SCH-1002', 'SCH-1003', 'SCH-1004', 'SCH-1005', 'SCH-1006', 'SCH-1007', 'SCH-1008', 'SCH-1009', 'SCH-1010')
+ON DUPLICATE KEY UPDATE
+PasswordHash = VALUES(PasswordHash),
+IsActive = VALUES(IsActive);
+
+INSERT INTO user_roles (UserID, RoleID)
+SELECT u.UserID, r.RoleID
+FROM users u
+INNER JOIN school_people sp ON sp.SchoolPersonID = u.SchoolPersonID
+INNER JOIN roles r ON r.RoleName = 'Student'
+WHERE sp.SchoolID IN ('SCH-1001', 'SCH-1002', 'SCH-1003', 'SCH-1004', 'SCH-1005', 'SCH-1006', 'SCH-1007', 'SCH-1008', 'SCH-1009', 'SCH-1010')
+ON DUPLICATE KEY UPDATE
+RoleID = VALUES(RoleID);
+
+-- =========================================================
 -- EMPLOYEE ASSIGNMENTS
 -- =========================================================
 INSERT INTO employee_assignments (SchoolPersonID, Department, PositionTitle, EmploymentStatus, StartDate)

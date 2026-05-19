@@ -11,6 +11,7 @@ $patientName = $_SESSION['patient_name'] ?? 'User';
 require_once __DIR__ . '/../../includes/module_guard.php';
 requireModule('Schedule', 'access');
 
+$activeSidebarItem = 'schedule';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -24,7 +25,7 @@ requireModule('Schedule', 'access');
 <div class="app-shell">
 
     <?php
-    $sidebarPath = __DIR__ . '/../../includes/sidebar.php';
+    $sidebarPath = __DIR__ . '/../../includes/sidebar_student.php';
     if (file_exists($sidebarPath)) {
         require_once $sidebarPath;
     }

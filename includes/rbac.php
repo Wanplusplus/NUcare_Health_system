@@ -157,7 +157,11 @@ function requirePermission(string $moduleName, string $permissionName): void {
 
     if (!hasPermission($userId, $moduleName, $permissionName)) {
         http_response_code(403);
-        header('Location: ../../modules/dashboard/dashboard.php');
+        if (isset($_SESSION['Roles']) && is_array($_SESSION['Roles']) && array_intersect($_SESSION['Roles'], ['Admin', 'Super Admin']) !== []) {
+            header('Location: ../../modules/dashboard/admin_dashboard.php');
+        } else {
+            header('Location: ../../modules/dashboard/student_dashboard.php');
+        }
         exit;
     }
 }

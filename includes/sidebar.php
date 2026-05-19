@@ -15,7 +15,7 @@
   <nav class="nav-menu">
     <!-- These hrefs follow the module structure in this project.
          Modules may override active state independently. -->
-    <a class="nav-item" href="/NUcare_Health_system/modules/dashboard/dashboard.php">
+    <a class="nav-item" href="/NUcare_Health_system/modules/dashboard/admin_dashboard.php">
       <span class="nav-dot"></span>Dashboard
     </a>
     <a class="nav-item" href="/NUcare_Health_system/modules/consultation/consultation.php">
