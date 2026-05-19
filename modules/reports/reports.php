@@ -1,12 +1,16 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['patient_id'])) {
+if (!isset($_SESSION['patient_id']) && !isset($_SESSION['UserID'])) {
     header('Location: ../../auth/login.php');
     exit;
 }
 
 $patientName = $_SESSION['patient_name'] ?? 'User';
+
+require_once __DIR__ . '/../../includes/module_guard.php';
+requireModule('Reports', 'access');
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
