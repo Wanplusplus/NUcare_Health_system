@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: May 21, 2026 at 03:58 AM
+-- Generation Time: May 21, 2026 at 02:50 PM
 -- Server version: 8.4.3
 -- PHP Version: 8.3.30
 
@@ -34,8 +34,7 @@ CREATE TABLE `audit_logs` (
   `ModuleName` varchar(100) DEFAULT NULL,
   `TableAffected` varchar(100) DEFAULT NULL,
   `RecordID` int DEFAULT NULL,
-  `ActionTimestamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `IPAddress` varchar(100) DEFAULT NULL
+  `ActionTimestamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -711,7 +710,10 @@ INSERT INTO `school_people` (`SchoolPersonID`, `SchoolID`, `FirstName`, `LastNam
 (29, 'SCH-8003', 'Super', 'Admin Three', 'AC', 'superadmin3@nucare.edu', 'Staff', 'Female', '2026-05-18 15:38:37'),
 (65, 'STF-888', 'Demo', 'Doctor', NULL, 'doctor888@example.com', 'Staff', 'Male', '2026-05-21 03:25:38'),
 (66, 'STF-999', 'Demo', 'Nurse', NULL, 'nurse999@example.com', 'Staff', 'Female', '2026-05-21 03:25:38'),
-(67, 'STF-000', 'Demo', 'Dentist', NULL, 'dentist000@example.com', 'Staff', 'Male', '2026-05-21 03:25:38');
+(67, 'STF-000', 'Demo', 'Dentist', NULL, 'dentist000@example.com', 'Staff', 'Male', '2026-05-21 03:25:38'),
+(68, 'S-10001', 'Student', 'One', NULL, 'student.one@example.com', 'Student', 'Male', '2026-05-21 04:11:11'),
+(69, 'S-10002', 'Student', 'Two', NULL, 'student.two@example.com', 'Student', 'Female', '2026-05-21 04:11:11'),
+(70, 'S-10003', 'Student', 'Three', NULL, 'student.three@example.com', 'Student', 'Male', '2026-05-21 04:11:11');
 
 -- --------------------------------------------------------
 
@@ -807,7 +809,9 @@ INSERT INTO `users` (`UserID`, `SchoolPersonID`, `PasswordHash`, `ResetToken`, `
 (16, 21, '$2y$10$5LvucdTBkHR1qaMagGplvucS9GhIin6hTZHLZgBAmZTSsSOlK8S7i', NULL, NULL, 1, NULL, '2026-05-21 02:36:14', '2026-05-21 02:36:14'),
 (23, 65, '$2y$10$N98IQPwRp5vj8ARnaZcwG.N8bs8sS2iq09eKxGNLEkY2/NlQa14Te', NULL, NULL, 1, NULL, '2026-05-21 03:25:38', '2026-05-21 03:42:25'),
 (24, 66, '$2y$10$HkVcGfn3.CLzPNgYCVwxY.IqdcYrq.wixOR.Ap3PVvATJ/xtrwjs.', NULL, NULL, 1, NULL, '2026-05-21 03:25:38', '2026-05-21 03:42:25'),
-(25, 67, '$2y$10$OXcWEdjoWxOK0TWX.nyjNeLd7jYJ8UX2sdRs6WnYg8zNxo4k7gTCy', NULL, NULL, 1, NULL, '2026-05-21 03:25:38', '2026-05-21 03:42:25');
+(25, 67, '$2y$10$OXcWEdjoWxOK0TWX.nyjNeLd7jYJ8UX2sdRs6WnYg8zNxo4k7gTCy', NULL, NULL, 1, NULL, '2026-05-21 03:25:38', '2026-05-21 03:42:25'),
+(38, 68, '$2y$10$aiziEzsuXGVILunuiXLgUOuJ27o2726O/0GJUnWBT0l7FwT7FY7.i', NULL, NULL, 1, NULL, '2026-05-21 04:17:29', '2026-05-21 04:17:29'),
+(39, 69, '$2y$10$lwUqyzuTjMFp/.HkTR9kMeej6g3rHstX4n0PvEY3DOdVO4wF0RRba', NULL, NULL, 1, NULL, '2026-05-21 04:26:22', '2026-05-21 04:26:22');
 
 -- --------------------------------------------------------
 
@@ -856,7 +860,9 @@ INSERT INTO `user_roles` (`UserRoleID`, `UserID`, `RoleID`) VALUES
 (18, 16, 4),
 (25, 23, 4),
 (26, 24, 6),
-(27, 25, 5);
+(27, 25, 5),
+(40, 38, 1),
+(41, 39, 1);
 
 --
 -- Indexes for dumped tables
@@ -1147,13 +1153,13 @@ ALTER TABLE `medicine_inventory_logs`
 -- AUTO_INCREMENT for table `modules`
 --
 ALTER TABLE `modules`
-  MODIFY `ModuleID` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `ModuleID` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `permissions`
 --
 ALTER TABLE `permissions`
-  MODIFY `PermissionID` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `PermissionID` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `physical_examinations`
@@ -1177,7 +1183,7 @@ ALTER TABLE `reports`
 -- AUTO_INCREMENT for table `roles`
 --
 ALTER TABLE `roles`
-  MODIFY `RoleID` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `RoleID` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `role_permissions`
@@ -1189,7 +1195,7 @@ ALTER TABLE `role_permissions`
 -- AUTO_INCREMENT for table `school_people`
 --
 ALTER TABLE `school_people`
-  MODIFY `SchoolPersonID` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=68;
+  MODIFY `SchoolPersonID` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=74;
 
 --
 -- AUTO_INCREMENT for table `student_enrollments`
@@ -1201,7 +1207,7 @@ ALTER TABLE `student_enrollments`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `UserID` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
+  MODIFY `UserID` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
 
 --
 -- AUTO_INCREMENT for table `user_diseases`
@@ -1213,7 +1219,7 @@ ALTER TABLE `user_diseases`
 -- AUTO_INCREMENT for table `user_roles`
 --
 ALTER TABLE `user_roles`
-  MODIFY `UserRoleID` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
+  MODIFY `UserRoleID` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
 
 --
 -- Constraints for dumped tables

@@ -43,22 +43,31 @@
     </div>
   </div>
 
+
+<?php
+  // Active state for consistent sidebar UI across admin modules.
+  // Prefer $activeSidebarItem, otherwise fall back to legacy $active.
+  $activeKey = $activeSidebarItem ?? ($active ?? 'dashboard');
+?>
+
   <nav class="nav-menu">
-    <a class="nav-item" href="/NUcare_Health_system/modules/dashboard/admin_dashboard.php">
+
+    <a class="nav-item <?= $activeKey === 'dashboard' ? 'active' : '' ?>" href="/NUcare_Health_system/modules/dashboard/admin_dashboard.php">
       <span class="nav-dot"></span>Dashboard
     </a>
-    <a class="nav-item" href="/NUcare_Health_system/admin/user_management.php">
+    <a class="nav-item <?= $activeKey === 'user_management' ? 'active' : '' ?>" href="/NUcare_Health_system/admin/user_management.php">
       <span class="nav-dot"></span>User Management
     </a>
-    <a class="nav-item" href="/NUcare_Health_system/admin/rbac_management.php">
+    <a class="nav-item <?= $activeKey === 'rbac_management' ? 'active' : '' ?>" href="/NUcare_Health_system/admin/rbac_management.php">
       <span class="nav-dot"></span>RBAC Management
     </a>
-    <a class="nav-item" href="/NUcare_Health_system/admin/reports.php">
+    <a class="nav-item <?= $activeKey === 'reports' ? 'active' : '' ?>" href="/NUcare_Health_system/admin/reports.php">
       <span class="nav-dot"></span>Reports
     </a>
-    <a class="nav-item" href="/NUcare_Health_system/admin/audit_logs.php">
+    <a class="nav-item <?= $activeKey === 'audit_logs' ? 'active' : '' ?>" href="/NUcare_Health_system/admin/audit_logs.php">
       <span class="nav-dot"></span>Audit Logs
     </a>
+
 
 
 

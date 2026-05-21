@@ -1,3 +1,5 @@
-- [ ] Fix broken/duplicated student_dashboard routing by ensuring modules/dashboard/student_dashboard.php exists
-- [x] Added modules/dashboard/student_dashboard.php entrypoint to route to the correct dashboard (admin vs medical staff)
+- [ ] seed 10 staff in school_people (create seeder)
+- [ ] run `php temp/seed_10_staff_school_people.php`
+- [ ] verify inserted SchoolID rows exist in `school_people`
+- [ ] test signup using one of the seeded SchoolID values
 
