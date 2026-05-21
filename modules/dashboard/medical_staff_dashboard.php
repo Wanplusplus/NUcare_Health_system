@@ -25,6 +25,9 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
     <title>NUCARE | Medical Staff Dashboard</title>
     <link rel="icon" href="/NUcare_Health_system/assets/image/nucarelogo.png">
     <link rel="stylesheet" href="../../assets/css/app.css">
+    <link rel="stylesheet" href="../../assets/css/medical_staff_notifications.css?v=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
 </head>
 <body>
 <div class="app-shell">
@@ -47,8 +50,33 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
                 </p>
             </div>
             <div class="header-actions">
-                <a href="../../auth/logout.php" class="header-button outline">Logout</a>
+                <div class="notif-bell">
+                    <button id="notifBellBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Notifications">
+                        <i class="fa-solid fa-bell"></i>
+                        <span>Notifications</span>
+                        <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+                        <span class="sr-only">Notifications</span>
+
+                    </button>
+
+
+                    <div id="notifDropdown" class="notif-dropdown" role="menu" aria-label="Notification list">
+
+
+                        <div class="notif-header">
+                            <h4>Real-time Alerts</h4>
+                            <div class="notif-lastup" id="notifLastUpdated"></div>
+                        </div>
+
+                        <div class="notif-body">
+                            <div class="notif-loading" id="notifLoading">Loading…</div>
+                            <div class="notif-empty" id="notifEmpty">No alerts right now.</div>
+                            <div id="notifList"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
+
         </header>
 
         <div class="cards-grid">
@@ -85,10 +113,11 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
                         <a href="../records/records.php" class="action-pill">Records</a>
                         <a href="../medicine/medicine.php" class="action-pill">Medicine</a>
                         <a href="../schedule/schedule.php" class="action-pill">Schedule</a>
-                        <a href="../../auth/logout.php" class="action-pill">Logout</a>
+
                     </div>
                 </div>
             </div>
+
 
             <div class="panel-card accent-card">
                 <div class="panel-card-header">
@@ -106,6 +135,8 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
 
 </div>
 <script src="../../assets/js/app.js"></script>
+<script src="../../assets/js/medical_staff_notifications.js?v=1"></script>
 </body>
 </html>
+
 

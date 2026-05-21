@@ -32,10 +32,8 @@ Patient Search
 Staff should be able to:
 
 Search patients from the database using:
-Name
 School ID
-Course
-Consultation Features
+
 
 Each consultation record should include:
 

@@ -272,23 +272,55 @@ if (file_exists($sidebarPath)) require_once $sidebarPath;
 
         <div class="modal-body">
 
-            <!-- Reset Password: ../../auth/forgot_password.php -->
-            <a href="../../auth/forgot_password.php" class="modal-btn reset">
+            <!-- Change Password (Current + New + Confirm) -->
+            <button type="button" class="modal-btn reset" id="openChangePassword">
                 <div class="btn-icon">
                     <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/>
                     </svg>
                 </div>
                 <div class="btn-label">
-                    <div>Reset Password</div>
-                    <div class="btn-sublabel">Send a password-reset link to your email</div>
+                    <div>Change Password</div>
+                    <div class="btn-sublabel">Update password using your current password</div>
                 </div>
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
                 </svg>
-            </a>
+            </button>
 
             <div class="modal-divider"></div>
+
+            <!-- Inline Change Password Form (hidden until opened) -->
+            <div id="changePasswordPanel" style="display:none; padding: 0 24px 24px;">
+                <h3 class="form-title" style="margin-top: 10px;">Update Password</h3>
+                <p class="form-desc" style="margin-bottom: 18px;">Enter your current password and choose a new one.</p>
+
+                <form id="settingsChangePasswordForm" autocomplete="off">
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label for="current_password" class="form-label" style="display:block; font-weight:700; margin-bottom:8px;">Current Password</label>
+                        <input type="password" id="current_password" name="current_password" class="form-input" style="width:100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border);" />
+                        <span class="form-error" id="currentPasswordError" style="display:block; margin-top:8px; color: var(--error); font-weight:600; font-size:12px;"></span>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label for="new_password" class="form-label" style="display:block; font-weight:700; margin-bottom:8px;">New Password</label>
+                        <input type="password" id="new_password" name="new_password" class="form-input" style="width:100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border);" />
+                        <span class="form-error" id="newPasswordError" style="display:block; margin-top:8px; color: var(--error); font-weight:600; font-size:12px;"></span>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 18px;">
+                        <label for="confirm_password" class="form-label" style="display:block; font-weight:700; margin-bottom:8px;">Confirm Password</label>
+                        <input type="password" id="confirm_password" name="confirm_password" class="form-input" style="width:100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border);" />
+                        <span class="form-error" id="confirmPasswordError" style="display:block; margin-top:8px; color: var(--error); font-weight:600; font-size:12px;"></span>
+                    </div>
+
+                    <button type="submit" class="btn-account" id="changePasswordBtn">
+                        <span id="changePasswordBtnText">Update Password</span>
+                        <span class="spinner" id="changePasswordSpinner" style="display:none;"></span>
+                    </button>
+                </form>
+            </div>
+
 
             <!-- Logout: ../../auth/logout.php -->
             <a href="../../auth/logout.php" class="modal-btn logout">
@@ -322,7 +354,24 @@ if (file_exists($sidebarPath)) require_once $sidebarPath;
     closeBtn.addEventListener('click', closeModal);
     overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+    // Change password panel
+    const openChangePassword = document.getElementById('openChangePassword');
+    const changePasswordPanel = document.getElementById('changePasswordPanel');
+
+    if (openChangePassword && changePasswordPanel) {
+        openChangePassword.addEventListener('click', (e) => {
+            e.preventDefault();
+            changePasswordPanel.style.display = 'block';
+        });
+    }
 </script>
+
+<script src="../../assets/js/settings_change_password.js?v=1"></script>
+
+<!-- toast container for fallback/modal (modal is injected by JS) -->
+<div id="toastContainer" style="position:fixed;top:20px;right:20px;z-index:1500;"></div>
 
 </body>
 </html>
+

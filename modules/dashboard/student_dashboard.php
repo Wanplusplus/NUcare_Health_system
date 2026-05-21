@@ -23,3 +23,5 @@ if (isset($_SESSION['UserID']) || isset($_SESSION['patient_id'])) {
 header('Location: ../../auth/login.php');
 exit;
 
+
+
