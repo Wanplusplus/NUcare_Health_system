@@ -136,10 +136,7 @@ try {
         $redirect = '../modules/dashboard/admin_dashboard.php';
     } else {
         // Medical roles (promoted staff) go to medical_staff dashboard
-        if (
-            is_array($roles)
-            && array_intersect($roles, ['Doctor', 'Dentist', 'Nurse']) !== []
-        ) {
+        if (is_array($roles) && array_intersect($roles, ['Doctor', 'Dentist', 'Nurse']) !== []) {
             $redirect = '../modules/dashboard/medical_staff_dashboard.php';
         } else {
             // Default: patient view
@@ -147,12 +144,20 @@ try {
         }
     }
 
+    // DEBUG: ensure the decision variables are visible in client-side network logs.
+    // Comment out/remove once verified.
+    // error_log('LOGIN_REDIRECT=' . $redirect . ' roles=' . json_encode($roles));
 
     echo json_encode([
         'status' => 'success',
         'message' => 'Login successful.',
         'redirect' => $redirect,
+        'roles_debug' => is_array($roles) ? $roles : [],
+        'session_userid_debug' => $_SESSION['UserID'] ?? null,
+        'session_schoolpersonid_debug' => $_SESSION['SchoolPersonID'] ?? null,
     ]);
+
+
 } catch (Throwable $e) {
     auditLog(null, null, 'failed_login', 'auth', $school_id, 'Exception during login: ' . $e->getMessage(), $ip);
     echo json_encode([

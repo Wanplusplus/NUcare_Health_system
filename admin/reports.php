@@ -11,6 +11,7 @@ if (!isset($_SESSION['patient_id']) && !isset($_SESSION['UserID'])) {
 require_once __DIR__ . '/../includes/module_guard.php';
 requireModule('Admin Panel', 'access');
 
+$activeSidebarItem = 'reports';
 $active = 'reports';
 ?>
 <!DOCTYPE html>

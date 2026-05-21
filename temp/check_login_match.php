@@ -10,8 +10,9 @@ $stmt = $pdo->prepare("
     WHERE sp.SchoolID = ?
     LIMIT 1
 ");
-$stmt->execute(['SCH-8001']);
+$stmt->execute(['STF-10001']);
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
 
 if (!$row) {
     echo "MISSING" . PHP_EOL;
