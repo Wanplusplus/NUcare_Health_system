@@ -1,8 +1,11 @@
-# TODO - Medical staff redirect/dashboard fix
+# TODO - NUcare Health System | Medicine Feature
 
-- [x] Add redirect logic in `auth/login_ajax.php` for Doctor/Dentist/Nurse users to `modules/dashboard/medical_staff_dashboard.php`
-- [x] Restore/fix `modules/dashboard/medical_staff_dashboard.php` to a valid dashboard page
+- [x] 0) Collected repo context (Add Medicine UI, current ajax endpoint, current export stub)
+- [x] 1) Replace backend endpoint `ajax/medicine_ajax.php` to insert into `medicine` and `medicine_inventory` (transactional, prepared statements, proper JSON response)
+- [x] 2) Fix frontend Add Medicine form submission URL to call the correct backend file
+- [x] 3) Replace `print-output/medicine_output.php` to generate professional PDF report for medicines + inventory (blue/gold theme) via TCPDF
+- [x] 4) Wire Export button in `assets/js/medicine.js` to navigate to `print-output/medicine_output.php`
 
-- [ ] Ensure the page passes RBAC checks (use `requireModule('Medical Staff Panel' or correct moduleName, 'access')` matching DB)
-- [ ] Run a quick smoke test: login as promoted Doctor -> verify correct session + redirect
+- [ ] 5) Smoke test: Add Medicine -> verify both tables get rows
+- [ ] 6) Smoke test: Export -> verify PDF downloads and shows correct joined data
 
