@@ -308,6 +308,9 @@ $activeSidebarItem = 'medicine';
 
     <!-- Form -->
     <form id="addMedicineForm" novalidate>
+      <input type="hidden" id="medicine_id" name="medicine_id" value="">
+      <input type="hidden" id="inventory_id" name="inventory_id" value="">
+      <input type="hidden" id="form_action" name="action" value="store">
 
       <div class="modal-body">
 

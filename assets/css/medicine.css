@@ -730,6 +730,76 @@
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+.btn-danger {
+    background: var(--danger);
+    color: var(--white);
+}
+.btn-danger:hover {
+    background: #b91c1c;
+}
+
+.delete-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    background: rgba(17, 24, 39, .58);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .2s, visibility .2s;
+}
+
+.delete-confirm-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.delete-confirm-box {
+    width: min(100%, 420px);
+    background: var(--white);
+    border-radius: var(--r-lg);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .28);
+    border: 2px solid #fca5a5;
+    padding: 20px;
+}
+
+.delete-confirm-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--danger);
+    margin-bottom: 10px;
+}
+
+.delete-confirm-head i {
+    font-size: 1.2rem;
+}
+
+.delete-confirm-head h3 {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    font-size: 1rem;
+    color: var(--text-dark);
+}
+
+.delete-confirm-message {
+    margin: 0 0 16px;
+    font-size: .88rem;
+    color: var(--text-mid);
+    line-height: 1.5;
+}
+
+.delete-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
 /* Toasts */
 .toast-wrap {
     position: fixed;
@@ -770,4 +840,12 @@
 }
 =======
 }
+<<<<<<< HEAD
 >>>>>>> 0b6b064d0a5abc96926289af4c722a3fd842011f
+=======
+
+.medicine-page {
+    width: 100%;
+    max-width: 100%;
+}
+>>>>>>> 3e2c35e9e5888132b21522ea1c759343bb7deb76
