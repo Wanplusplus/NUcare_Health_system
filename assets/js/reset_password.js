@@ -108,8 +108,25 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const raw = await response.text();
-            console.log('RESET RESPONSE:', raw);
-            const result = JSON.parse(raw);
+                console.log('RESET RESPONSE:', raw);
+            // If backend returns JSON error, show it instead of generic message
+            if (raw && raw.trim().startsWith('{')) {
+                try {
+                    const parsedDebug = JSON.parse(raw);
+                    if (parsedDebug && parsedDebug.message) {
+                        showToast(parsedDebug.message, parsedDebug.status === 'success' ? 'success' : 'error');
+                        return;
+                    }
+                } catch (e) {}
+            }
+            let result;
+            try {
+                result = JSON.parse(raw);
+            } catch (e) {
+                console.error('RESET PARSE ERROR. Raw response:', raw);
+                showToast('Backend returned non-JSON response. Check console.', 'error');
+                return;
+            }
 
             if (result.status === 'success') {
                 showToast(result.message, 'success');
