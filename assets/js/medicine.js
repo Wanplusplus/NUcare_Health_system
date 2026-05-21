@@ -16,13 +16,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const saveBtn            = document.getElementById('saveMedicineBtn');
   const toastWrap          = document.getElementById('toastWrap');
 
-  /* modal tab controls */
-  const modalTabs   = document.querySelectorAll('.modal-tab');
-  const tabPanels   = document.querySelectorAll('.tab-panel');
-  const btnTabNext  = document.getElementById('btnTabNext');
-  const btnTabPrev  = document.getElementById('btnTabPrev');
+  const modalTabs  = document.querySelectorAll('.modal-tab');
+  const tabPanels  = document.querySelectorAll('.tab-panel');
+  const btnTabNext = document.getElementById('btnTabNext');
+  const btnTabPrev = document.getElementById('btnTabPrev');
 
-  /* form fields */
   const qty          = document.getElementById('quantity');
   const unitCost     = document.getElementById('unit_cost');
   const purchaseQty  = document.getElementById('purchase_quantity');
@@ -31,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const endingBal    = document.getElementById('ending_balance');
   const statusPreview= document.getElementById('statusPreview');
 
-  /* error spans */
   const errs = {
     medicine_name:   document.getElementById('err_medicine_name'),
     category:        document.getElementById('err_category'),
@@ -40,31 +37,28 @@ document.addEventListener('DOMContentLoaded', () => {
     expiration_date: document.getElementById('err_expiration_date'),
   };
 
-  /* ── State ── */
+  /* ══════════════════════════════════════════════
+     IMPORTANT: update this path to match where
+     you placed medicine_ajax.php on your server.
+     From assets/js/medicine.js → ajax/medicine/medicine_ajax.php
+     ══════════════════════════════════════════════ */
+  const AJAX_URL = '../../ajax/medicine_ajax.php';
+
   let currentYear  = new Date().getFullYear();
   let currentMonth = new Date().getMonth() + 1;
-  let activeTab    = 'master';  // 'master' | 'inventory'
+  let activeTab    = 'master';
+  let medicines    = [];
 
-  const monthNames = [
-    'January','February','March','April','May','June',
-    'July','August','September','October','November','December'
-  ];
-
-  /* Dummy data */
-  let medicines = [
-    {id:1, medicine_name:'Paracetamol', generic_name:'Acetaminophen', quantity:120, unit:'Tablet', purchase_quantity:200, ending_balance:120, expiration_date:'2026-12-20', status:'Available'},
-    {id:2, medicine_name:'Amoxicillin', generic_name:'Antibiotic', quantity:15, unit:'Capsule', purchase_quantity:40, ending_balance:15, expiration_date:'2026-07-01', status:'Low Stock'},
-    {id:3, medicine_name:'Vitamin C', generic_name:'Ascorbic Acid', quantity:0, unit:'Bottle', purchase_quantity:50, ending_balance:0, expiration_date:'2025-01-01', status:'Expired'},
-    {id:4, medicine_name:'Cetirizine', generic_name:'Antihistamine', quantity:22, unit:'Tablet', purchase_quantity:35, ending_balance:22, expiration_date:'2026-06-15', status:'Near Expiry'},
-  ];
+  const monthNames = ['January','February','March','April','May','June',
+    'July','August','September','October','November','December'];
 
   /* ── Helpers ── */
-  const toast = (msg, type='success') => {
+  const toast = (msg, type = 'success') => {
     const el = document.createElement('div');
     el.className = `toast ${type}`;
     el.textContent = msg;
     toastWrap.appendChild(el);
-    setTimeout(() => el.remove(), 3000);
+    setTimeout(() => el.remove(), 4000);
   };
 
   const clearErrors = () => Object.values(errs).forEach(e => e && (e.textContent = ''));
@@ -72,10 +66,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const statusFrom = (q, exp) => {
     if (!exp) return 'Available';
     const days = Math.ceil((new Date(exp) - new Date()) / 86400000);
-    if (q <= 0)   return 'Out of Stock';
-    if (days < 0) return 'Expired';
+    if (q <= 0)    return 'Out Of Stock';
+    if (days < 0)  return 'Expired';
     if (days <= 30) return 'Near Expiry';
-    if (q <= 20)  return 'Low Stock';
+    if (q <= 10)   return 'Low Stock';
     return 'Available';
   };
 
@@ -86,18 +80,16 @@ document.addEventListener('DOMContentLoaded', () => {
       'Near Expiry':  ['low', 'fa-clock'],
       'Expired':      ['bad', 'fa-ban'],
       'Out of Stock': ['bad', 'fa-circle-xmark'],
+      'Out Of Stock': ['bad', 'fa-circle-xmark'],
     };
-    const [cls, icon] = map[status] || ['ok','fa-circle-check'];
+    const [cls, icon] = map[status] || ['ok', 'fa-circle-check'];
     return `<span class="s-pill ${cls}"><i class="fa-solid ${icon}"></i> ${status}</span>`;
   };
 
-  /* ── Computed field updates ── */
   const updateComputed = () => {
     const p = parseFloat(unitCost?.value || 0) * parseFloat(purchaseQty?.value || 0);
     if (totalCost) totalCost.value = p > 0 ? p.toFixed(2) : '';
     if (endingBal) endingBal.value = qty?.value !== '' ? qty.value : '';
-
-    /* update status preview */
     if (statusPreview) {
       const q = parseFloat(qty?.value || 0);
       const e = expDate?.value || '';
@@ -109,14 +101,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  /* ── Period UI ── */
   const updatePeriodUI = () => {
     yearLabel.textContent = currentYear;
     monthTabs.forEach(t => t.classList.toggle('active', parseInt(t.dataset.month) === currentMonth));
     if (summaryPeriodLabel) summaryPeriodLabel.textContent = `${monthNames[currentMonth - 1]} ${currentYear}`;
   };
 
-  /* ── Table render ── */
   const renderTable = data => {
     medTableBody.innerHTML = '';
     medEmpty.style.display = data.length ? 'none' : 'block';
@@ -125,18 +115,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const frag = document.createDocumentFragment();
     data.forEach(m => {
       const tr = document.createElement('tr');
-      const stClass = { Available:'ok', 'Low Stock':'low', 'Near Expiry':'low', Expired:'bad', 'Out of Stock':'bad' }[m.status] || 'ok';
-      const rowClass = { Expired:'r-expired', 'Near Expiry':'r-near', 'Low Stock':'r-low' }[m.status] || '';
+      const rowClass = { Expired:'r-expired','Near Expiry':'r-near','Low Stock':'r-low' }[m.status] || '';
       if (rowClass) tr.className = rowClass;
       tr.dataset.id = m.id;
+      tr.dataset.inventoryId = m.inventory_id ?? '';
+
+      let expDisplay = m.expiration_date || '—';
+      if (expDisplay && expDisplay !== '—') {
+        const d = new Date(expDisplay);
+        if (!isNaN(d)) expDisplay = d.toLocaleDateString('en-PH', { year:'numeric', month:'short', day:'numeric' });
+      }
+
       tr.innerHTML = `
-        <td><span class="med-name">${m.medicine_name}</span><span class="med-generic">${m.generic_name || ''}</span></td>
+        <td>
+          <span class="med-name">${m.medicine_name}</span>
+          <span class="med-generic">${m.generic_name || ''}</span>
+        </td>
         <td>${m.quantity}</td>
         <td>${m.unit}</td>
-        <td>${m.purchase_quantity ?? '—'}</td>
+        <td>—</td>
         <td>${m.purchase_quantity ?? '—'}</td>
         <td>${m.ending_balance ?? '—'}</td>
-        <td>${m.expiration_date}</td>
+        <td>${expDisplay}</td>
         <td>${pillFor(m.status)}</td>
         <td>
           <div class="acts">
@@ -144,8 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <button class="act-btn deduct" data-action="deduct" title="Deduct" type="button"><i class="fa-solid fa-minus"></i></button>
             <button class="act-btn del"    data-action="delete" title="Delete" type="button"><i class="fa-solid fa-trash"></i></button>
           </div>
-        </td>
-      `;
+        </td>`;
       frag.appendChild(tr);
     });
     medTableBody.appendChild(frag);
@@ -155,72 +154,99 @@ document.addEventListener('DOMContentLoaded', () => {
   const updateSummary = data => {
     const c = { total:data.length, available:0, low:0, expired:0, near:0, purchased:0, ending:0 };
     data.forEach(m => {
-      if (m.status === 'Available')    c.available++;
-      if (m.status === 'Low Stock')    c.low++;
-      if (m.status === 'Expired')      c.expired++;
-      if (m.status === 'Near Expiry')  c.near++;
+      const st = (m.status || '').toLowerCase();
+      if (st === 'available')   c.available++;
+      if (st === 'low stock')   c.low++;
+      if (st === 'expired')     c.expired++;
+      if (st === 'near expiry') c.near++;
       c.purchased += Number(m.purchase_quantity || 0);
       c.ending    += Number(m.ending_balance    || 0);
     });
-
-    const set = (id, v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
-    set('sumTotal', c.total);
-    set('sumAvailable', c.available);
-    set('sumLow', c.low);
-    set('sumExpired', c.expired);
-    set('sumNear', c.near);
-    set('sumPurchased', c.purchased);
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('sumTotal',         c.total);
+    set('sumAvailable',     c.available);
+    set('sumLow',           c.low);
+    set('sumExpired',       c.expired);
+    set('sumNear',          c.near);
+    set('sumPurchased',     c.purchased);
     set('sumEndingBalance', c.ending);
 
-    const aLow    = document.getElementById('alertLowStock');
-    const aExp    = document.getElementById('alertExpired');
-    const aNear   = document.getElementById('alertNearExpiry');
-    const alerts  = document.getElementById('medAlerts');
-
+    const aLow   = document.getElementById('alertLowStock');
+    const aExp   = document.getElementById('alertExpired');
+    const aNear  = document.getElementById('alertNearExpiry');
+    const alerts = document.getElementById('medAlerts');
     if (aLow)  aLow.style.display  = c.low     ? 'inline-flex' : 'none';
     if (aExp)  aExp.style.display  = c.expired ? 'inline-flex' : 'none';
     if (aNear) aNear.style.display = c.near    ? 'inline-flex' : 'none';
-
-    const setTxt = (id, v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
-    setTxt('alertLowStockText', `${c.low} low stock`);
-    setTxt('alertExpiredText',  `${c.expired} expired`);
+    const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    setTxt('alertLowStockText',   `${c.low} low stock`);
+    setTxt('alertExpiredText',    `${c.expired} expired`);
     setTxt('alertNearExpiryText', `${c.near} near expiry`);
-
     if (alerts) alerts.style.display = (c.low || c.expired || c.near) ? 'flex' : 'none';
   };
 
   const applyFilters = () => {
-    const s  = (searchInput?.value || '').toLowerCase().trim();
-    const st = statusFilter?.value || '';
+    const s  = (searchInput?.value  || '').toLowerCase().trim();
+    const st = (statusFilter?.value || '').toLowerCase().trim();
     renderTable(medicines.filter(m =>
-      ((m.medicine_name||'').toLowerCase().includes(s) ||
-       (m.generic_name ||'').toLowerCase().includes(s)) &&
-      (!st || m.status.toLowerCase().replace(/\s/g,'') === st.replace(/\s/g,'') || m.status === st)
+      ((m.medicine_name || '').toLowerCase().includes(s) ||
+       (m.generic_name  || '').toLowerCase().includes(s)) &&
+      (!st || m.status.toLowerCase().replace(/\s+/g,'') === st.replace(/\s+/g,'') || m.status.toLowerCase() === st)
     ));
   };
 
-  /* ── Modal Tab Switching ── */
-  const TABS = ['master','inventory'];
+  /* ══════════════════════════════════════
+     LOAD FROM DATABASE
+     ══════════════════════════════════════ */
+  const loadMedicines = async () => {
+    try {
+      const fd = new FormData();
+      fd.append('action', 'fetch');
+      const res = await fetch(AJAX_URL, { method: 'POST', body: fd });
 
-  const switchTab = (tabId) => {
+      /* Check if the response is actually JSON before parsing */
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        const rawText = await res.text();
+        console.error('Non-JSON response from server (fetch):', rawText);
+        toast('Server returned non-JSON. Check PHP path & errors in console.', 'error');
+        renderTable([]);
+        return;
+      }
+
+      const json = await res.json();
+      if (json.success) {
+        medicines = json.data || [];
+        applyFilters();
+      } else {
+        console.error('Fetch medicines error:', json.message);
+        toast('Load error: ' + json.message, 'error');
+        renderTable([]);
+      }
+    } catch (err) {
+      console.error('loadMedicines network error:', err);
+      toast('Could not reach server. Check AJAX_URL in medicine.js.', 'error');
+      renderTable([]);
+    }
+  };
+
+  /* ── Modal tabs ── */
+  const TABS = ['master', 'inventory'];
+  const switchTab = tabId => {
     activeTab = tabId;
     modalTabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
     tabPanels.forEach(p => p.classList.toggle('active', p.id === `tab-${tabId}`));
-
     const idx = TABS.indexOf(tabId);
-    btnTabPrev.style.display  = idx > 0              ? 'inline-flex' : 'none';
-    btnTabNext.style.display  = idx < TABS.length-1  ? 'inline-flex' : 'none';
-    saveBtn.style.display     = idx === TABS.length-1 ? 'inline-flex' : 'none';
+    btnTabPrev.style.display = idx > 0              ? 'inline-flex' : 'none';
+    btnTabNext.style.display = idx < TABS.length-1  ? 'inline-flex' : 'none';
+    saveBtn.style.display    = idx === TABS.length-1 ? 'inline-flex' : 'none';
   };
 
-  /* ── Validate per tab ── */
   const validateMaster = () => {
-    clearErrors();
-    let ok = true;
+    clearErrors(); let ok = true;
     const n = document.getElementById('medicine_name')?.value.trim();
     const c = document.getElementById('category')?.value;
     const u = document.getElementById('unit')?.value;
-
     if (!n) { if(errs.medicine_name) errs.medicine_name.textContent = 'Medicine name is required'; ok=false; }
     if (!c) { if(errs.category)      errs.category.textContent      = 'Category is required';      ok=false; }
     if (!u) { if(errs.unit)          errs.unit.textContent          = 'Unit is required';           ok=false; }
@@ -228,28 +254,18 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const validateInventory = () => {
-    clearErrors();
-    let ok = true;
+    clearErrors(); let ok = true;
     const q = parseFloat(qty?.value);
     const e = expDate?.value;
-
     if (!(q >= 0)) { if(errs.quantity)        errs.quantity.textContent        = 'Enter a valid quantity'; ok=false; }
     if (!e)        { if(errs.expiration_date)  errs.expiration_date.textContent = 'Expiration date required'; ok=false; }
     return ok;
   };
 
-  /* ── Modal Open/Close ── */
-  const openModal = () => {
-    modal.classList.add('show');
-    switchTab('master');
-  };
-
+  const openModal = () => { modal.classList.add('show'); switchTab('master'); };
   const closeModal = () => {
     modal.classList.remove('show');
-    form.reset();
-    clearErrors();
-    updateComputed();
-    switchTab('master');
+    form.reset(); clearErrors(); updateComputed(); switchTab('master');
   };
 
   const setLoading = on => {
@@ -259,52 +275,38 @@ document.addEventListener('DOMContentLoaded', () => {
       : '<i class="fa-solid fa-floppy-disk"></i> Save Medicine';
   };
 
-  /* ── Event Listeners ── */
-
+  /* ── Events ── */
   addBtn?.addEventListener('click', openModal);
-
   document.querySelectorAll('[data-close-modal]').forEach(b => b.addEventListener('click', closeModal));
   modal?.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 
-  /* Tab clicking */
   modalTabs.forEach(tab => tab.addEventListener('click', () => {
-    if (activeTab === 'master' && tab.dataset.tab === 'inventory') {
-      if (!validateMaster()) return;
-    }
+    if (activeTab === 'master' && tab.dataset.tab === 'inventory' && !validateMaster()) return;
     switchTab(tab.dataset.tab);
   }));
-
-  /* Next / Prev */
   btnTabNext?.addEventListener('click', () => {
     const idx = TABS.indexOf(activeTab);
     if (idx === 0 && !validateMaster()) return;
     if (idx < TABS.length - 1) switchTab(TABS[idx + 1]);
   });
-
   btnTabPrev?.addEventListener('click', () => {
     const idx = TABS.indexOf(activeTab);
     if (idx > 0) switchTab(TABS[idx - 1]);
   });
 
-  /* Year / Month */
   btnYearPrev?.addEventListener('click', () => { currentYear--;  updatePeriodUI(); });
   btnYearNext?.addEventListener('click', () => { currentYear++;  updatePeriodUI(); });
   monthTabs.forEach(tab => tab.addEventListener('click', () => {
-    currentMonth = parseInt(tab.dataset.month);
-    updatePeriodUI();
+    currentMonth = parseInt(tab.dataset.month); updatePeriodUI();
   }));
 
-  /* Filters */
-  searchInput?.addEventListener('input',  applyFilters);
+  searchInput?.addEventListener('input',   applyFilters);
   statusFilter?.addEventListener('change', applyFilters);
-
-  /* Computed fields */
   qty?.addEventListener('input',         updateComputed);
   unitCost?.addEventListener('input',    updateComputed);
   purchaseQty?.addEventListener('input', updateComputed);
   expDate?.addEventListener('change',    updateComputed);
 
-  /* Table row actions */
   medTableBody?.addEventListener('click', e => {
     const btn = e.target.closest('button[data-action]');
     if (!btn) return;
@@ -319,70 +321,60 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (action === 'deduct') {
       toast('Deduct stock — coming soon', 'warn');
     } else if (action === 'edit') {
-      toast('Edit — coming soon', 'success');
+      toast('Edit — coming soon', 'warn');
     }
   });
 
-  /* Form Submit */
+  /* ══════════════════════════════════════
+     FORM SUBMIT
+     ══════════════════════════════════════ */
   form?.addEventListener('submit', async e => {
     e.preventDefault();
     if (!validateInventory()) return;
-
     setLoading(true);
+
     const fd = new FormData(form);
-    const status = statusFrom(parseFloat(qty.value || 0), expDate.value);
-    fd.append('status', status);
+    fd.append('action', 'add');
+    fd.append('status', statusFrom(parseFloat(qty?.value || 0), expDate?.value));
 
     try {
-      const res  = await fetch('../../ajax/medicine/add_medicine.ajax.php', { method:'POST', body:fd });
+      const res = await fetch(AJAX_URL, { method: 'POST', body: fd });
+
+      /* Detect non-JSON response (PHP crash / wrong path) */
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        const rawText = await res.text();
+        console.error('Non-JSON response from server (add):', rawText);
+        toast('Server error — PHP is not returning JSON. Check the browser console for details.', 'error');
+        return;
+      }
+
       const json = await res.json();
 
       if (json.success) {
         toast(json.message || 'Medicine saved!', 'success');
-        medicines.unshift({
-          id:                Date.now(),
-          medicine_name:     fd.get('medicine_name'),
-          generic_name:      fd.get('generic_name'),
-          quantity:          parseInt(fd.get('quantity') || 0),
-          unit:              fd.get('unit'),
-          purchase_quantity: parseInt(fd.get('purchase_quantity') || 0),
-          ending_balance:    parseInt(fd.get('ending_balance') || fd.get('quantity') || 0),
-          expiration_date:   fd.get('expiration_date'),
-          status,
-        });
-        applyFilters();
         closeModal();
+        /* Reload from DB so table reflects the real saved data */
+        await loadMedicines();
       } else {
-        toast(json.message || 'Failed to save', 'error');
+        /* Show the exact PHP error message in the toast */
+        toast(json.message || 'Failed to save medicine', 'error');
+        console.error('Save medicine server error:', json.message);
       }
-    } catch {
-      /* Dev mode: just add locally */
-      medicines.unshift({
-        id:                Date.now(),
-        medicine_name:     fd.get('medicine_name') || 'New Medicine',
-        generic_name:      fd.get('generic_name')  || '',
-        quantity:          parseInt(fd.get('quantity') || 0),
-        unit:              fd.get('unit') || 'pcs',
-        purchase_quantity: parseInt(fd.get('purchase_quantity') || 0),
-        ending_balance:    parseInt(fd.get('quantity') || 0),
-        expiration_date:   fd.get('expiration_date') || '—',
-        status,
-      });
-      applyFilters();
-      toast('Medicine added (local mode)', 'success');
-      closeModal();
+    } catch (err) {
+      console.error('Save fetch error:', err);
+      toast('Network error — could not reach server', 'error');
     } finally {
       setLoading(false);
     }
   });
 
-  /* Export button */
   document.getElementById('btnExport')?.addEventListener('click', () => {
     toast('Export — coming soon', 'warn');
   });
 
   /* ── Init ── */
   updatePeriodUI();
-  renderTable(medicines);
   updateComputed();
+  loadMedicines();
 });
