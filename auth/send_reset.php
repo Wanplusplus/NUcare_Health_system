@@ -50,7 +50,14 @@ $update->execute();
 $update->close();
 
 // ── Build reset link ──────────────────────────────────────────────────────────
-$resetLink = 'http://localhost/NUcare_Health_system/auth/reset_password.php?token=' . urlencode($token);
+// Build reset link using the current server host (works for Laragon/local/reverse proxy)
+$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$basePath = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\'); // e.g. /NUcare_Health_system/auth
+// basePath points to /<app>/auth, so go one level up to /<app> and then /auth/reset_password.php
+$resetLink = $scheme . '://' . $host . dirname($basePath, 1) . '/auth/reset_password.php?token=' . urlencode($token);
+
+
 
 // ── Send email via PHPMailer ──────────────────────────────────────────────────
 $sent = sendResetEmail($email, $resetLink);

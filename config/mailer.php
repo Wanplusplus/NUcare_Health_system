@@ -10,7 +10,11 @@ function sendResetEmail(string $recipientEmail, string $resetLink): bool
 {
     $mail = new PHPMailer(true);
 
+    // Ensure we can see the real Gmail/SMTP rejection reason in logs
+    $mail->SMTPDebug = 0;
+
     try {
+
         // ── SMTP Configuration ────────────────────────────────────────────
         $mail->isSMTP();
         $mail->Host       = 'smtp.gmail.com';
@@ -75,7 +79,8 @@ function sendResetEmail(string $recipientEmail, string $resetLink): bool
 
     } catch (Exception $e) {
         error_log('Mailer Error: ' . $mail->ErrorInfo);
+        error_log('PHPMailer Exception: ' . $e->getMessage());
         return false;
     }
 }
-?>
+
