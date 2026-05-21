@@ -30,7 +30,8 @@ $studentId = $_SESSION['school_id'] ?? ($_SESSION['SchoolID'] ?? 'N/A');
 <div class="app-shell">
 
     <?php
-    $sidebarPath = __DIR__ . '/../../includes/sidebar_student.php';
+    $sidebarPath = __DIR__ . '/../../includes/sidebar_medical_staff.php';
+
     if (file_exists($sidebarPath)) {
         require_once $sidebarPath;
     }
@@ -40,7 +41,8 @@ $studentId = $_SESSION['school_id'] ?? ($_SESSION['SchoolID'] ?? 'N/A');
         <header class="page-header">
             <div>
                 <p class="breadcrumb">Home / Dashboard</p>
-                <h2>Student Dashboard</h2>
+                    <h2>Medical Staff Dashboard</h2>
+
                 <p class="page-description">
                     Welcome back, <?php echo htmlspecialchars($patientName); ?>.
                     Your schedule and medical records are available from the sidebar.
@@ -53,9 +55,10 @@ $studentId = $_SESSION['school_id'] ?? ($_SESSION['SchoolID'] ?? 'N/A');
 
         <div class="cards-grid">
             <article class="status-card">
-                <h3>Student ID</h3>
+                <h3>Staff ID</h3>
                 <p class="status-value" style="font-size: 26px;"><?php echo htmlspecialchars((string)$studentId); ?></p>
             </article>
+
 
             <article class="status-card">
                 <h3>Schedule</h3>

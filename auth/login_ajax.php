@@ -129,11 +129,24 @@ try {
 
     auditLog($userId, $schoolPersonId, 'login', 'auth', $school_id, null, $ip);
 
-    $redirect = '../modules/dashboard/student_dashboard.php';
+    $redirect = '../modules/dashboard/patient_dashboard.php';
     $roles = $_SESSION['Roles'] ?? [];
+
     if (is_array($roles) && array_intersect($roles, ['Admin', 'Super Admin']) !== []) {
         $redirect = '../modules/dashboard/admin_dashboard.php';
+    } else {
+        // Medical roles (promoted staff) go to medical_staff dashboard
+        if (
+            is_array($roles)
+            && array_intersect($roles, ['Doctor', 'Dentist', 'Nurse']) !== []
+        ) {
+            $redirect = '../modules/dashboard/medical_staff_dashboard.php';
+        } else {
+            // Default: patient view
+            $redirect = '../modules/dashboard/patient_dashboard.php';
+        }
     }
+
 
     echo json_encode([
         'status' => 'success',

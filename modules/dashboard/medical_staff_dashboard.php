@@ -1,0 +1,111 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+if (!isset($_SESSION['patient_id']) && !isset($_SESSION['UserID'])) {
+    header('Location: ../../auth/login.php');
+    exit;
+}
+
+// Redirect admins away from medical staff dashboard
+if (isset($_SESSION['Roles']) && is_array($_SESSION['Roles']) && array_intersect($_SESSION['Roles'], ['Admin', 'Super Admin']) !== []) {
+    header('Location: admin_dashboard.php');
+    exit;
+}
+
+$activeSidebarItem = 'dashboard';
+$patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NUCARE | Medical Staff Dashboard</title>
+    <link rel="icon" href="/NUcare_Health_system/assets/image/nucarelogo.png">
+    <link rel="stylesheet" href="../../assets/css/app.css">
+</head>
+<body>
+<div class="app-shell">
+
+    <?php
+    $sidebarPath = __DIR__ . '/../../includes/sidebar_medical_staff.php';
+    if (file_exists($sidebarPath)) {
+        require_once $sidebarPath;
+    }
+    ?>
+
+    <main class="main-content">
+        <header class="page-header">
+            <div>
+                <p class="breadcrumb">Home / Dashboard</p>
+                <h2>Medical Staff Dashboard</h2>
+                <p class="page-description">
+                    Welcome back, <?php echo htmlspecialchars($patientName); ?>.
+                    Access your clinical modules from the sidebar.
+                </p>
+            </div>
+            <div class="header-actions">
+                <a href="../../auth/logout.php" class="header-button outline">Logout</a>
+            </div>
+        </header>
+
+        <div class="cards-grid">
+            <article class="status-card">
+                <h3>Staff Role</h3>
+                <p class="status-value" style="font-size: 26px;">Medical</p>
+            </article>
+
+            <article class="status-card">
+                <h3>Consultation</h3>
+                <p class="status-value" style="font-size: 26px;">Available</p>
+            </article>
+
+            <article class="status-card">
+                <h3>Records</h3>
+                <p class="status-value" style="font-size: 26px;">Available</p>
+            </article>
+
+            <article class="status-card">
+                <h3>Schedule</h3>
+                <p class="status-value" style="font-size: 26px;">Open</p>
+            </article>
+        </div>
+
+        <div class="content-grid">
+            <div class="panel-card">
+                <div class="panel-card-header">
+                    <h3>Quick Access</h3>
+                </div>
+                <div class="panel-card-body">
+                    <p>Shortcuts to the modules typically used by medical staff.</p>
+                    <div class="action-list">
+                        <a href="../consultation/consultation.php" class="action-pill">Consultation</a>
+                        <a href="../records/records.php" class="action-pill">Records</a>
+                        <a href="../medicine/medicine.php" class="action-pill">Medicine</a>
+                        <a href="../schedule/schedule.php" class="action-pill">Schedule</a>
+                        <a href="../../auth/logout.php" class="action-pill">Logout</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-card accent-card">
+                <div class="panel-card-header">
+                    <h3>Medical Staff Portal</h3>
+                </div>
+                <div class="panel-card-body">
+                    <p>
+                        This portal is intended for medical staff (Doctor/Dentist/Nurse) after admin promotion.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+</div>
+<script src="../../assets/js/app.js"></script>
+</body>
+</html>
+

@@ -24,7 +24,8 @@ requireModule('Reports', 'access');
 <div class="app-shell">
 
     <?php
-    $sidebarPath = __DIR__ . '/../../includes/sidebar.php';
+    $sidebarPath = __DIR__ . '/../../includes/sidebar_medical_staff.php';
+
     if (file_exists($sidebarPath)) {
         require_once $sidebarPath;
     }
