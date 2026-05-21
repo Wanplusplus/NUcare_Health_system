@@ -271,6 +271,229 @@ requireModule('Medicine', 'access');
 
 </div>
 
+<!-- ══════════════════════════════════════
+     ADD MEDICINE MODAL
+     ══════════════════════════════════════ -->
+
+<!-- ADD MEDICINE MODAL -->
+<div class="modal-overlay" id="addMedicineModal">
+  <div class="modal-box">
+
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <i class="fa-solid fa-pills"></i>
+        <div>
+          <h3 class="modal-title">Add Medicine</h3>
+          <p class="modal-subtitle">Step through each section to complete the entry</p>
+        </div>
+      </div>
+      <button class="modal-close" data-close-modal type="button">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Modal Tabs -->
+    <div class="modal-tabs">
+      <button class="modal-tab active" data-tab="master" type="button">
+        <i class="fa-solid fa-book-medical"></i>
+        <span>1. Medicine Details</span>
+      </button>
+      <button class="modal-tab" data-tab="inventory" type="button">
+        <i class="fa-solid fa-boxes-stacking"></i>
+        <span>2. Inventory / Batch</span>
+      </button>
+    </div>
+
+    <!-- Form -->
+    <form id="addMedicineForm" novalidate>
+
+      <div class="modal-body">
+
+        <!-- ── TAB 1: Medicine Master ── -->
+        <div class="tab-panel active" id="tab-master">
+
+          <div class="form-notice info">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>This registers the medicine in the <strong>master list</strong>. It does <em>not</em> add stock — proceed to the next tab for inventory.</span>
+          </div>
+
+          <div class="form-grid">
+
+            <div class="form-group">
+              <label for="medicine_name">Medicine / Brand Name <span class="req">*</span></label>
+              <input type="text" id="medicine_name" name="medicine_name" placeholder="e.g. Biogesic, Amoxicillin">
+              <span class="form-err" id="err_medicine_name"></span>
+            </div>
+
+            <div class="form-group">
+              <label for="generic_name">Generic Name</label>
+              <input type="text" id="generic_name" name="generic_name" placeholder="e.g. Paracetamol">
+            </div>
+
+            <div class="form-group">
+              <label for="category">Category <span class="req">*</span></label>
+              <select id="category" name="category">
+                <option value="">Select category…</option>
+                <option>Analgesic / Pain Reliever</option>
+                <option>Antibiotic</option>
+                <option>Antihistamine</option>
+                <option>Antiviral</option>
+                <option>Vitamin / Supplement</option>
+                <option>Antiseptic / Disinfectant</option>
+                <option>First Aid Supply</option>
+                <option>Dental Supply</option>
+                <option>Other</option>
+              </select>
+              <span class="form-err" id="err_category"></span>
+            </div>
+
+            <div class="form-group">
+              <label for="dosage">Dosage / Strength</label>
+              <input type="text" id="dosage" name="dosage" placeholder="e.g. 500 mg, 250 mg/5 mL">
+            </div>
+
+            <div class="form-group">
+              <label for="unit">Unit Type <span class="req">*</span></label>
+              <select id="unit" name="unit">
+                <option value="">Select unit…</option>
+                <option>Tablet</option>
+                <option>Capsule</option>
+                <option>Bottle</option>
+                <option>Sachet</option>
+                <option>Ampule</option>
+                <option>Vial</option>
+                <option>Piece</option>
+                <option>Pack</option>
+                <option>Roll</option>
+                <option>Box</option>
+              </select>
+              <span class="form-err" id="err_unit"></span>
+            </div>
+
+            <div class="form-group form-group--full">
+              <label for="med_description">Description / Notes</label>
+              <textarea id="med_description" name="description" rows="2" placeholder="Optional notes about this medicine…"></textarea>
+            </div>
+
+          </div>
+
+          <div class="form-access-note">
+            <i class="fa-solid fa-shield-halved"></i>
+            Can manage: <strong>Admin · Doctor · Dentist · Nurse</strong>
+          </div>
+
+        </div>
+
+        <!-- ── TAB 2: Inventory / Batch ── -->
+        <div class="tab-panel" id="tab-inventory">
+
+          <div class="form-notice info">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Record the <strong>stock-in batch</strong>. One medicine can have multiple batches with different expiry dates.</span>
+          </div>
+
+          <div class="form-grid">
+
+            <div class="form-group">
+              <label for="batch_code">Batch / Lot Code</label>
+              <input type="text" id="batch_code" name="batch_code" placeholder="e.g. A1, LOT-2025-08">
+            </div>
+
+            <div class="form-group">
+              <label for="quantity">Quantity Received <span class="req">*</span></label>
+              <input type="number" id="quantity" name="quantity" min="0" placeholder="0">
+              <span class="form-err" id="err_quantity"></span>
+            </div>
+
+            <div class="form-group">
+              <label for="purchase_quantity">Qty of Purchase / Delivery</label>
+              <input type="number" id="purchase_quantity" name="purchase_quantity" min="0" placeholder="0">
+            </div>
+
+            <div class="form-group">
+              <label for="unit_cost">Unit Cost (₱)</label>
+              <input type="number" id="unit_cost" name="unit_cost" min="0" step="0.01" placeholder="0.00">
+            </div>
+
+            <div class="form-group">
+              <label for="total_cost">Total Cost (₱)</label>
+              <input type="text" id="total_cost" name="total_cost" readonly tabindex="-1" placeholder="Auto-calculated">
+            </div>
+
+            <div class="form-group">
+              <label for="ending_balance">Ending Balance</label>
+              <input type="text" id="ending_balance" name="ending_balance" readonly tabindex="-1" placeholder="Mirrors quantity">
+            </div>
+
+            <div class="form-group">
+              <label for="expiration_date">Expiration Date <span class="req">*</span></label>
+              <input type="date" id="expiration_date" name="expiration_date">
+              <span class="form-err" id="err_expiration_date"></span>
+            </div>
+
+            <div class="form-group">
+              <label for="supplier">Supplier / Source</label>
+              <input type="text" id="supplier" name="supplier" placeholder="e.g. PhilHealth Supply, DOH">
+            </div>
+
+            <div class="form-group form-group--full">
+              <label>Stock Status Preview</label>
+              <div class="status-preview" id="statusPreview">
+                <span class="s-pill ok"><i class="fa-solid fa-circle-check"></i> Fill in quantity &amp; expiry to preview</span>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="form-audit-note">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>Saving will automatically log a <strong>Stock In (+)</strong> entry in the inventory audit trail.</span>
+          </div>
+
+          <div class="form-access-note">
+            <i class="fa-solid fa-shield-halved"></i>
+            Primarily managed by: <strong>Nurse · Doctor · Dentist · Admin</strong>
+          </div>
+
+        </div>
+
+      </div><!-- /.modal-body -->
+
+      <!-- Modal Footer -->
+      <div class="modal-footer">
+
+        <button type="button" class="btn btn-outline" data-close-modal>
+          Cancel
+        </button>
+
+        <div class="modal-footer-right">
+
+          <button type="button" class="btn btn-outline" id="btnTabPrev" style="display:none;">
+            <i class="fa-solid fa-arrow-left"></i> Back
+          </button>
+
+          <button type="button" class="btn btn-accent" id="btnTabNext">
+            Next <i class="fa-solid fa-arrow-right"></i>
+          </button>
+
+          <button type="submit" class="btn btn-navy" id="saveMedicineBtn" style="display:none;">
+            <i class="fa-solid fa-floppy-disk"></i>
+            Save Medicine
+          </button>
+
+        </div>
+
+      </div>
+
+    </form>
+
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toastWrap" class="toast-wrap"></div>
+
 <!-- Main App JS -->
 <script src="../../assets/js/app.js"></script>
 <script src="../../assets/js/medicine.js"></script>
