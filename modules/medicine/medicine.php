@@ -92,7 +92,8 @@ $activeSidebarItem = 'medicine';
 
                 <h2>
                     <i class="fa-solid fa-pills"></i>
-                    Medicine Inventory
+                    Medicine
+
                 </h2>
 
                 <div class="med-title-actions">

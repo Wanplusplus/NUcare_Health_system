@@ -44,27 +44,24 @@
   </div>
 
   <nav class="nav-menu">
-    <a class="nav-item" href="#">
+    <a class="nav-item" href="/NUcare_Health_system/modules/dashboard/admin_dashboard.php">
       <span class="nav-dot"></span>Dashboard
     </a>
-    <a class="nav-item" href="#">
+    <a class="nav-item" href="/NUcare_Health_system/admin/user_management.php">
       <span class="nav-dot"></span>User Management
     </a>
-    <a class="nav-item" href="#">
+    <a class="nav-item" href="/NUcare_Health_system/admin/rbac_management.php">
       <span class="nav-dot"></span>RBAC Management
     </a>
-    <a class="nav-item" href="#">
+    <a class="nav-item" href="/NUcare_Health_system/admin/reports.php">
       <span class="nav-dot"></span>Reports
     </a>
-    <a class="nav-item" href="#">
+    <a class="nav-item" href="/NUcare_Health_system/admin/audit_logs.php">
       <span class="nav-dot"></span>Audit Logs
     </a>
-    <a class="nav-item" href="#">
-      <span class="nav-dot"></span>Medicine Inventory
-    </a>
-    <a class="nav-item" href="#">
-      <span class="nav-dot"></span>Schedule Monitoring
-    </a>
+
+
+
   </nav>
 
   <div class="sidebar-footer">
