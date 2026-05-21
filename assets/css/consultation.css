@@ -44,14 +44,16 @@
 .consult-page {
     font-family: 'Nunito', sans-serif;
     color: var(--text);
-    background: #f0f4fb;
+    background: #dce9ff;
     min-height: 100%;
     padding: 28px 32px;
     display: flex;
     flex-direction: column;
     gap: 20px;
     box-sizing: border-box;
-    max-width: 1100px;
+
+    width: 100%;
+    max-width: 100%;
 }
 
 /* ── Page Header ── */
@@ -686,13 +688,19 @@ input.error, select.error, textarea.error {
     .patient-banner-meta { grid-template-columns: 1fr 1fr; }
 }
 
-.main-content {
+.app-shell {
     display: flex;
-    justify-content: center;   /* centers horizontally */
+    width: 100%;
+}
+
+.main-content {
+    flex: 1;
+    width: 100%;
     padding: 24px;
+    box-sizing: border-box;
 }
 
 .consult-page {
     width: 100%;
-    max-width: 1400px; /* adjust size */
+    max-width: 100%;
 }

@@ -767,3 +767,13 @@
     .form-grid { grid-template-columns: 1fr; }
     .modal-tab span { display: none; }
 }
+.main-content {
+    width: 100%;
+    padding: 24px;
+    box-sizing: border-box;
+}
+
+.medicine-page {
+    width: 100%;
+    max-width: 100%;
+}

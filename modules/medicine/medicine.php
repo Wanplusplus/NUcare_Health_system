@@ -10,6 +10,7 @@ $patientName = $_SESSION['patient_name'] ?? 'User';
 
 require_once __DIR__ . '/../../includes/module_guard.php';
 requireModule('Medicine', 'access');
+$activeSidebarItem = 'medicine';
 
 ?>
 <!DOCTYPE html>
