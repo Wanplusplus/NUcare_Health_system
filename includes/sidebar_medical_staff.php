@@ -76,8 +76,8 @@ $activeSidebarItem = $activeSidebarItem ?? 'dashboard';
     <a class="nav-item <?php echo $activeSidebarItem === 'schedule' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/schedule/schedule.php">
       <span class="nav-dot"></span>Schedule
     </a>
-    <a class="nav-item" href="/NUcare_Health_system/auth/logout.php">
-      <span class="nav-dot"></span>Logout
+   <a class="nav-item <?php echo $activeSidebarItem === 'settings' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/settings/settings.php">
+      <span class="nav-dot"></span>Settings
     </a>
   </nav>
 
