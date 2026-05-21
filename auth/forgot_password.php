@@ -43,8 +43,8 @@ if (isset($_SESSION['patient_id'])) {
             </div>
 
             <div class="card-body">
-                <h2 class="form-title">Forgot Password?</h2>
-                <p class="form-desc">
+<h2 class="form-title">Forgot Password?</h2>
+<p class="form-desc">
                     Enter your registered Gmail / Email address and we will send you a reset link.
                 </p>
 

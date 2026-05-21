@@ -1,0 +1,4 @@
+Debug note: reset flow uses users.ResetToken/TokenExpiry and users.PasswordHash.
+login uses school_people.SchoolID join users.SchoolPersonID and password_verify against users.PasswordHash.
+If login fails after reset edits, verify reset endpoints actually update correct UserID and column names.
+

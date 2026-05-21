@@ -21,6 +21,7 @@ function sendResetEmail(string $recipientEmail, string $resetLink): bool
         $mail->SMTPAuth   = true;
         $mail->Username   = 'seanjhanz111@gmail.com';       // ← Your Gmail here
         $mail->Password   = 'ibwl otru owny rvtc';       // ← Your 16-char App Password
+
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = 587;
 
@@ -39,15 +40,18 @@ function sendResetEmail(string $recipientEmail, string $resetLink): bool
             <style>
                 body { font-family: 'Segoe UI', Arial, sans-serif; background: #f1f5f9; margin: 0; padding: 30px; }
                 .wrapper { max-width: 520px; margin: auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,.10); }
-                .header { background: linear-gradient(135deg, #0f766e, #0d9488); padding: 36px 32px; text-align: center; }
+                .header { background: linear-gradient(135deg, #0ea5e9, #0ea5e9); padding: 36px 32px; text-align: center; }
+
                 .header img { width: 52px; margin-bottom: 10px; }
                 .header h1 { margin: 0; color: #fff; font-size: 22px; letter-spacing: 2px; }
                 .header p { margin: 4px 0 0; color: #ccfbf1; font-size: 13px; }
                 .body { padding: 36px 32px; }
                 .body h2 { color: #0f172a; font-size: 20px; margin: 0 0 12px; }
                 .body p { color: #475569; font-size: 15px; line-height: 1.7; margin: 0 0 20px; }
-                .btn { display: inline-block; background: linear-gradient(135deg, #0f766e, #0d9488); color: #ffffff !important; padding: 14px 36px; border-radius: 50px; text-decoration: none; font-weight: 700; font-size: 15px; letter-spacing: .5px; }
-                .notice { background: #f8fafc; border-left: 4px solid #0f766e; border-radius: 8px; padding: 14px 18px; margin-top: 24px; font-size: 13px; color: #64748b; }
+                .btn { display: inline-block; background: linear-gradient(135deg, #0ea5e9, #0ea5e9); color: #ffffff !important; padding: 14px 36px; border-radius: 50px; text-decoration: none; font-weight: 700; font-size: 15px; letter-spacing: .5px; }
+
+                .notice { background: #f8fafc; border-left: 4px solid #0ea5e9; border-radius: 8px; padding: 14px 18px; margin-top: 24px; font-size: 13px; color: #64748b; }
+
                 .footer { text-align: center; padding: 20px; background: #f8fafc; font-size: 12px; color: #94a3b8; }
             </style>
         </head>

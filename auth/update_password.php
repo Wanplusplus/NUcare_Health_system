@@ -30,11 +30,11 @@ if ($new_password !== $confirm_password) {
     exit;
 }
 
-// Fetch token record first
+// Fetch token record first (users table)
 $stmt = $conn->prepare(
-    "SELECT PatientID, token_expiry
-     FROM patients
-     WHERE reset_token = ?
+    "SELECT UserID, TokenExpiry
+     FROM users
+     WHERE ResetToken = ?
      LIMIT 1"
 );
 
@@ -53,11 +53,11 @@ if ($result->num_rows === 0) {
     exit;
 }
 
-$patient = $result->fetch_assoc();
+$user = $result->fetch_assoc();
 $stmt->close();
 
 // Check expiry in PHP
-if (strtotime($patient['token_expiry']) < time()) {
+if (strtotime($user['TokenExpiry']) < time()) {
     echo json_encode(['status' => 'error', 'message' => 'Invalid or expired reset link.']);
     exit;
 }
@@ -66,9 +66,9 @@ if (strtotime($patient['token_expiry']) < time()) {
 $hashedPassword = password_hash($new_password, PASSWORD_DEFAULT);
 
 $update = $conn->prepare(
-    "UPDATE patients
-     SET Password = ?, reset_token = NULL, token_expiry = NULL
-     WHERE PatientID = ?"
+    "UPDATE users
+     SET PasswordHash = ?, ResetToken = NULL, TokenExpiry = NULL
+     WHERE UserID = ?"
 );
 
 if (!$update) {
@@ -76,13 +76,14 @@ if (!$update) {
     exit;
 }
 
-$update->bind_param('si', $hashedPassword, $patient['PatientID']);
+$update->bind_param('si', $hashedPassword, $user['UserID']);
+
 
 if ($update->execute()) {
     echo json_encode([
         'status' => 'success',
         'message' => 'Password updated! Redirecting to login...',
-        'redirect' => 'login.php'
+        'redirect' => '../auth/login.php'
     ]);
 } else {
     echo json_encode(['status' => 'error', 'message' => 'Failed to update password. Please try again.']);
