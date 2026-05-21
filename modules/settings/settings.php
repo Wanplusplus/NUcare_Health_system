@@ -33,7 +33,7 @@ $activeSidebarItem = 'settings';
             --card:          #ffffff;
             --text:          #1e293b;
             --muted:         #64748b;
-            --border:        #e2e8f0;
+            --border:        #e2e8f0;   
             --error:         #dc2626;
             --radius:        16px;
         }
