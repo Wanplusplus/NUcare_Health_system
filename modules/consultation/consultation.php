@@ -47,11 +47,7 @@ $activeSidebarItem = 'consultation';
                 <p class="page-desc">Search for a patient, review details, and record consultation data in one clean workspace.</p>
             </div>
             <div class="page-header-right">
-                
-                <a href="../../auth/logout.php" class="btn-logout">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                    Logout
-                </a>
+                <!-- Logout removed per requirements -->
             </div>
         </div>
 
@@ -102,18 +98,6 @@ $activeSidebarItem = 'consultation';
                         <span class="meta-val" id="cpcSex">—</span>
                     </div>
                     <div class="meta-field">
-                        <span class="meta-label">Birthday</span>
-                        <span class="meta-val" id="cpcBday">—</span>
-                    </div>
-                    <div class="meta-field">
-                        <span class="meta-label">Program</span>
-                        <span class="meta-val" id="cpcProgram">—</span>
-                    </div>
-                    <div class="meta-field">
-                        <span class="meta-label">Contact No.</span>
-                        <span class="meta-val" id="cpcTel">—</span>
-                    </div>
-                    <div class="meta-field">
                         <span class="meta-label">Loaded At</span>
                         <span class="meta-val" id="cpcTime">—</span>
                     </div>
@@ -123,6 +107,25 @@ $activeSidebarItem = 'consultation';
 
         <!-- ══ CONSULTATION FORM ══ -->
         <div class="consult-form-outer">
+            <!-- Transaction confirmation modal (history exists) -->
+            <div id="txConfirmModal" class="modal" style="display:none;">
+                <div class="modal-overlay"></div>
+                <div class="modal-card">
+                    <div class="modal-head">
+                        <div class="modal-title">Patient found</div>
+                        <button type="button" class="modal-close" onclick="closeTxConfirm()" aria-label="Close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p id="txConfirmText">Do you want to add another transaction?</p>
+                        <div class="modal-sub">Previous consultations will remain preserved.</div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-modal btn-yes" onclick="confirmAddAnother(true)">Yes</button>
+                        <button type="button" class="btn-modal btn-no" onclick="confirmAddAnother(false)">No</button>
+                    </div>
+                </div>
+            </div>
+
             <div id="disabledOverlay" class="show">
                 <i class="fa-solid fa-lock"></i>
                 Search for a patient first to activate the form
@@ -135,7 +138,8 @@ $activeSidebarItem = 'consultation';
                   class="consult-form-area disabled"
                   id="consultFormArea">
 
-                <input type="hidden" id="consultPatientID" name="patient_id">
+                <input type="hidden" id="consultPatientID" name="school_person_id">
+                <input type="hidden" id="consultationID" name="consultation_id" value="">
 
                 <!-- Vitals -->
                 <div class="consult-card">
@@ -262,13 +266,13 @@ $activeSidebarItem = 'consultation';
 
                     <div class="pdf-upload-zone" id="pdfUploadZone">
                         <input type="file"
-                               id="consultPdfFile"
-                               name="consultation_pdf"
-                               accept="application/pdf"
-                               onchange="handlePdfSelect(this)">
+                               id="consultAttachmentFile"
+                               name="consultation_attachment"
+                               accept="image/png,image/jpeg,application/pdf"
+                               onchange="handleAttachmentSelect(this)">
                         <i class="fa-solid fa-file-arrow-up pdf-upload-icon"></i>
-                        <span class="pdf-upload-label" id="pdfUploadLabel">Click to upload or drag &amp; drop a PDF</span>
-                        <span class="pdf-upload-hint">PDF format · Maximum 10 MB</span>
+                        <span class="pdf-upload-label" id="pdfUploadLabel">Click to upload or drag &amp; drop JPG/PNG/PDF</span>
+                        <span class="pdf-upload-hint">Allowed: JPG, PNG, PDF · Maximum 50 MB</span>
                     </div>
 
                     <div class="pdf-file-preview" id="pdfFilePreview">
@@ -277,7 +281,7 @@ $activeSidebarItem = 'consultation';
                             <div class="pdf-file-name" id="pdfFileName">—</div>
                             <div class="pdf-file-size" id="pdfFileSize">—</div>
                         </div>
-                        <button type="button" class="btn-remove-pdf" onclick="removePdf()" title="Remove file">
+                        <button type="button" class="btn-remove-pdf" onclick="removeAttachment()" title="Remove file">
                             <i class="fa-solid fa-xmark"></i>
                         </button>
                     </div>
@@ -288,7 +292,30 @@ $activeSidebarItem = 'consultation';
                     </div>
                 </div>
 
-                <!-- Actions -->
+                    <!-- Consultation History -->
+                    <div class="consult-card consult-history-card">
+                        <div class="card-section-label">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                            Consultation History
+                        </div>
+                        <div class="history-table-wrap">
+                            <table class="history-table" id="consultHistoryTable">
+                                <thead>
+                                    <tr>
+                                        <th>School ID</th>
+                                        <th>Sex</th>
+                                        <th>Transaction #</th>
+                                        <th>Created At</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="consultHistoryTbody">
+                                    <tr><td colspan="4" class="muted">Search for a patient to view history.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
                 <div id="consultFormActions" class="consult-actions">
                     <button type="submit" class="btn-save-consult">
                         <i class="fa-solid fa-floppy-disk"></i>

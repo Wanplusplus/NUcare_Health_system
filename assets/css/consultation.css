@@ -1,7 +1,6 @@
 /* =============================================
-   NUCARE — Consultation Page
-   Matches reference screenshot aesthetic:
-   Navy sidebar, clean white cards, blue accents
+   NUCARE — Consultation Page (Original styles)
+   NOTE: This file was restored to prevent UI regressions.
    ============================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Poppins:wght@500;600;700;800&display=swap');
@@ -99,42 +98,6 @@
     flex-shrink: 0;
     padding-top: 4px;
 }
-
-.btn-new-patient {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 9px 20px;
-    background: var(--navy);
-    color: var(--white);
-    border: none;
-    border-radius: var(--r-xl);
-    font-family: 'Poppins', sans-serif;
-    font-size: .8rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background .15s, transform .12s;
-    white-space: nowrap;
-}
-.btn-new-patient:hover { background: var(--navy-light); transform: translateY(-1px); }
-
-.btn-logout {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 9px 18px;
-    background: var(--white);
-    color: var(--navy);
-    border: 1.5px solid var(--gray-200);
-    border-radius: var(--r-xl);
-    font-family: 'Poppins', sans-serif;
-    font-size: .8rem;
-    font-weight: 700;
-    text-decoration: none;
-    transition: border-color .15s, background .15s;
-    white-space: nowrap;
-}
-.btn-logout:hover { border-color: var(--navy); background: var(--gray-50); }
 
 /* ── Cards ── */
 .consult-card {
@@ -332,6 +295,7 @@
     flex-direction: column;
     gap: 20px;
 }
+
 .consult-form-area.disabled {
     pointer-events: none;
     user-select: none;
@@ -426,7 +390,7 @@ input.error, select.error, textarea.error {
 }
 .form-group--full { grid-column: 1 / -1; }
 
-/* ── Medicine Entries ── */
+/* ── Medicines ── */
 .med-entry {
     display: grid;
     grid-template-columns: 1fr 140px 36px;
@@ -517,7 +481,7 @@ input.error, select.error, textarea.error {
 }
 .btn-clear-consult:hover { border-color: var(--gray-400); color: var(--gray-700); }
 
-/* ── PDF Upload ── */
+/* ── PDF/Attachment Upload ── */
 .pdf-upload-zone {
     border: 2px dashed var(--gray-300);
     border-radius: var(--r-lg);
@@ -653,7 +617,7 @@ input.error, select.error, textarea.error {
 }
 .pdf-err-msg.show { display: flex; }
 
-/* ── Toast ── */
+/* Toast */
 .consult-toast {
     position: fixed;
     bottom: 24px;
@@ -672,7 +636,40 @@ input.error, select.error, textarea.error {
 .consult-toast.success    { background: var(--success-bg); color: var(--success); border: 1.5px solid #bbf7d0; opacity:1; transform:translateY(0); }
 .consult-toast.error-toast{ background: var(--danger-bg);  color: var(--danger);  border: 1.5px solid #fecaca; opacity:1; transform:translateY(0); }
 
-/* ── Responsive ── */
+/* Transaction modal */
+.modal{position:fixed; inset:0; z-index:9999; display:none;}
+.modal-overlay{position:absolute; inset:0; background:rgba(15,23,42,.55); backdrop-filter:blur(4px);}
+.modal-card{
+    position:relative;
+    width:100%;
+    max-width:520px;
+    margin:8vh auto 0;
+    background:var(--white);
+    border-radius:var(--r-xl);
+    box-shadow:var(--shadow-md);
+    border:1px solid rgba(26,26,110,.08);
+    overflow:hidden;
+}
+.modal-head{display:flex; align-items:center; justify-content:space-between; padding:16px 18px; background:linear-gradient(90deg,var(--blue-50),#fff);}
+.modal-title{font-family:'Poppins',sans-serif; font-weight:900; color:var(--navy);}
+.modal-close{border:none; background:transparent; font-size:24px; cursor:pointer; color:var(--navy);}
+.modal-body{padding:14px 18px 4px;}
+.modal-body p{margin:0; font-family:'Nunito',sans-serif; font-weight:700; color:#0f172a;}
+.modal-sub{margin-top:8px; font-size:.82rem; color:var(--gray-500);}
+.modal-actions{display:flex; gap:12px; padding:16px 18px 18px; justify-content:flex-end;}
+.btn-modal{padding:10px 18px; border-radius:999px; font-family:'Poppins',sans-serif; font-weight:800; border:1.5px solid transparent; cursor:pointer;}
+.btn-yes{background:var(--navy); color:#fff;}
+.btn-no{background:var(--white); color:var(--navy); border-color:var(--gray-200);}
+
+/* Consultation history table */
+.consult-history-card{margin-top:10px;}
+.history-table-wrap{overflow:auto;}
+.history-table{width:100%; border-collapse:collapse; min-width:520px;}
+.history-table th{background:var(--blue-50); color:var(--navy); text-align:left; font-size:.75rem; padding:10px 12px; font-family:'Poppins',sans-serif; font-weight:900; text-transform:uppercase; letter-spacing:.05em;}
+.history-table td{padding:11px 12px; border-top:1px solid rgba(226,232,240,.9); font-family:'Nunito',sans-serif; font-weight:700; color:#0f172a; font-size:.9rem;}
+.history-table .muted{color:var(--gray-500); font-weight:700;}
+
+/* Responsive */
 @media (max-width: 860px) {
     .consult-page { padding: 16px 14px; }
     .vitals-grid,
@@ -704,3 +701,4 @@ input.error, select.error, textarea.error {
     width: 100%;
     max-width: 100%;
 }
+
