@@ -19,12 +19,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$school_id = trim((string)($_POST['username'] ?? ''));
+$schoolId = trim((string)($_POST['username'] ?? ''));
 $loginPassword = (string)($_POST['password'] ?? '');
-$demoPassword = 'DemoPass123!';
+// (debug variable removed)
 $ip = $_SERVER['REMOTE_ADDR'] ?? null;
 
-if ($school_id === '' || $loginPassword === '') {
+if ($schoolId === '' || $loginPassword === '') {
     echo json_encode([
         'status' => 'error',
         'message' => 'Please enter your School ID and password.',
@@ -35,17 +35,47 @@ if ($school_id === '' || $loginPassword === '') {
 $pdo = require __DIR__ . '/../config/db_pdo.php';
 
 try {
+    // Normalize input for SchoolID matching
+    $debugUserInput = $schoolId;
+
+
     $personStmt = $pdo->prepare(
         "SELECT SchoolPersonID, SchoolID, Email, PersonType, FirstName, LastName
          FROM school_people
          WHERE SchoolID = ?
          LIMIT 1"
     );
-    $personStmt->execute([$school_id]);
+
+    $person = null;
+    $usedFallbackSchoolIdMatch = false;
+
+    $personStmt->execute([$schoolId]);
     $person = $personStmt->fetch();
 
     if (!$person) {
-        auditLog(null, null, 'failed_login', 'auth', $school_id, 'SchoolID not found in school_people', $ip);
+        // Try a normalized match (trim + case-insensitive). This fixes “exists in users but not found via SchoolID exact match”.
+        $fallbackStmt = $pdo->prepare(
+            "SELECT SchoolPersonID, SchoolID, Email, PersonType, FirstName, LastName
+             FROM school_people
+             WHERE LOWER(TRIM(SchoolID)) = LOWER(TRIM(?))
+             LIMIT 1"
+        );
+
+        $fallbackStmt->execute([$debugUserInput]);
+        $person = $fallbackStmt->fetch();
+
+        if ($person) {
+            $usedFallbackSchoolIdMatch = true;
+            auditLog(null, null, 'login_debug_school_match', 'auth', $schoolId, 'matched via LOWER(TRIM(SchoolID))', $ip);
+        }
+    }
+
+    if (!$usedFallbackSchoolIdMatch && $person) {
+        auditLog(null, null, 'login_debug_school_match', 'auth', $schoolId, 'matched via exact SchoolID', $ip);
+    }
+
+    if (!$person) {
+        auditLog(null, null, 'failed_login', 'auth', $schoolId, 'SchoolID not found in school_people', $ip);
         echo json_encode([
             'status' => 'error',
             'message' => 'Invalid School ID or password.',
@@ -53,8 +83,7 @@ try {
         exit;
     }
 
-    $personType = (string)$person['PersonType'];
-    $isStudent = $personType === 'Student';
+
 
     $userStmt = $pdo->prepare(
         "SELECT UserID, SchoolPersonID, PasswordHash, IsActive
@@ -65,35 +94,8 @@ try {
     $userStmt->execute([(int)$person['SchoolPersonID']]);
     $user = $userStmt->fetch();
 
-    if ((!$user || (int)$user['IsActive'] !== 1) && $isStudent && $loginPassword === $demoPassword) {
-        $hash = password_hash($demoPassword, PASSWORD_DEFAULT);
-
-        $upsertUserStmt = $pdo->prepare(
-            "INSERT INTO users (SchoolPersonID, PasswordHash, IsActive)
-             VALUES (?, ?, 1)
-             ON DUPLICATE KEY UPDATE PasswordHash = VALUES(PasswordHash), IsActive = VALUES(IsActive)"
-        );
-        $upsertUserStmt->execute([(int)$person['SchoolPersonID'], $hash]);
-
-        $studentRoleStmt = $pdo->prepare("SELECT RoleID FROM roles WHERE RoleName = 'Student' LIMIT 1");
-        $studentRoleStmt->execute();
-        $studentRole = $studentRoleStmt->fetch();
-
-        $userStmt->execute([(int)$person['SchoolPersonID']]);
-        $user = $userStmt->fetch();
-
-        if ($user && $studentRole) {
-            $roleLinkStmt = $pdo->prepare(
-                "INSERT INTO user_roles (UserID, RoleID)
-                 VALUES (?, ?)
-                 ON DUPLICATE KEY UPDATE RoleID = VALUES(RoleID)"
-            );
-            $roleLinkStmt->execute([(int)$user['UserID'], (int)$studentRole['RoleID']]);
-        }
-    }
-
     if (!$user || (int)$user['IsActive'] !== 1) {
-        auditLog(null, (int)$person['SchoolPersonID'], 'failed_login', 'auth', $school_id, 'User not found or inactive', $ip);
+        auditLog(null, (int)$person['SchoolPersonID'], 'failed_login', 'auth', $schoolId, 'User not found or inactive', $ip);
         echo json_encode([
             'status' => 'error',
             'message' => 'Invalid School ID or password.',
@@ -101,70 +103,90 @@ try {
         exit;
     }
 
-    if (empty($user['PasswordHash']) || !password_verify($loginPassword, (string)$user['PasswordHash'])) {
-        auditLog((int)$user['UserID'], (int)$person['SchoolPersonID'], 'failed_login', 'auth', $school_id, 'Password mismatch', $ip);
+    // HARD debug: verify hashing format mismatch (no plaintext)
+    $computedHash = hash('sha256', $loginPassword);
+    $storedHash = (string)($user['PasswordHash'] ?? '');
+
+    auditLog(
+        (int)$user['UserID'],
+        (int)$person['SchoolPersonID'],
+        'login_hash_debug',
+        'auth',
+        $schoolId,
+        'storedLen=' . strlen($storedHash) . '; storedPrefix=' . substr($storedHash, 0, 16) . '; computedLen=' . strlen($computedHash) . '; computedPrefix=' . substr($computedHash, 0, 16) . '; equals=' . (hash_equals($storedHash, $computedHash) ? '1' : '0'),
+        $ip
+    );
+
+    if ($storedHash === '' || !hash_equals($storedHash, $computedHash)) {
+        auditLog((int)$user['UserID'], (int)$person['SchoolPersonID'], 'failed_login', 'auth', $schoolId, 'Password mismatch (hash debug logged)', $ip);
         echo json_encode([
             'status' => 'error',
             'message' => 'Invalid School ID or password.',
         ]);
         exit;
     }
+
 
     session_regenerate_id(true);
 
     $userId = (int)$user['UserID'];
     $schoolPersonId = (int)$user['SchoolPersonID'];
 
-    rbacLoadSessionPermissions($pdo, $userId);
+rbacLoadSessionPermissions($pdo, $userId);
+
+    $roles = isset($_SESSION['Roles']) && is_array($_SESSION['Roles']) ? $_SESSION['Roles'] : [];
+    $landingKey = rbacGetLandingDashboardKey($roles);
+
+    // Temporary debug audit events (inspect audit_logs table)
+    auditLog(
+        (int)$userId,
+        (int)$schoolPersonId,
+        'login_debug_rbac_loaded',
+        'auth',
+        $schoolId,
+        'roles=' . implode(',', $roles) . '; accessibleModulesCount=' . count($_SESSION['AccessibleModules'] ?? []),
+        $ip
+    );
+
+
 
     $_SESSION['UserID'] = $userId;
     $_SESSION['SchoolPersonID'] = $schoolPersonId;
     $_SESSION['school_id'] = (string)$person['SchoolID'];
     $_SESSION['patient_name'] = trim((string)$person['FirstName'] . ' ' . (string)$person['LastName']);
-    $_SESSION['role'] = $isStudent ? 'Student' : $personType;
+    $_SESSION['person_type'] = (string)$person['PersonType'];
+    $_SESSION['role'] = $_SESSION['Role'] ?? (string)$person['PersonType'];
 
-    if ($isStudent) {
-        $_SESSION['patient_id'] = $userId;
-    }
+    $updateLoginStmt = $pdo->prepare("UPDATE users SET LastLogin = NOW() WHERE UserID = ?");
+    $updateLoginStmt->execute([$userId]);
 
-    auditLog($userId, $schoolPersonId, 'login', 'auth', $school_id, null, $ip);
+    auditLog($userId, $schoolPersonId, 'login', 'auth', $schoolId, 'Login successful', $ip);
 
     $redirect = '../modules/dashboard/patient_dashboard.php';
-    $roles = $_SESSION['Roles'] ?? [];
-
-    if (is_array($roles) && array_intersect($roles, ['Admin', 'Super Admin']) !== []) {
+    if ($landingKey === 'admin') {
         $redirect = '../modules/dashboard/admin_dashboard.php';
-    } else {
-        // Medical roles (promoted staff) go to medical_staff dashboard
-        if (is_array($roles) && array_intersect($roles, ['Doctor', 'Dentist', 'Nurse']) !== []) {
-            $redirect = '../modules/dashboard/medical_staff_dashboard.php';
-        } else {
-            // Default: patient view
-            $redirect = '../modules/dashboard/patient_dashboard.php';
-        }
+    } elseif ($landingKey === 'medical') {
+        $redirect = '../modules/dashboard/medical_staff_dashboard.php';
     }
-
-    // DEBUG: ensure the decision variables are visible in client-side network logs.
-    // Comment out/remove once verified.
-    // error_log('LOGIN_REDIRECT=' . $redirect . ' roles=' . json_encode($roles));
 
     echo json_encode([
         'status' => 'success',
         'message' => 'Login successful.',
         'redirect' => $redirect,
-        'roles_debug' => is_array($roles) ? $roles : [],
+        'roles_debug' => $roles,
         'session_userid_debug' => $_SESSION['UserID'] ?? null,
         'session_schoolpersonid_debug' => $_SESSION['SchoolPersonID'] ?? null,
     ]);
-
-
 } catch (Throwable $e) {
-    auditLog(null, null, 'failed_login', 'auth', $school_id, 'Exception during login: ' . $e->getMessage(), $ip);
+    auditLog(null, null, 'failed_login', 'auth', $schoolId, 'Exception during login: ' . $e->getMessage(), $ip);
     echo json_encode([
         'status' => 'error',
         'message' => 'Login failed: ' . $e->getMessage(),
         'file' => $e->getFile(),
         'line' => $e->getLine(),
     ]);
+    
     exit;
+
+    
 }

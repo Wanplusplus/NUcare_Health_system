@@ -2,8 +2,9 @@
 // Handles email lookup and sending the reset link (users + school_people schema)
 header('Content-Type: application/json');
 
-require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../config/db_pdo.php';
 require_once __DIR__ . '/../config/mailer.php';
+
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['status' => 'error', 'message' => 'Invalid request.']);

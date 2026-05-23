@@ -3,10 +3,11 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['patient_id']) && !isset($_SESSION['UserID'])) {
+if (!isset($_SESSION['UserID'])) {
     header('Location: ../../auth/login.php');
     exit;
 }
+
 
 require_once __DIR__ . '/../../includes/module_guard.php';
 requireModule('Admin Panel', 'access');

@@ -62,8 +62,9 @@ if (strtotime($user['TokenExpiry']) < time()) {
     exit;
 }
 
-// Hash and update password
-$hashedPassword = password_hash($new_password, PASSWORD_DEFAULT);
+// Hash and update password (MySQL SHA2(password, 256))
+$hashedPassword = hash('sha256', $new_password);
+
 
 $update = $conn->prepare(
     "UPDATE users
