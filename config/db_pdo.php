@@ -4,7 +4,8 @@ declare(strict_types=1);
 $host = 'localhost';
 $dbname = 'nucaredb';
 $username = 'root';
-$password = '';
+$dbPassword = '';
+
 
 $options = [
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -13,6 +14,6 @@ $options = [
     PDO::ATTR_PERSISTENT => false,
 ];
 
-$pdo = new PDO("mysql:host={$host};dbname={$dbname};charset=utf8mb4", $username, $password, $options);
+$pdo = new PDO("mysql:host={$host};dbname={$dbname};charset=utf8mb4", $username, $dbPassword, $options);
 
 return $pdo;

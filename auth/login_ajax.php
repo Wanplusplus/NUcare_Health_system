@@ -46,6 +46,9 @@ try {
          LIMIT 1"
     );
 
+    $person = null;
+    $usedFallbackSchoolIdMatch = false;
+
     $personStmt->execute([$schoolId]);
     $person = $personStmt->fetch();
 
@@ -57,15 +60,21 @@ try {
              WHERE LOWER(TRIM(SchoolID)) = LOWER(TRIM(?))
              LIMIT 1"
         );
+
         $fallbackStmt->execute([$debugUserInput]);
         $person = $fallbackStmt->fetch();
 
         if ($person) {
-            auditLog(null, null, 'failed_login_fallback_matched', 'auth', $schoolId, 'Fallback normalized SchoolID matched in school_people', $ip);
+            $usedFallbackSchoolIdMatch = true;
+            auditLog(null, null, 'login_debug_school_match', 'auth', $schoolId, 'matched via LOWER(TRIM(SchoolID))', $ip);
         }
     }
 
-if (!$person) {
+    if (!$usedFallbackSchoolIdMatch && $person) {
+        auditLog(null, null, 'login_debug_school_match', 'auth', $schoolId, 'matched via exact SchoolID', $ip);
+    }
+
+    if (!$person) {
         auditLog(null, null, 'failed_login', 'auth', $schoolId, 'SchoolID not found in school_people', $ip);
         echo json_encode([
             'status' => 'error',
@@ -94,16 +103,29 @@ if (!$person) {
         exit;
     }
 
+    // HARD debug: verify hashing format mismatch (no plaintext)
     $computedHash = hash('sha256', $loginPassword);
+    $storedHash = (string)($user['PasswordHash'] ?? '');
 
-    if (empty($user['PasswordHash']) || !hash_equals((string)$user['PasswordHash'], $computedHash)) {
-        auditLog((int)$user['UserID'], (int)$person['SchoolPersonID'], 'failed_login', 'auth', $schoolId, 'Password mismatch', $ip);
+    auditLog(
+        (int)$user['UserID'],
+        (int)$person['SchoolPersonID'],
+        'login_hash_debug',
+        'auth',
+        $schoolId,
+        'storedLen=' . strlen($storedHash) . '; storedPrefix=' . substr($storedHash, 0, 16) . '; computedLen=' . strlen($computedHash) . '; computedPrefix=' . substr($computedHash, 0, 16) . '; equals=' . (hash_equals($storedHash, $computedHash) ? '1' : '0'),
+        $ip
+    );
+
+    if ($storedHash === '' || !hash_equals($storedHash, $computedHash)) {
+        auditLog((int)$user['UserID'], (int)$person['SchoolPersonID'], 'failed_login', 'auth', $schoolId, 'Password mismatch (hash debug logged)', $ip);
         echo json_encode([
             'status' => 'error',
             'message' => 'Invalid School ID or password.',
         ]);
         exit;
     }
+
 
     session_regenerate_id(true);
 
@@ -115,13 +137,17 @@ rbacLoadSessionPermissions($pdo, $userId);
     $roles = isset($_SESSION['Roles']) && is_array($_SESSION['Roles']) ? $_SESSION['Roles'] : [];
     $landingKey = rbacGetLandingDashboardKey($roles);
 
-    // Debug: confirm permissions were loaded for this login
-    rbacDebug('login_after_rbac_load', [
-        'userId' => $userId,
-        'school_person_id' => $schoolPersonId,
-        'roles' => $roles,
-        'accessibleModules' => $_SESSION['AccessibleModules'] ?? [],
-    ]);
+    // Temporary debug audit events (inspect audit_logs table)
+    auditLog(
+        (int)$userId,
+        (int)$schoolPersonId,
+        'login_debug_rbac_loaded',
+        'auth',
+        $schoolId,
+        'roles=' . implode(',', $roles) . '; accessibleModulesCount=' . count($_SESSION['AccessibleModules'] ?? []),
+        $ip
+    );
+
 
 
     $_SESSION['UserID'] = $userId;
@@ -159,5 +185,8 @@ rbacLoadSessionPermissions($pdo, $userId);
         'file' => $e->getFile(),
         'line' => $e->getLine(),
     ]);
+    
     exit;
+
+    
 }
