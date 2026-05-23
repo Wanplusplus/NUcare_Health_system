@@ -192,12 +192,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
             // Priority order can be adjusted later.
             $priority = ['Doctor', 'Dentist', 'Nurse'];
             $chosenRole = null;
+
             foreach ($priority as $pRole) {
                 if (in_array($pRole, $desiredRoles, true)) {
                     $chosenRole = $pRole;
                     break;
                 }
             }
+
             // If none of the prioritized roles are present, pick the first desired role (if any)
             if ($chosenRole === null && !empty($desiredRoles)) {
                 $chosenRole = $desiredRoles[0];
@@ -231,6 +233,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
 
                 // Insert only chosen role.
                 if ($chosenRole !== null) {
+
+                    // Debug: trace promotion sync timing
+                    if (function_exists('rbacDebug')) {
+                        rbacDebug('promotion_before_role_assignment', [
+
+                            'actorUserId' => $actorUserId,
+                            'targetUserId' => $targetUserId,
+                            'desiredRolesToAdd' => $rolesToAdd,
+                            'desiredRolesToRemove' => $rolesToRemove,
+                            'chosenRole' => $chosenRole,
+                        ]);
+                    }
+
                     $roleRow = fetchOne($pdo, "SELECT RoleID FROM roles WHERE RoleName = ? LIMIT 1", [$chosenRole]);
                     if ($roleRow) {
                         $roleId = (int)$roleRow['RoleID'];
@@ -263,8 +278,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
                         if (isset($roleToProfessionMap[$chosenRole])) {
                             ensureMedicalProfessional($pdo, $targetUserId, $roleToProfessionMap[$chosenRole]);
                         }
+
+                        // Ensure RBAC permissions exist for promoted medical roles.
+                        // This prevents promoted users from being blocked by module_guard.php.
+                        if (in_array($chosenRole, ['Doctor', 'Dentist', 'Nurse'], true)) {
+                            $requiredModules = ['Consultation', 'Records', 'Schedule', 'Medicine'];
+                            $requiredPermissions = ['access', 'View', 'Create', 'Edit', 'Approve'];
+
+                            // Remove existing entries for this role+module+permission set, then insert fresh.
+                            // This avoids duplicate-key failures when the role is changed multiple times.
+
+                            $deleteSql = "
+                                DELETE rp
+                                FROM role_permissions rp
+                                INNER JOIN roles rr ON rr.RoleID = rp.RoleID
+                                INNER JOIN modules mm ON mm.ModuleID = rp.ModuleID
+                                INNER JOIN permissions p ON p.PermissionID = rp.PermissionID
+                                WHERE rr.RoleName = ?
+                                  AND mm.ModuleName IN ('" . implode("','", $requiredModules) . "')
+                                  AND p.PermissionName IN ('" . implode("','", $requiredPermissions) . "')
+                            ";
+
+                            $delStmt = $pdo->prepare($deleteSql);
+                            $delStmt->execute([$chosenRole]);
+
+                            $insertSql = "
+                                INSERT INTO role_permissions (RoleID, ModuleID, PermissionID)
+                                SELECT rr.RoleID, mm.ModuleID, p.PermissionID
+                                FROM roles rr
+                                CROSS JOIN modules mm
+                                CROSS JOIN permissions p
+                                WHERE rr.RoleName = ?
+                                  AND mm.ModuleName IN ('" . implode("','", $requiredModules) . "')
+                                  AND p.PermissionName IN ('" . implode("','", $requiredPermissions) . "')
+                            ";
+
+                            $stmt = $pdo->prepare($insertSql);
+                            $stmt->execute([$chosenRole]);
+                        }
                     }
                 }
+
 
                 $pdo->commit();
                 $success = 'Role updated successfully (single-role enforced).';

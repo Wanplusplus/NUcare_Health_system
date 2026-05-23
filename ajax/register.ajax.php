@@ -67,7 +67,7 @@ if ($dupRes->num_rows > 0) {
     exit;
 }
 
-$hash = password_hash($password, PASSWORD_DEFAULT);
+$hash = hash('sha256', $password);
 $role = 'Patient';
 $sex = 'Male';
 $verified = 1;

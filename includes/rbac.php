@@ -3,28 +3,50 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/db_pdo.php';
 
-function rbacGetUserIdFromSession(): ?int {
+function rbacGetUserIdFromSession(): ?int
+{
     return isset($_SESSION['UserID']) ? (int)$_SESSION['UserID'] : null;
 }
 
-function rbacGetSchoolPersonIdFromSession(): ?int {
+function rbacGetSchoolPersonIdFromSession(): ?int
+{
     return isset($_SESSION['SchoolPersonID']) ? (int)$_SESSION['SchoolPersonID'] : null;
 }
 
-function getUserRoles(int $userId): array {
-    $pdo = require __DIR__ . '/../config/db_pdo.php';
+function rbacNormalizeRoleName(string $roleName): string
+{
+    // Normalize whitespace + case to avoid role/persontype mismatch issues.
+    // Database values must still match after normalization.
+    $roleName = trim($roleName);
+    $roleName = preg_replace('/\s+/', ' ', $roleName) ?? $roleName;
+    return $roleName;
+}
+
+
+function rbacGetUserRoles(PDO $pdo, int $userId): array
+{
     $sql = "
-        SELECT r.RoleName
+        SELECT DISTINCT r.RoleName
         FROM user_roles ur
         INNER JOIN roles r ON r.RoleID = ur.RoleID
         WHERE ur.UserID = ?
+        ORDER BY r.RoleName ASC
     ";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$userId]);
-    return array_map(static fn($row) => (string)$row['RoleName'], $stmt->fetchAll());
+
+    $roles = array_map(static fn (array $row): string => (string)$row['RoleName'], $stmt->fetchAll());
+    return array_values(array_unique(array_map('rbacNormalizeRoleName', $roles)));
 }
 
-function getUserPermissions(int $userId): array {
+function getUserRoles(int $userId): array
+{
+    $pdo = require __DIR__ . '/../config/db_pdo.php';
+    return rbacGetUserRoles($pdo, $userId);
+}
+
+function getUserPermissions(int $userId): array
+{
     $pdo = require __DIR__ . '/../config/db_pdo.php';
     $sql = "
         SELECT DISTINCT p.PermissionName, m.ModuleName
@@ -33,13 +55,15 @@ function getUserPermissions(int $userId): array {
         INNER JOIN permissions p ON p.PermissionID = rp.PermissionID
         INNER JOIN modules m ON m.ModuleID = rp.ModuleID
         WHERE ur.UserID = ?
+        ORDER BY m.ModuleName ASC, p.PermissionName ASC
     ";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$userId]);
     return $stmt->fetchAll();
 }
 
-function hasPermission(int $userId, string $moduleName, string $permissionName): bool {
+function hasPermission(int $userId, string $moduleName, string $permissionName): bool
+{
     $pdo = require __DIR__ . '/../config/db_pdo.php';
     $sql = "
         SELECT 1
@@ -57,9 +81,210 @@ function hasPermission(int $userId, string $moduleName, string $permissionName):
     return $stmt->fetchColumn() !== false;
 }
 
-function rbacLoadSessionPermissions(PDO $pdo, int $userId): void {
+function rbacGetPersonType(PDO $pdo, int $schoolPersonId): ?string
+{
+    $stmt = $pdo->prepare("SELECT PersonType FROM school_people WHERE SchoolPersonID = ? LIMIT 1");
+    $stmt->execute([$schoolPersonId]);
+    $val = $stmt->fetchColumn();
+    if ($val === false) {
+        return null;
+    }
+    $personType = (string)$val;
+    $personType = trim($personType);
+    $personType = preg_replace('/\s+/', ' ', $personType) ?? $personType;
+    // Case normalization to ensure match against 'Student'|'Faculty'|'Staff'
+    return ucwords(strtolower($personType));
+}
+
+
+function rbacGetRoleId(PDO $pdo, string $roleName): ?int
+{
+    $stmt = $pdo->prepare("SELECT RoleID FROM roles WHERE RoleName = ? LIMIT 1");
+    // Normalize then also try case-normalized match.
+    $normalized = rbacNormalizeRoleName($roleName);
+    $stmt->execute([$normalized]);
+    $val = $stmt->fetchColumn();
+    if ($val !== false) {
+        return (int)$val;
+    }
+
+    // Fallback: match case-insensitively (covers DB seeded variants like 'doctor').
+    $stmt2 = $pdo->prepare("SELECT RoleID FROM roles WHERE LOWER(TRIM(RoleName)) = LOWER(TRIM(?)) LIMIT 1");
+    $stmt2->execute([$normalized]);
+    $val2 = $stmt2->fetchColumn();
+    return $val2 !== false ? (int)$val2 : null;
+}
+
+
+function rbacGetUserSchoolPersonId(PDO $pdo, int $userId): ?int
+{
+    $stmt = $pdo->prepare("SELECT SchoolPersonID FROM users WHERE UserID = ? LIMIT 1");
+    $stmt->execute([$userId]);
+    $val = $stmt->fetchColumn();
+    return $val !== false ? (int)$val : null;
+}
+
+function rbacInsertRoleByName(PDO $pdo, int $userId, string $roleName): void
+{
+    $roleName = rbacNormalizeRoleName($roleName);
+    $roleId = rbacGetRoleId($pdo, $roleName);
+    if ($roleId === null) {
+        // If role doesn't exist in DB, we can't insert user_roles.
+        // Keeping silent to avoid breaking existing flows.
+        return;
+    }
+
+    $stmt = $pdo->prepare("INSERT IGNORE INTO user_roles (UserID, RoleID) VALUES (?, ?)");
+    $stmt->execute([$userId, $roleId]);
+}
+
+
+function rbacEnsureDefaultRoleAssignment(PDO $pdo, int $userId): array
+{
+    $roles = rbacGetUserRoles($pdo, $userId);
+    if ($roles !== []) {
+        return $roles;
+    }
+
+    $schoolPersonId = rbacGetUserSchoolPersonId($pdo, $userId);
+    if ($schoolPersonId === null) {
+        return [];
+    }
+
+    $personType = rbacGetPersonType($pdo, $schoolPersonId);
+    $defaultRole = match ($personType) {
+        'Student' => 'Student',
+        'Faculty' => 'Faculty',
+        'Staff' => 'Staff',
+        default => null,
+    };
+
+    // If PersonType is present but unrecognized, we do not assign.
+    if ($defaultRole !== null) {
+        rbacInsertRoleByName($pdo, $userId, $defaultRole);
+    }
+
+    return rbacGetUserRoles($pdo, $userId);
+}
+
+
+function rbacEnsureRolePermissionsForRole(PDO $pdo, string $roleName): void
+{
+    $roleName = rbacNormalizeRoleName($roleName);
+    if ($roleName === '') {
+        return;
+    }
+
+    $matrix = [
+        'Student' => [
+            'modules' => ['Consultation', 'Records', 'Schedule'],
+            'permissions' => ['access', 'View'],
+        ],
+        'Faculty' => [
+            'modules' => ['Consultation', 'Records', 'Schedule', 'Medicine'],
+            'permissions' => ['access', 'View', 'Create', 'Edit'],
+        ],
+        'Staff' => [
+            'modules' => ['Consultation', 'Records', 'Schedule', 'Medicine'],
+            'permissions' => ['access', 'View', 'Create', 'Edit'],
+        ],
+        'Doctor' => [
+            'modules' => ['Consultation', 'Records', 'Schedule', 'Medicine'],
+            'permissions' => ['access', 'View', 'Create', 'Edit', 'Approve'],
+        ],
+        'Dentist' => [
+            'modules' => ['Consultation', 'Records', 'Schedule', 'Medicine'],
+            'permissions' => ['access', 'View', 'Create', 'Edit', 'Approve'],
+        ],
+        'Nurse' => [
+            'modules' => ['Consultation', 'Records', 'Schedule', 'Medicine'],
+            'permissions' => ['access', 'View', 'Create', 'Edit', 'Approve'],
+        ],
+        'Admin' => [
+            'modules' => ['Reports', 'Admin Panel', 'RBAC Management', 'Consultation', 'Records', 'Medicine', 'Schedule'],
+            'permissions' => ['access', 'View', 'Create', 'Edit', 'Delete', 'Manage', 'Approve'],
+        ],
+        'Super Admin' => [
+            'modules' => ['Consultation', 'Records', 'Reports', 'Medicine', 'Schedule', 'Admin Panel', 'RBAC Management'],
+            'permissions' => ['access', 'View', 'Create', 'Edit', 'Delete', 'Manage', 'Approve'],
+        ],
+    ];
+
+    if (!isset($matrix[$roleName])) {
+        return;
+    }
+
+    $modules = $matrix[$roleName]['modules'];
+    $permissions = $matrix[$roleName]['permissions'];
+
+    $modulePlaceholders = implode(',', array_fill(0, count($modules), '?'));
+    $permissionPlaceholders = implode(',', array_fill(0, count($permissions), '?'));
+
+    $sql = "
+        INSERT IGNORE INTO role_permissions (RoleID, ModuleID, PermissionID)
+        SELECT r.RoleID, m.ModuleID, p.PermissionID
+        FROM roles r
+        INNER JOIN modules m ON m.ModuleName IN ($modulePlaceholders)
+        INNER JOIN permissions p ON p.PermissionName IN ($permissionPlaceholders)
+        WHERE r.RoleName = ?
+    ";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute(array_merge($modules, $permissions, [$roleName]));
+}
+
+function rbacEnsureRolePermissionsForRoles(PDO $pdo, array $roles): void
+{
+    foreach (array_unique(array_map('rbacNormalizeRoleName', $roles)) as $roleName) {
+        rbacEnsureRolePermissionsForRole($pdo, $roleName);
+    }
+}
+
+/**
+ * Debug helper: log RBAC inputs without modifying UI.
+ */
+function rbacDebug(string $stage, array $context = []): void
+{
+    // Temporarily enabled for diagnosing signup/promotion sync issues.
+    // Disable later by setting to false.
+$enabled = false;
+    if (!$enabled) {
+        return;
+    }
+
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+    $payload = json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    error_log('[RBAC DEBUG] ' . $stage . ' ip=' . $ip . ' ctx=' . $payload);
+}
+
+
+function rbacLoadSessionPermissions(PDO $pdo, int $userId): void
+{
+    // Standard session structure (required by requirements)
+
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    $roles = rbacEnsureDefaultRoleAssignment($pdo, $userId);
+    rbacEnsureRolePermissionsForRoles($pdo, $roles);
+
+    // SchoolPersonID + SchoolID
+    $schoolPersonId = rbacGetUserSchoolPersonId($pdo, $userId);
+    $schoolId = null;
+    if ($schoolPersonId !== null) {
+        $stmt = $pdo->prepare("SELECT SchoolID FROM school_people WHERE SchoolPersonID = ? LIMIT 1");
+        $stmt->execute([$schoolPersonId]);
+        $schoolId = $stmt->fetchColumn();
+    }
+
     $_SESSION['UserID'] = $userId;
-    $_SESSION['Roles'] = getUserRoles($userId);
+    $_SESSION['SchoolPersonID'] = $schoolPersonId ?? null;
+    $_SESSION['SchoolID'] = $schoolId !== false ? (string)$schoolId : null;
+
+    $_SESSION['Roles'] = $roles;
+    $_SESSION['Permissions'] = []; // filled below
+
 
     $perms = getUserPermissions($userId);
     $rolePermissions = [];
@@ -73,7 +298,24 @@ function rbacLoadSessionPermissions(PDO $pdo, int $userId): void {
     }
 
     $_SESSION['Permissions'] = $rolePermissions;
+    // Keep legacy key (used by some UI) but do not rely on it for auth.
     $_SESSION['AccessibleModules'] = array_keys($accessibleModules);
+
+}
+
+function rbacGetLandingDashboardKey(array $roles): string
+{
+    $roles = array_values(array_unique(array_map('rbacNormalizeRoleName', $roles)));
+
+    if (array_intersect($roles, ['Admin', 'Super Admin']) !== []) {
+        return 'admin';
+    }
+
+    if (array_intersect($roles, ['Doctor', 'Dentist', 'Nurse']) !== []) {
+        return 'medical';
+    }
+
+    return 'patient';
 }
 
 /**
@@ -81,48 +323,14 @@ function rbacLoadSessionPermissions(PDO $pdo, int $userId): void {
  * - If student is no longer enrolled, disable booking access and consultation requests.
  * - Keep historical records intact.
  */
-function rbacStudentHasActiveEnrollment(PDO $pdo, int $schoolPersonId): bool {
-    // Prefer new table if it exists
-    try {
-        $sql = "
-            SELECT 1
-            FROM student_enrollments
-            WHERE SchoolPersonID = ?
-              AND EnrollmentStatus = 'Enrolled'
-            LIMIT 1
-        ";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$schoolPersonId]);
-        return $stmt->fetchColumn() !== false;
-    } catch (Throwable $e) {
-        // ignore and fallback
-    }
+// Enrollment checks removed from RBAC auth path per requirements.
+// Access control must depend ONLY on user_roles + role_permissions.
 
-    // Fallback to legacy enrolled_students table
-    try {
-        $sql = "
-            SELECT 1
-            FROM enrolled_students
-            WHERE StudentID = ?
-              AND EnrollmentStatus = 'Enrolled'
-            LIMIT 1
-        ";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$schoolPersonId]);
-        return $stmt->fetchColumn() !== false;
-    } catch (Throwable $e) {
-        return false;
-    }
-}
 
-function rbacGetPersonType(PDO $pdo, int $schoolPersonId): ?string {
-    $stmt = $pdo->prepare("SELECT PersonType FROM school_people WHERE SchoolPersonID = ? LIMIT 1");
-    $stmt->execute([$schoolPersonId]);
-    $val = $stmt->fetchColumn();
-    return $val !== false ? (string)$val : null;
-}
+function requirePermission(string $moduleName, string $permissionName): void
+{
+    // RBAC only: authorization depends ONLY on role_permissions via user_roles.
 
-function requirePermission(string $moduleName, string $permissionName): void {
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -135,38 +343,28 @@ function requirePermission(string $moduleName, string $permissionName): void {
 
     $pdo = require __DIR__ . '/../config/db_pdo.php';
 
-    // Enrollment override: students who are not enrolled cannot book/consult.
-    // This is NOT a role-name hardcode; it’s based on school_people.PersonType.
-    if ($permissionName === 'access') {
-        $schoolPersonId = isset($_SESSION['SchoolPersonID']) ? (int)$_SESSION['SchoolPersonID'] : 0;
-        if ($schoolPersonId > 0) {
-            $personType = rbacGetPersonType($pdo, $schoolPersonId);
-            if ($personType === 'Student') {
-                $active = rbacStudentHasActiveEnrollment($pdo, $schoolPersonId);
-                if (
-                    !$active
-                    && ($moduleName === 'Consultation' || $moduleName === 'Schedule')
-                ) {
-                    http_response_code(403);
-                    echo 'Access denied: student is not currently enrolled for booking/consultation.';
-                    exit;
-                }
-            }
-        }
-    }
+    // No additional enrollment/person-type overrides.
+
 
     if (!hasPermission($userId, $moduleName, $permissionName)) {
         http_response_code(403);
-        if (isset($_SESSION['Roles']) && is_array($_SESSION['Roles']) && array_intersect($_SESSION['Roles'], ['Admin', 'Super Admin']) !== []) {
+
+        $roles = isset($_SESSION['Roles']) && is_array($_SESSION['Roles']) ? $_SESSION['Roles'] : [];
+        $landingKey = rbacGetLandingDashboardKey($roles);
+
+        if ($landingKey === 'admin') {
             header('Location: ../../modules/dashboard/admin_dashboard.php');
+        } elseif ($landingKey === 'medical') {
+            header('Location: ../../modules/dashboard/medical_staff_dashboard.php');
         } else {
-            header('Location: ../../modules/dashboard/student_dashboard.php');
+            header('Location: ../../modules/dashboard/patient_dashboard.php');
         }
+
         exit;
     }
 }
 
-// Backward-compat wrapper: existing module_guard calls this name.
-function rbacRequireModulePermission(string $moduleName, string $permissionName): void {
+function rbacRequireModulePermission(string $moduleName, string $permissionName): void
+{
     requirePermission($moduleName, $permissionName);
 }

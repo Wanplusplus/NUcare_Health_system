@@ -1,25 +1,32 @@
 <?php
-// Student dashboard entrypoint.
-// Your project routes "student_dashboard.php" from index.php, but the dashboard
-// content is role-based (medical staff vs admin). This file keeps routing stable.
+declare(strict_types=1);
 
+// Role router: keeps the old student_dashboard.php entrypoint stable while sending users
+// to the correct landing page based on actual RBAC roles.
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// If user is already an admin, send them to admin dashboard.
-if (isset($_SESSION['UserID']) && isset($_SESSION['Roles']) && is_array($_SESSION['Roles']) && array_intersect($_SESSION['Roles'], ['Admin', 'Super Admin']) !== []) {
+require_once __DIR__ . '/../../includes/rbac.php';
+
+if (!isset($_SESSION['UserID'])) {
+    header('Location: ../../auth/login.php');
+    exit;
+}
+
+
+$roles = isset($_SESSION['Roles']) && is_array($_SESSION['Roles']) ? $_SESSION['Roles'] : [];
+$landingKey = rbacGetLandingDashboardKey($roles);
+
+if ($landingKey === 'admin') {
     header('Location: admin_dashboard.php');
     exit;
 }
 
-// If user is an authenticated medical staff user, send to the staff dashboard.
-if (isset($_SESSION['UserID']) || isset($_SESSION['patient_id'])) {
+if ($landingKey === 'medical') {
     header('Location: medical_staff_dashboard.php');
     exit;
 }
 
-// Otherwise, treat as unauthenticated.
-header('Location: ../../auth/login.php');
+header('Location: patient_dashboard.php');
 exit;
-

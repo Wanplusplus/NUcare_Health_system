@@ -3,10 +3,11 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['patient_id']) && !isset($_SESSION['UserID'])) {
+if (!isset($_SESSION['UserID'])) {
     header('Location: ../../auth/login.php');
     exit;
 }
+
 
 // Redirect admins away from medical staff dashboard
 if (isset($_SESSION['Roles']) && is_array($_SESSION['Roles']) && array_intersect($_SESSION['Roles'], ['Admin', 'Super Admin']) !== []) {

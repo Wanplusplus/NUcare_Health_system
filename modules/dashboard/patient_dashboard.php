@@ -3,19 +3,29 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['patient_id']) && !isset($_SESSION['UserID'])) {
+if (!isset($_SESSION['UserID'])) {
     header('Location: ../../auth/login.php');
     exit;
 }
 
-if (isset($_SESSION['Roles']) && is_array($_SESSION['Roles']) && array_intersect($_SESSION['Roles'], ['Admin', 'Super Admin']) !== []) {
-    header('Location: admin_dashboard.php');
-    exit;
-}
 
 $activeSidebarItem = 'dashboard';
 $patientName = $_SESSION['patient_name'] ?? 'Student';
-$studentId = $_SESSION['school_id'] ?? ($_SESSION['SchoolID'] ?? 'N/A');
+$studentId = $_SESSION['SchoolID'] ?? $_SESSION['school_id'] ?? 'N/A';
+
+require_once __DIR__ . '/../../includes/rbac.php';
+
+// If this is a medical professional, redirect immediately.
+if (isset($_SESSION['Roles']) && is_array($_SESSION['Roles'])) {
+    $roles = $_SESSION['Roles'];
+    $landingKey = rbacGetLandingDashboardKey($roles);
+    if ($landingKey === 'medical') {
+        header('Location: medical_staff_dashboard.php');
+        exit;
+    }
+}
+
+
 ?>
 <!DOCTYPE html>
 <html lang="en">

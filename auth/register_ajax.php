@@ -8,6 +8,7 @@ header('Content-Type: application/json');
 
 require_once __DIR__ . '/../config/db_pdo.php';
 require_once __DIR__ . '/../includes/audit.php';
+require_once __DIR__ . '/../includes/rbac.php';
 require_once __DIR__ . '/../config/db.php'; // legacy fallback for medicalprofessionals
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -15,14 +16,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$first_name       = trim((string)($_POST['first_name'] ?? ''));
-$last_name        = trim((string)($_POST['last_name'] ?? ''));
-$middle_name      = trim((string)($_POST['middle_name'] ?? ''));
-$sex              = trim((string)($_POST['sex'] ?? ''));
-$school_id        = trim((string)($_POST['school_id'] ?? ''));
-$email            = strtolower(trim((string)($_POST['email'] ?? '')));
-$password         = (string)($_POST['password'] ?? '');
-$confirm_password= (string)($_POST['confirm_password'] ?? '');
+$first_name = trim((string)($_POST['first_name'] ?? ''));
+$last_name = trim((string)($_POST['last_name'] ?? ''));
+$middle_name = trim((string)($_POST['middle_name'] ?? ''));
+$sex = trim((string)($_POST['sex'] ?? ''));
+$school_id = trim((string)($_POST['school_id'] ?? ''));
+$email = strtolower(trim((string)($_POST['email'] ?? '')));
+$password = (string)($_POST['password'] ?? '');
+$confirm_password = (string)($_POST['confirm_password'] ?? '');
 
 $ip = $_SERVER['REMOTE_ADDR'] ?? null;
 
@@ -54,7 +55,8 @@ if ($sex !== 'Male' && $sex !== 'Female') {
 $pdo = require __DIR__ . '/../config/db_pdo.php';
 
 try {
-    // 1) Validate school_id exists in school_people (spec: signup only if SchoolID exists)
+    $pdo->beginTransaction();
+
     $spStmt = $pdo->prepare(
         "SELECT SchoolPersonID, SchoolID, Email, PersonType
          FROM school_people
@@ -65,32 +67,38 @@ try {
     $sp = $spStmt->fetch();
 
     if (!$sp) {
+        $pdo->rollBack();
         auditLog(null, null, 'failed_signup', 'auth', $school_id, 'SchoolID not found in school_people', $ip);
         echo json_encode(['status' => 'error', 'message' => 'Invalid School ID.']);
         exit;
     }
 
-    // 2) Reject if account already exists in users (spec: by SchoolPersonID)
     $dupStmt = $pdo->prepare("SELECT UserID FROM users WHERE SchoolPersonID = ? LIMIT 1");
     $dupStmt->execute([(int)$sp['SchoolPersonID']]);
     if ($dupStmt->fetch()) {
+        $pdo->rollBack();
         auditLog(null, (int)$sp['SchoolPersonID'], 'failed_signup', 'auth', $school_id, 'User already exists for SchoolPersonID', $ip);
         echo json_encode(['status' => 'error', 'message' => 'Account already exists.']);
         exit;
     }
 
-    // 3) Determine role by PersonType only (spec)
-    $personType = (string)$sp['PersonType'];
+    $personType = rtrim((string)$sp['PersonType']);
     $roleName = match ($personType) {
         'Student' => 'Student',
         'Faculty' => 'Faculty',
         'Staff' => 'Staff',
-        default => 'Student',
+        default => null,
     };
 
-    // 5) Create users account
-    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+    if ($roleName === null) {
+        $pdo->rollBack();
+        auditLog(null, (int)$sp['SchoolPersonID'], 'failed_signup', 'auth', $school_id, 'Unsupported PersonType: ' . $personType, $ip);
+        echo json_encode(['status' => 'error', 'message' => 'Signup role assignment failed: unsupported person type.']);
+        exit;
+    }
 
+    // PasswordHash is stored as MySQL SHA2(password, 256)
+    $hashedPassword = hash('sha256', $password);
     $middleNameVal = $middle_name !== '' ? $middle_name : null;
 
     $displayName = trim($first_name . ' ' . $middleNameVal . ' ' . $last_name);
@@ -107,30 +115,33 @@ try {
 
     $userId = (int)$pdo->lastInsertId();
 
-    // 6) Assign role automatically (user_roles)
-    $roleIdStmt = $pdo->prepare("SELECT RoleID FROM roles WHERE RoleName = ? LIMIT 1");
-    $roleIdStmt->execute([$roleName]);
-    $roleIdRow = $roleIdStmt->fetch();
+rbacInsertRoleByName($pdo, $userId, $roleName);
+    rbacEnsureRolePermissionsForRole($pdo, $roleName);
 
-    if (!$roleIdRow) {
-        auditLog($userId, (int)$sp['SchoolPersonID'], 'signup', 'auth', $school_id, 'Role mapping failed (role not found: ' . $roleName . ')', $ip);
-        echo json_encode([
-            'status' => 'error',
-            'message' => 'Signup role assignment failed: role not found for roleName=' . $roleName,
-        ]);
-        exit;
-    }
+    // Debug: confirm role and permission sync after signup
+    rbacDebug('signup_after_insert', [
+        'school_id' => (string)$school_id,
+        'school_person_id' => (int)$sp['SchoolPersonID'],
+        'personType' => $personType,
+        'assigned_role' => $roleName,
+        'userId' => $userId,
+    ]);
 
-    $urInsert = $pdo->prepare("INSERT INTO user_roles (UserID, RoleID) VALUES (?, ?)");
-    $urInsert->execute([$userId, (int)$roleIdRow['RoleID']]);
+    $pdo->commit();
 
     auditLog($userId, (int)$sp['SchoolPersonID'], 'signup', 'auth', $school_id, 'Signup successful. Assigned role: ' . $roleName, $ip);
+
 
     echo json_encode([
         'status' => 'success',
         'message' => 'Registration successful. Redirecting to login...',
+        'role' => $roleName,
     ]);
 } catch (Throwable $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+
     auditLog(null, null, 'failed_signup', 'auth', $school_id, 'Exception during signup: ' . $e->getMessage(), $ip);
     echo json_encode([
         'status' => 'error',
