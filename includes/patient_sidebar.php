@@ -61,18 +61,22 @@ $activeSidebarItem = $activeSidebarItem ?? 'dashboard';
   </div>
 
   <nav class="nav-menu">
-    <a class="nav-item <?php echo $activeSidebarItem === 'dashboard' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/dashboard/student_dashboard.php">
+    <a class="nav-item <?php echo $activeSidebarItem === 'dashboard' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/dashboard/patient_dashboard.php">
       <span class="nav-dot"></span>Dashboard
     </a>
-    <a class="nav-item <?php echo $activeSidebarItem === 'schedule' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/schedule/schedule.php">
-      <span class="nav-dot"></span>Schedule / Appointments
+    <a class="nav-item <?php echo $activeSidebarItem === 'schedule' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/dashboard/my_schedule.php">
+      <span class="nav-dot"></span>My Schedule
     </a>
-    <a class="nav-item <?php echo $activeSidebarItem === 'records' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/records/records.php">
-      <span class="nav-dot"></span>My Medical Records
+    <a class="nav-item <?php echo $activeSidebarItem === 'records' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/dashboard/my_records.php">
+      <span class="nav-dot"></span>My Records
+    </a>
+    <a class="nav-item <?php echo $activeSidebarItem === 'profile' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/dashboard/profile.php">
+      <span class="nav-dot"></span>Profile
     </a>
     <a class="nav-item" href="/NUcare_Health_system/auth/logout.php">
       <span class="nav-dot"></span>Logout
     </a>
+
   </nav>
 
   <div class="sidebar-footer">
