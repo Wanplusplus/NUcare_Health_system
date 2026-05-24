@@ -869,12 +869,71 @@
 [2026-05-23T15:39:11+00:00] auditLog EXEC INSERT
 [2026-05-23T15:39:11+00:00] auditLog INSERT OK rowCount=1
 <<<<<<< HEAD
+<<<<<<< HEAD
 [2026-05-24T06:45:24+00:00] auditLog CALLED actionType=failed_login entityType=auth entityId=2024-116608
 [2026-05-24T06:45:24+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
 [2026-05-24T06:50:30+00:00] auditLog CALLED actionType=failed_login entityType=auth entityId=2024-116608
 [2026-05-24T06:50:30+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
 [2026-05-24T06:50:52+00:00] auditLog CALLED actionType=failed_login entityType=auth entityId=2024-116605
 [2026-05-24T06:50:52+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+=======
+[2026-05-23T15:44:38+00:00] auditLog CALLED actionType=failed_login entityType=auth entityId=2024-1116605
+[2026-05-23T15:44:38+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-05-23T15:47:28+00:00] auditLog CALLED actionType=failed_login entityType=auth entityId=2024-1116605
+[2026-05-23T15:47:28+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-05-23T15:47:53+00:00] auditLog CALLED actionType=failed_login entityType=auth entityId=2024-1116605
+[2026-05-23T15:47:53+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-05-23T15:48:54+00:00] auditLog CALLED actionType=failed_login entityType=auth entityId=2024-1116605
+[2026-05-23T15:48:54+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-05-23T15:52:08+00:00] auditLog CALLED actionType=failed_login entityType=auth entityId=2024-1116605
+[2026-05-23T15:52:08+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-05-24T06:41:04+00:00] auditLog CALLED actionType=login_debug_school_match entityType=auth entityId=2024-116605
+[2026-05-24T06:41:04+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-05-24T06:41:04+00:00] auditLog CALLED actionType=login_hash_debug entityType=auth entityId=2024-116605
+[2026-05-24T06:41:04+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:41:04+00:00] auditLog PREP INSERT UserID=1 Action=login_hash_debug ModuleName=auth
+[2026-05-24T06:41:04+00:00] auditLog EXEC INSERT
+[2026-05-24T06:41:04+00:00] auditLog EXCEPTION: SQLSTATE[22001]: String data, right truncated: 1406 Data too long for column 'TableAffected' at row 1
+[2026-05-24T06:41:04+00:00] auditLog PDO errorInfo=["00000",null,null]
+[2026-05-24T06:41:04+00:00] auditLog CALLED actionType=login_debug_rbac_loaded entityType=auth entityId=2024-116605
+[2026-05-24T06:41:04+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:41:04+00:00] auditLog PREP INSERT UserID=1 Action=login_debug_rbac_loaded ModuleName=auth
+[2026-05-24T06:41:04+00:00] auditLog EXEC INSERT
+[2026-05-24T06:41:04+00:00] auditLog INSERT OK rowCount=1
+[2026-05-24T06:41:04+00:00] auditLog CALLED actionType=login entityType=auth entityId=2024-116605
+[2026-05-24T06:41:04+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:41:04+00:00] auditLog PREP INSERT UserID=1 Action=login ModuleName=auth
+[2026-05-24T06:41:04+00:00] auditLog EXEC INSERT
+[2026-05-24T06:41:04+00:00] auditLog INSERT OK rowCount=1
+[2026-05-24T06:45:23+00:00] auditLog CALLED actionType=logout entityType=auth entityId=
+[2026-05-24T06:45:23+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:45:23+00:00] auditLog PREP INSERT UserID=1 Action=logout ModuleName=auth
+[2026-05-24T06:45:23+00:00] auditLog EXEC INSERT
+[2026-05-24T06:45:23+00:00] auditLog INSERT OK rowCount=1
+[2026-05-24T06:45:57+00:00] auditLog CALLED actionType=login_debug_school_match entityType=auth entityId=2024-116613
+[2026-05-24T06:45:57+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-05-24T06:45:57+00:00] auditLog CALLED actionType=login_hash_debug entityType=auth entityId=2024-116613
+[2026-05-24T06:45:57+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:45:57+00:00] auditLog PREP INSERT UserID=9 Action=login_hash_debug ModuleName=auth
+[2026-05-24T06:45:57+00:00] auditLog EXEC INSERT
+[2026-05-24T06:45:57+00:00] auditLog EXCEPTION: SQLSTATE[22001]: String data, right truncated: 1406 Data too long for column 'TableAffected' at row 1
+[2026-05-24T06:45:57+00:00] auditLog PDO errorInfo=["00000",null,null]
+[2026-05-24T06:45:57+00:00] auditLog CALLED actionType=login_debug_rbac_loaded entityType=auth entityId=2024-116613
+[2026-05-24T06:45:57+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:45:57+00:00] auditLog PREP INSERT UserID=9 Action=login_debug_rbac_loaded ModuleName=auth
+[2026-05-24T06:45:57+00:00] auditLog EXEC INSERT
+[2026-05-24T06:45:57+00:00] auditLog INSERT OK rowCount=1
+[2026-05-24T06:45:57+00:00] auditLog CALLED actionType=login entityType=auth entityId=2024-116613
+[2026-05-24T06:45:57+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:45:57+00:00] auditLog PREP INSERT UserID=9 Action=login ModuleName=auth
+[2026-05-24T06:45:57+00:00] auditLog EXEC INSERT
+[2026-05-24T06:45:57+00:00] auditLog INSERT OK rowCount=1
+[2026-05-24T06:46:46+00:00] auditLog CALLED actionType=logout entityType=auth entityId=
+[2026-05-24T06:46:46+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:46:46+00:00] auditLog PREP INSERT UserID=9 Action=logout ModuleName=auth
+[2026-05-24T06:46:46+00:00] auditLog EXEC INSERT
+[2026-05-24T06:46:46+00:00] auditLog INSERT OK rowCount=1
+>>>>>>> e1a2ee8d7574abd532ac51024bedb54e55efd364
 =======
 [2026-05-24T06:18:35+00:00] auditLog CALLED actionType=login_debug_school_match entityType=auth entityId=2024-116605
 [2026-05-24T06:18:35+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
@@ -973,6 +1032,7 @@
 [2026-05-24T06:50:48+00:00] auditLog EXEC INSERT
 [2026-05-24T06:50:48+00:00] auditLog INSERT OK rowCount=1
 >>>>>>> a679521efe76e4424f52d70af76eb3442f96ebaf
+<<<<<<< HEAD
 [2026-05-24T07:59:06+00:00] auditLog CALLED actionType=logout entityType=auth entityId=
 [2026-05-24T07:59:06+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
 [2026-05-24T07:59:06+00:00] auditLog PREP INSERT UserID=6 Action=logout ModuleName=auth
@@ -1042,3 +1102,141 @@
 [2026-05-24T09:11:25+00:00] auditLog PREP INSERT UserID=6 Action=login ModuleName=auth
 [2026-05-24T09:11:25+00:00] auditLog EXEC INSERT
 [2026-05-24T09:11:25+00:00] auditLog INSERT OK rowCount=1
+=======
+<<<<<<< HEAD
+=======
+[2026-05-24T06:55:37+00:00] auditLog CALLED actionType=login_debug_school_match entityType=auth entityId=2024-116605
+[2026-05-24T06:55:37+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-05-24T06:55:37+00:00] auditLog CALLED actionType=login_hash_debug entityType=auth entityId=2024-116605
+[2026-05-24T06:55:37+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:55:37+00:00] auditLog PREP INSERT UserID=1 Action=login_hash_debug ModuleName=auth
+[2026-05-24T06:55:37+00:00] auditLog EXEC INSERT
+[2026-05-24T06:55:37+00:00] auditLog EXCEPTION: SQLSTATE[22001]: String data, right truncated: 1406 Data too long for column 'TableAffected' at row 1
+[2026-05-24T06:55:37+00:00] auditLog PDO errorInfo=["00000",null,null]
+[2026-05-24T06:55:37+00:00] auditLog CALLED actionType=login_debug_rbac_loaded entityType=auth entityId=2024-116605
+[2026-05-24T06:55:37+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:55:37+00:00] auditLog PREP INSERT UserID=1 Action=login_debug_rbac_loaded ModuleName=auth
+[2026-05-24T06:55:37+00:00] auditLog EXEC INSERT
+[2026-05-24T06:55:37+00:00] auditLog INSERT OK rowCount=1
+[2026-05-24T06:55:37+00:00] auditLog CALLED actionType=login entityType=auth entityId=2024-116605
+[2026-05-24T06:55:37+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:55:37+00:00] auditLog PREP INSERT UserID=1 Action=login ModuleName=auth
+[2026-05-24T06:55:37+00:00] auditLog EXEC INSERT
+[2026-05-24T06:55:37+00:00] auditLog INSERT OK rowCount=1
+[2026-05-24T06:56:05+00:00] auditLog CALLED actionType=logout entityType=auth entityId=
+[2026-05-24T06:56:05+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:56:05+00:00] auditLog PREP INSERT UserID=1 Action=logout ModuleName=auth
+[2026-05-24T06:56:05+00:00] auditLog EXEC INSERT
+[2026-05-24T06:56:05+00:00] auditLog INSERT OK rowCount=1
+[2026-05-24T06:57:27+00:00] auditLog CALLED actionType=login_debug_school_match entityType=auth entityId=2024-116612
+[2026-05-24T06:57:27+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-05-24T06:57:27+00:00] auditLog CALLED actionType=login_hash_debug entityType=auth entityId=2024-116612
+[2026-05-24T06:57:27+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:57:27+00:00] auditLog PREP INSERT UserID=8 Action=login_hash_debug ModuleName=auth
+[2026-05-24T06:57:27+00:00] auditLog EXEC INSERT
+[2026-05-24T06:57:27+00:00] auditLog EXCEPTION: SQLSTATE[22001]: String data, right truncated: 1406 Data too long for column 'TableAffected' at row 1
+[2026-05-24T06:57:27+00:00] auditLog PDO errorInfo=["00000",null,null]
+[2026-05-24T06:57:27+00:00] auditLog CALLED actionType=login_debug_rbac_loaded entityType=auth entityId=2024-116612
+[2026-05-24T06:57:27+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:57:27+00:00] auditLog PREP INSERT UserID=8 Action=login_debug_rbac_loaded ModuleName=auth
+[2026-05-24T06:57:27+00:00] auditLog EXEC INSERT
+[2026-05-24T06:57:27+00:00] auditLog INSERT OK rowCount=1
+[2026-05-24T06:57:27+00:00] auditLog CALLED actionType=login entityType=auth entityId=2024-116612
+[2026-05-24T06:57:27+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:57:27+00:00] auditLog PREP INSERT UserID=8 Action=login ModuleName=auth
+[2026-05-24T06:57:27+00:00] auditLog EXEC INSERT
+[2026-05-24T06:57:27+00:00] auditLog INSERT OK rowCount=1
+[2026-05-24T06:58:08+00:00] auditLog CALLED actionType=logout entityType=auth entityId=
+[2026-05-24T06:58:08+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:58:08+00:00] auditLog PREP INSERT UserID=8 Action=logout ModuleName=auth
+[2026-05-24T06:58:08+00:00] auditLog EXEC INSERT
+[2026-05-24T06:58:08+00:00] auditLog INSERT OK rowCount=1
+[2026-05-24T06:58:44+00:00] auditLog CALLED actionType=login_debug_school_match entityType=auth entityId=2024-116613
+[2026-05-24T06:58:44+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-05-24T06:58:45+00:00] auditLog CALLED actionType=login_hash_debug entityType=auth entityId=2024-116613
+[2026-05-24T06:58:45+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:58:45+00:00] auditLog PREP INSERT UserID=9 Action=login_hash_debug ModuleName=auth
+[2026-05-24T06:58:45+00:00] auditLog EXEC INSERT
+[2026-05-24T06:58:45+00:00] auditLog EXCEPTION: SQLSTATE[22001]: String data, right truncated: 1406 Data too long for column 'TableAffected' at row 1
+[2026-05-24T06:58:45+00:00] auditLog PDO errorInfo=["00000",null,null]
+[2026-05-24T06:58:45+00:00] auditLog CALLED actionType=login_debug_rbac_loaded entityType=auth entityId=2024-116613
+[2026-05-24T06:58:45+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:58:45+00:00] auditLog PREP INSERT UserID=9 Action=login_debug_rbac_loaded ModuleName=auth
+[2026-05-24T06:58:45+00:00] auditLog EXEC INSERT
+[2026-05-24T06:58:45+00:00] auditLog INSERT OK rowCount=1
+[2026-05-24T06:58:45+00:00] auditLog CALLED actionType=login entityType=auth entityId=2024-116613
+[2026-05-24T06:58:45+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:58:45+00:00] auditLog PREP INSERT UserID=9 Action=login ModuleName=auth
+[2026-05-24T06:58:45+00:00] auditLog EXEC INSERT
+[2026-05-24T06:58:45+00:00] auditLog INSERT OK rowCount=1
+[2026-05-24T06:58:50+00:00] auditLog CALLED actionType=logout entityType=auth entityId=
+[2026-05-24T06:58:50+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:58:50+00:00] auditLog PREP INSERT UserID=9 Action=logout ModuleName=auth
+[2026-05-24T06:58:50+00:00] auditLog EXEC INSERT
+[2026-05-24T06:58:50+00:00] auditLog INSERT OK rowCount=1
+[2026-05-24T06:59:30+00:00] auditLog CALLED actionType=login_debug_school_match entityType=auth entityId=2024-116608
+[2026-05-24T06:59:30+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-05-24T06:59:30+00:00] auditLog CALLED actionType=login_hash_debug entityType=auth entityId=2024-116608
+[2026-05-24T06:59:30+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:59:30+00:00] auditLog PREP INSERT UserID=4 Action=login_hash_debug ModuleName=auth
+[2026-05-24T06:59:30+00:00] auditLog EXEC INSERT
+[2026-05-24T06:59:30+00:00] auditLog EXCEPTION: SQLSTATE[22001]: String data, right truncated: 1406 Data too long for column 'TableAffected' at row 1
+[2026-05-24T06:59:30+00:00] auditLog PDO errorInfo=["00000",null,null]
+[2026-05-24T06:59:30+00:00] auditLog CALLED actionType=login_debug_rbac_loaded entityType=auth entityId=2024-116608
+[2026-05-24T06:59:30+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:59:30+00:00] auditLog PREP INSERT UserID=4 Action=login_debug_rbac_loaded ModuleName=auth
+[2026-05-24T06:59:30+00:00] auditLog EXEC INSERT
+[2026-05-24T06:59:30+00:00] auditLog INSERT OK rowCount=1
+[2026-05-24T06:59:30+00:00] auditLog CALLED actionType=login entityType=auth entityId=2024-116608
+[2026-05-24T06:59:30+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:59:30+00:00] auditLog PREP INSERT UserID=4 Action=login ModuleName=auth
+[2026-05-24T06:59:30+00:00] auditLog EXEC INSERT
+[2026-05-24T06:59:30+00:00] auditLog INSERT OK rowCount=1
+[2026-05-24T06:59:37+00:00] auditLog CALLED actionType=logout entityType=auth entityId=
+[2026-05-24T06:59:37+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:59:37+00:00] auditLog PREP INSERT UserID=4 Action=logout ModuleName=auth
+[2026-05-24T06:59:37+00:00] auditLog EXEC INSERT
+[2026-05-24T06:59:37+00:00] auditLog INSERT OK rowCount=1
+[2026-05-24T06:59:56+00:00] auditLog CALLED actionType=login_debug_school_match entityType=auth entityId=2024-116608
+[2026-05-24T06:59:56+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-05-24T06:59:56+00:00] auditLog CALLED actionType=login_hash_debug entityType=auth entityId=2024-116608
+[2026-05-24T06:59:56+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:59:56+00:00] auditLog PREP INSERT UserID=4 Action=login_hash_debug ModuleName=auth
+[2026-05-24T06:59:56+00:00] auditLog EXEC INSERT
+[2026-05-24T06:59:56+00:00] auditLog EXCEPTION: SQLSTATE[22001]: String data, right truncated: 1406 Data too long for column 'TableAffected' at row 1
+[2026-05-24T06:59:56+00:00] auditLog PDO errorInfo=["00000",null,null]
+[2026-05-24T06:59:56+00:00] auditLog CALLED actionType=login_debug_rbac_loaded entityType=auth entityId=2024-116608
+[2026-05-24T06:59:56+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:59:56+00:00] auditLog PREP INSERT UserID=4 Action=login_debug_rbac_loaded ModuleName=auth
+[2026-05-24T06:59:56+00:00] auditLog EXEC INSERT
+[2026-05-24T06:59:56+00:00] auditLog INSERT OK rowCount=1
+[2026-05-24T06:59:56+00:00] auditLog CALLED actionType=login entityType=auth entityId=2024-116608
+[2026-05-24T06:59:56+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T06:59:56+00:00] auditLog PREP INSERT UserID=4 Action=login ModuleName=auth
+[2026-05-24T06:59:56+00:00] auditLog EXEC INSERT
+[2026-05-24T06:59:56+00:00] auditLog INSERT OK rowCount=1
+[2026-05-24T07:02:15+00:00] auditLog CALLED actionType=logout entityType=auth entityId=
+[2026-05-24T07:02:15+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T07:02:15+00:00] auditLog PREP INSERT UserID=4 Action=logout ModuleName=auth
+[2026-05-24T07:02:15+00:00] auditLog EXEC INSERT
+[2026-05-24T07:02:15+00:00] auditLog INSERT OK rowCount=1
+[2026-05-24T07:02:34+00:00] auditLog CALLED actionType=login_debug_school_match entityType=auth entityId=2024-116610
+[2026-05-24T07:02:34+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-05-24T07:02:34+00:00] auditLog CALLED actionType=login_hash_debug entityType=auth entityId=2024-116610
+[2026-05-24T07:02:34+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T07:02:34+00:00] auditLog PREP INSERT UserID=6 Action=login_hash_debug ModuleName=auth
+[2026-05-24T07:02:34+00:00] auditLog EXEC INSERT
+[2026-05-24T07:02:34+00:00] auditLog EXCEPTION: SQLSTATE[22001]: String data, right truncated: 1406 Data too long for column 'TableAffected' at row 1
+[2026-05-24T07:02:34+00:00] auditLog PDO errorInfo=["00000",null,null]
+[2026-05-24T07:02:34+00:00] auditLog CALLED actionType=login_debug_rbac_loaded entityType=auth entityId=2024-116610
+[2026-05-24T07:02:34+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T07:02:34+00:00] auditLog PREP INSERT UserID=6 Action=login_debug_rbac_loaded ModuleName=auth
+[2026-05-24T07:02:34+00:00] auditLog EXEC INSERT
+[2026-05-24T07:02:34+00:00] auditLog INSERT OK rowCount=1
+[2026-05-24T07:02:34+00:00] auditLog CALLED actionType=login entityType=auth entityId=2024-116610
+[2026-05-24T07:02:34+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-24T07:02:34+00:00] auditLog PREP INSERT UserID=6 Action=login ModuleName=auth
+[2026-05-24T07:02:34+00:00] auditLog EXEC INSERT
+[2026-05-24T07:02:34+00:00] auditLog INSERT OK rowCount=1
+>>>>>>> e1a2ee8d7574abd532ac51024bedb54e55efd364
+>>>>>>> b3b185b354dd4c0b60f0a9aabb02ff5e26544be0
