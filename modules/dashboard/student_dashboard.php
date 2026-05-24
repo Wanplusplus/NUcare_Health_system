@@ -30,9 +30,3 @@ if ($landingKey === 'medical') {
 
 header('Location: patient_dashboard.php');
 exit;
-<<<<<<< HEAD
-
-
-
-=======
->>>>>>> adminside

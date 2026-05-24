@@ -1,39 +1,43 @@
 -- Consultation Module schema (Consultation Transactions)
 -- Uses PHP + MySQL (InnoDB) with prepared statements in application code.
 
+-- NOTE (Core Rule): NO separate consultation table.
+-- Consultation transactions are stored in `physical_examinations`.
+
+-- This file only contains ALTER TABLE statements to extend `physical_examinations`.
+
 START TRANSACTION;
 
-CREATE TABLE IF NOT EXISTS `consultation_transactions` (
-  `ConsultationID` INT NOT NULL AUTO_INCREMENT,
-  `SchoolPersonID` INT NOT NULL,
-  `TransactionNumber` INT NOT NULL,
+-- Transaction number per patient (patient linkage is via clinic_transactions.SchoolPersonID)
+-- We store the transaction number on physical_examinations for history display.
 
-  `BloodPressure` VARCHAR(20) DEFAULT NULL,
-  `Temperature` DECIMAL(5,2) DEFAULT NULL,
-  `PulseRate` INT DEFAULT NULL,
-  `Weight` DECIMAL(6,2) DEFAULT NULL,
+ALTER TABLE `physical_examinations`
+  ADD COLUMN IF NOT EXISTS `transaction_number` INT NULL,
+  ADD COLUMN IF NOT EXISTS `service_type` VARCHAR(150) NULL,
+  ADD COLUMN IF NOT EXISTS `consultation_status` ENUM('Waiting','Consulting','Completed','Cancelled') NOT NULL DEFAULT 'Waiting',
+  ADD COLUMN IF NOT EXISTS `chief_complaint` TEXT NULL,
+  ADD COLUMN IF NOT EXISTS `clinical_notes` TEXT NULL,
+  ADD COLUMN IF NOT EXISTS `findings` TEXT NULL,
+  ADD COLUMN IF NOT EXISTS `assessment` TEXT NULL,
+  ADD COLUMN IF NOT EXISTS `treatment_plan` TEXT NULL,
+  ADD COLUMN IF NOT EXISTS `attachment_path` VARCHAR(255) NULL;
 
-  `ChiefComplaint` TEXT DEFAULT NULL,
-  `ServiceType` VARCHAR(150) NOT NULL,
-  `ConsultationStatus` ENUM('Waiting','Consulting','Completed','Cancelled') NOT NULL DEFAULT 'Waiting',
-  `ClinicalNotes` TEXT DEFAULT NULL,
+-- created_at (useful for history display; keep compatibility with existing CreatedAt)
+ALTER TABLE `physical_examinations`
+  ADD COLUMN IF NOT EXISTS `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP;
 
-  `AttachedDocument` VARCHAR(255) DEFAULT NULL,
+-- If physical_examinations already has ExamDate, keep it.
+-- Ensure a consistent ordering column exists for history UI.
 
-  `CreatedAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-  `UpdatedAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+-- Unique traceability constraint: uniqueness is best enforced with patient reference,
+-- but physical_examinations doesn't store SchoolPersonID directly.
+-- We enforce uniqueness loosely on (ClinicTransactionID, transaction_number) as a fallback,
+-- since ClinicTransactionID is per patient transaction.
+-- If you later add school_person_id column to physical_examinations, we can tighten this constraint.
 
-  PRIMARY KEY (`ConsultationID`),
-  UNIQUE KEY `uniq_schoolperson_transaction` (`SchoolPersonID`, `TransactionNumber`),
-  KEY `idx_consult_schoolperson` (`SchoolPersonID`),
-  KEY `idx_consult_createdat` (`CreatedAt`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-ALTER TABLE `consultation_transactions`
-  ADD CONSTRAINT `fk_consultation_schoolperson`
-  FOREIGN KEY (`SchoolPersonID`) REFERENCES `school_people` (`SchoolPersonID`)
-  ON UPDATE CASCADE
-  ON DELETE RESTRICT;
+ALTER TABLE `physical_examinations`
+  ADD UNIQUE KEY IF NOT EXISTS `uniq_clinictrans_txnum` (`ClinicTransactionID`, `transaction_number`);
 
 COMMIT;
+
 
