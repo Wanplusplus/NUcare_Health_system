@@ -21,7 +21,7 @@ $activeSidebarItem = 'consultation';
     <title>NUCARE | Consultation</title>
     <link rel="icon" href="/NUcare_Health_system/assets/image/nucarelogo.png">
     <link rel="stylesheet" href="../../assets/css/app.css?v=1">
-    <link rel="stylesheet" href="../../assets/css/consultation.css?v=1">
+    <link rel="stylesheet" href="../../assets/css/consultation.css?v=3">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
@@ -47,7 +47,7 @@ $activeSidebarItem = 'consultation';
                 <p class="page-desc">Search for a patient, review details, and record consultation data in one clean workspace.</p>
             </div>
             <div class="page-header-right">
-                <!-- Logout removed per requirements -->
+                <span class="service-badge" id="serviceTypeBadge" style="display:none;"></span>
             </div>
         </div>
 
@@ -57,17 +57,20 @@ $activeSidebarItem = 'consultation';
                 <i class="fa-solid fa-magnifying-glass"></i>
                 Find Patient
             </div>
-            <p class="card-section-desc">Enter a patient ID number or full name to begin a consultation.</p>
+            <p class="card-section-desc">Enter a School ID or patient name to begin a consultation.</p>
 
             <div class="search-row">
-                <div class="search-input-wrap">
+                <div class="search-input-wrap" style="position:relative;">
                     <i class="fa-solid fa-magnifying-glass search-icon"></i>
                     <input
                         type="text"
                         id="consultSearchInput"
-                        placeholder="Search patient ID or name…"
-                        onkeydown="if(event.key==='Enter') searchPatient()"
+                        placeholder="Search School ID or name…"
+                        autocomplete="off"
+                        onkeydown="if(event.key==='Enter'){ event.preventDefault(); searchPatient(); }"
+                        oninput="onSearchInput(this.value)"
                     >
+                    <ul class="search-autocomplete" id="searchAutocomplete"></ul>
                 </div>
                 <button class="btn-search-patient" type="button" onclick="searchPatient()">
                     <i class="fa-solid fa-magnifying-glass"></i>
@@ -78,9 +81,9 @@ $activeSidebarItem = 'consultation';
             <div id="searchFeedback" class="search-feedback"></div>
         </div>
 
-        <!-- ══ PATIENT CARD ══ -->
+        <!-- ══ PATIENT BANNER ══ -->
         <div class="patient-banner" id="consultPatientCard">
-            <div class="patient-banner-avatar">
+            <div class="patient-banner-avatar" id="patientAvatarInitials">
                 <i class="fa-solid fa-user-nurse"></i>
             </div>
             <div class="patient-banner-body">
@@ -90,12 +93,20 @@ $activeSidebarItem = 'consultation';
                 </div>
                 <div class="patient-banner-meta">
                     <div class="meta-field">
-                        <span class="meta-label">Patient ID</span>
+                        <span class="meta-label">School ID</span>
                         <span class="meta-val" id="cpcID">—</span>
                     </div>
                     <div class="meta-field">
                         <span class="meta-label">Sex</span>
                         <span class="meta-val" id="cpcSex">—</span>
+                    </div>
+                    <div class="meta-field">
+                        <span class="meta-label">Age</span>
+                        <span class="meta-val" id="cpcAge">—</span>
+                    </div>
+                    <div class="meta-field">
+                        <span class="meta-label">Type</span>
+                        <span class="meta-val" id="cpcType">—</span>
                     </div>
                     <div class="meta-field">
                         <span class="meta-label">Loaded At</span>
@@ -107,25 +118,34 @@ $activeSidebarItem = 'consultation';
 
         <!-- ══ CONSULTATION FORM ══ -->
         <div class="consult-form-outer">
-            <!-- Transaction confirmation modal (history exists) -->
+
+            <!-- History-exists modal -->
             <div id="txConfirmModal" class="modal" style="display:none;">
                 <div class="modal-overlay"></div>
                 <div class="modal-card">
                     <div class="modal-head">
-                        <div class="modal-title">Patient found</div>
+                        <div class="modal-title">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                            Patient has existing records
+                        </div>
                         <button type="button" class="modal-close" onclick="closeTxConfirm()" aria-label="Close">&times;</button>
                     </div>
                     <div class="modal-body">
-                        <p id="txConfirmText">Do you want to add another transaction?</p>
-                        <div class="modal-sub">Previous consultations will remain preserved.</div>
+                        <p id="txConfirmText">This patient already has consultation history. Would you like to start a new transaction?</p>
+                        <div class="modal-sub">All previous consultations will remain preserved.</div>
                     </div>
                     <div class="modal-actions">
-                        <button type="button" class="btn-modal btn-yes" onclick="confirmAddAnother(true)">Yes</button>
-                        <button type="button" class="btn-modal btn-no" onclick="confirmAddAnother(false)">No</button>
+                        <button type="button" class="btn-modal btn-yes" onclick="confirmAddAnother(true)">
+                            <i class="fa-solid fa-plus"></i> New Transaction
+                        </button>
+                        <button type="button" class="btn-modal btn-no" onclick="confirmAddAnother(false)">
+                            Cancel
+                        </button>
                     </div>
                 </div>
             </div>
 
+            <!-- Form lock overlay -->
             <div id="disabledOverlay" class="show">
                 <i class="fa-solid fa-lock"></i>
                 Search for a patient first to activate the form
@@ -135,14 +155,17 @@ $activeSidebarItem = 'consultation';
                   method="POST"
                   action="../../ajax/consultation/save_consultation.ajax.php"
                   enctype="multipart/form-data"
-                  class="consult-form-area disabled"
-                  id="consultFormArea">
+                  class="consult-form-area disabled">
 
-                <input type="hidden" id="consultPatientID" name="school_person_id">
-                <input type="hidden" id="consultationID" name="consultation_id" value="">
+                <input type="hidden" id="consultPatientID"  name="school_person_id">
+                <input type="hidden" id="consultationID"    name="consultation_id" value="">
 
-                <!-- Vitals -->
-                <div class="consult-card">
+                <!-- ════════════════════════════════════════
+                     SECTION: VITAL SIGNS
+                     Shown for: General Consultation, First Aid, Physical Examination
+                     Hidden for: Dental, Medical Certificate
+                ════════════════════════════════════════ -->
+                <div class="consult-card" id="section-vitals" data-section="vitals">
                     <div class="card-section-label">
                         <i class="fa-solid fa-heart-pulse"></i>
                         Vital Signs
@@ -154,21 +177,36 @@ $activeSidebarItem = 'consultation';
                         </div>
                         <div class="form-group">
                             <label for="consultTemp">Temperature (°C)</label>
-                            <input type="text" id="consultTemp" name="temperature" placeholder="e.g. 36.6">
+                            <input type="number" id="consultTemp" name="temperature" step="0.1" placeholder="e.g. 36.6">
                         </div>
                         <div class="form-group">
-                            <label for="consultPulse">Pulse Rate</label>
-                            <input type="text" id="consultPulse" name="pulse_rate" placeholder="e.g. 75 bpm">
+                            <label for="consultPulse">Pulse Rate (bpm)</label>
+                            <input type="number" id="consultPulse" name="pulse_rate" step="1" placeholder="e.g. 75">
                         </div>
                         <div class="form-group">
                             <label for="consultWeight">Weight (kg)</label>
-                            <input type="number" id="consultWeight" name="weight" step="0.1" placeholder="e.g. 55">
+                            <input type="number" id="consultWeight" name="weight" step="0.1" placeholder="e.g. 55" oninput="calcBMI()">
+                        </div>
+                        <div class="form-group">
+                            <label for="consultHeight">Height (cm)</label>
+                            <input type="number" id="consultHeight" name="height" step="0.1" placeholder="e.g. 160" oninput="calcBMI()">
+                        </div>
+                        <!-- BMI auto-calculated -->
+                        <div class="form-group">
+                            <label>BMI</label>
+                            <div class="bmi-display" id="bmiDisplay">
+                                <span class="bmi-val" id="bmiValue">—</span>
+                                <span class="bmi-label" id="bmiCategory"></span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Complaint & Service -->
-                <div class="consult-card">
+                <!-- ════════════════════════════════════════
+                     SECTION: CONSULTATION DETAILS
+                     Hidden for: Physical Examination, Medical Certificate
+                ════════════════════════════════════════ -->
+                <div class="consult-card" id="section-consultation-details" data-section="consultation-details">
                     <div class="card-section-label">
                         <i class="fa-solid fa-clipboard-list"></i>
                         Consultation Details
@@ -184,14 +222,12 @@ $activeSidebarItem = 'consultation';
 
                         <div class="form-group">
                             <label for="consultService">Service Type <span class="req">*</span></label>
-                            <select id="consultService" name="service_type">
+                            <select id="consultService" name="service_type" onchange="onServiceTypeChange(this.value)">
                                 <option value="">— Select service —</option>
                                 <option>General Consultation</option>
                                 <option>Dental</option>
                                 <option>First Aid</option>
                                 <option>Medical Certificate</option>
-                                <option>Immunization</option>
-                                <option>Laboratory</option>
                                 <option>Physical Examination</option>
                                 <option>Other</option>
                             </select>
@@ -200,8 +236,7 @@ $activeSidebarItem = 'consultation';
 
                         <div class="form-group" id="otherServiceWrap" style="display:none;">
                             <label for="consultServiceOther">Specify Other Service</label>
-                            <input type="text" id="consultServiceOther" name="service_other"
-                                   placeholder="Specify service…">
+                            <input type="text" id="consultServiceOther" name="service_other" placeholder="Specify service…">
                         </div>
 
                         <div class="form-group">
@@ -223,46 +258,481 @@ $activeSidebarItem = 'consultation';
                     </div>
                 </div>
 
-                <!-- Medicines Dispensed -->
-                <div class="consult-card">
+
+                <!-- ════════════════════════════════════════
+                     SECTION: FIRST AID (Service-specific)
+                     Shown only when Service Type = First Aid
+                ════════════════════════════════════════ -->
+                <div class="consult-card hidden" id="section-firstaid" data-section="firstaid">
+                    <div class="card-section-label">
+                        <i class="fa-solid fa-kit-medical"></i>
+                        First Aid Details
+                    </div>
+                    <div class="firstaid-grid">
+                        <div class="form-group">
+                            <label for="faInjuryType">Injury Type</label>
+                            <select id="faInjuryType" name="injury_type">
+                                <option value="">— Select type —</option>
+                                <option>Laceration / Cut</option>
+                                <option>Bruise / Contusion</option>
+                                <option>Sprain / Strain</option>
+                                <option>Burn</option>
+                                <option>Fracture (suspected)</option>
+                                <option>Head Injury</option>
+                                <option>Eye Injury</option>
+                                <option>Allergic Reaction</option>
+                                <option>Fainting / Syncope</option>
+                                <option>Nosebleed</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="faLocation">Incident Location</label>
+                            <input type="text" id="faLocation" name="incident_location" placeholder="e.g. Gymnasium, Cafeteria, Room 301">
+                        </div>
+                        <div class="form-group form-group--full">
+                            <label for="faAction">Immediate Action Taken</label>
+                            <textarea id="faAction" name="immediate_action_taken" rows="3"
+                                      placeholder="Describe the first aid given, medications applied, referral made…"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ════════════════════════════════════════
+                     SECTION: PHYSICAL EXAMINATION
+                     Shown only when Service Type = Physical Examination
+                     Replaces Consultation Details + Medicine for this service type
+                ════════════════════════════════════════ -->
+                <div class="physexam-card hidden" id="section-physical-exam" data-section="physical-exam">
+                    <div class="physexam-header">
+                        <div>
+                            <div class="physexam-header-title">
+                                <i class="fa-solid fa-stethoscope"></i>
+                                Physical Examination Form
+                            </div>
+                            <div class="physexam-header-desc">Complete the systematic body systems review. Mark each finding as Normal or Abnormal.</div>
+                        </div>
+                        <span class="physexam-header-badge">
+                            <i class="fa-solid fa-shield-halved"></i> Confidential Medical Record
+                        </span>
+                    </div>
+
+                    <div class="physexam-body">
+
+                        <!-- ── Exam Date ── -->
+                        <div class="pe-section">
+                            <div class="pe-section-label">
+                                <div class="pe-section-label-icon"><i class="fa-solid fa-calendar-days"></i></div>
+                                <span class="pe-section-label-text">Examination Date</span>
+                            </div>
+                            <div class="pe-vitals-grid">
+                                <div class="form-group">
+                                    <label for="examDate">Date of Examination <span class="req">*</span></label>
+                                    <input type="date" id="examDate" name="exam_date" value="<?= date('Y-m-d') ?>">
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <!-- ── Head & Sensory ── -->
+                        <div class="pe-section">
+                            <div class="pe-section-label">
+                                <div class="pe-section-label-icon"><i class="fa-solid fa-brain"></i></div>
+                                <span class="pe-section-label-text">Head &amp; Sensory</span>
+                            </div>
+                            <div class="pe-exam-grid">
+
+                                <!-- Ears -->
+                                <div class="exam-field-group">
+                                    <div class="exam-field-label">
+                                        <span>Ears</span>
+                                        <div class="exam-badge-row">
+                                            <button type="button" class="exam-badge-btn normal"
+                                                    data-field="examEars" data-status="normal"
+                                                    onclick="toggleExamBadge('examEars','normal')">
+                                                <i class="fa-solid fa-check"></i> Normal
+                                            </button>
+                                            <button type="button" class="exam-badge-btn abnormal"
+                                                    data-field="examEars" data-status="abnormal"
+                                                    onclick="toggleExamBadge('examEars','abnormal')">
+                                                <i class="fa-solid fa-triangle-exclamation"></i> Abnormal
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <select class="exam-field-input exam-select" id="examEars" name="exam_ears">
+                                        <option value="">— Select finding —</option>
+                                        <option value="Normal">Normal</option>
+                                        <option value="Cerumen impaction">Cerumen impaction</option>
+                                        <option value="Otitis media">Otitis media</option>
+                                        <option value="Tympanic membrane perforation">Tympanic membrane perforation</option>
+                                        <option value="Hearing loss">Hearing loss</option>
+                                        <option value="Other abnormality">Other abnormality</option>
+                                    </select>
+                                </div>
+
+                                <!-- Eyes / Pupil -->
+                                <div class="exam-field-group">
+                                    <div class="exam-field-label">
+                                        <span>Eyes / Pupil</span>
+                                        <div class="exam-badge-row">
+                                            <button type="button" class="exam-badge-btn normal"
+                                                    data-field="examEyesPupil" data-status="normal"
+                                                    onclick="toggleExamBadge('examEyesPupil','normal')">
+                                                <i class="fa-solid fa-check"></i> Normal
+                                            </button>
+                                            <button type="button" class="exam-badge-btn abnormal"
+                                                    data-field="examEyesPupil" data-status="abnormal"
+                                                    onclick="toggleExamBadge('examEyesPupil','abnormal')">
+                                                <i class="fa-solid fa-triangle-exclamation"></i> Abnormal
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <select class="exam-field-input exam-select" id="examEyesPupil" name="exam_eyes_pupil">
+                                        <option value="">— Select finding —</option>
+                                        <option value="PERRLA">PERRLA (Normal)</option>
+                                        <option value="Anisocoria">Anisocoria</option>
+                                        <option value="Conjunctivitis">Conjunctivitis</option>
+                                        <option value="Papilledema">Papilledema</option>
+                                        <option value="Visual field defect">Visual field defect</option>
+                                        <option value="Other abnormality">Other abnormality</option>
+                                    </select>
+                                </div>
+
+                                <!-- Nose -->
+                                <div class="exam-field-group">
+                                    <div class="exam-field-label">
+                                        <span>Nose</span>
+                                        <div class="exam-badge-row">
+                                            <button type="button" class="exam-badge-btn normal"
+                                                    data-field="examNose" data-status="normal"
+                                                    onclick="toggleExamBadge('examNose','normal')">
+                                                <i class="fa-solid fa-check"></i> Normal
+                                            </button>
+                                            <button type="button" class="exam-badge-btn abnormal"
+                                                    data-field="examNose" data-status="abnormal"
+                                                    onclick="toggleExamBadge('examNose','abnormal')">
+                                                <i class="fa-solid fa-triangle-exclamation"></i> Abnormal
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <select class="exam-field-input exam-select" id="examNose" name="exam_nose">
+                                        <option value="">— Select finding —</option>
+                                        <option value="Normal">Normal</option>
+                                        <option value="Nasal polyps">Nasal polyps</option>
+                                        <option value="Deviated septum">Deviated septum</option>
+                                        <option value="Rhinitis">Rhinitis</option>
+                                        <option value="Sinusitis">Sinusitis</option>
+                                        <option value="Other abnormality">Other abnormality</option>
+                                    </select>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- ── Cardiovascular & Respiratory ── -->
+                        <div class="pe-section">
+                            <div class="pe-section-label">
+                                <div class="pe-section-label-icon"><i class="fa-solid fa-lungs"></i></div>
+                                <span class="pe-section-label-text">Cardiovascular &amp; Respiratory</span>
+                            </div>
+                            <div class="pe-exam-grid">
+
+                                <!-- Heart -->
+                                <div class="exam-field-group">
+                                    <div class="exam-field-label">
+                                        <span>Heart</span>
+                                        <div class="exam-badge-row">
+                                            <button type="button" class="exam-badge-btn normal"
+                                                    data-field="examHeart" data-status="normal"
+                                                    onclick="toggleExamBadge('examHeart','normal')">
+                                                <i class="fa-solid fa-check"></i> Normal
+                                            </button>
+                                            <button type="button" class="exam-badge-btn abnormal"
+                                                    data-field="examHeart" data-status="abnormal"
+                                                    onclick="toggleExamBadge('examHeart','abnormal')">
+                                                <i class="fa-solid fa-triangle-exclamation"></i> Abnormal
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <select class="exam-field-input exam-select" id="examHeart" name="exam_heart">
+                                        <option value="">— Select finding —</option>
+                                        <option value="Regular rate and rhythm">Regular rate and rhythm (Normal)</option>
+                                        <option value="Murmur">Murmur</option>
+                                        <option value="Arrhythmia">Arrhythmia</option>
+                                        <option value="Bradycardia">Bradycardia</option>
+                                        <option value="Tachycardia">Tachycardia</option>
+                                        <option value="Other abnormality">Other abnormality</option>
+                                    </select>
+                                </div>
+
+                                <!-- Lungs -->
+                                <div class="exam-field-group">
+                                    <div class="exam-field-label">
+                                        <span>Lungs</span>
+                                        <div class="exam-badge-row">
+                                            <button type="button" class="exam-badge-btn normal"
+                                                    data-field="examLungs" data-status="normal"
+                                                    onclick="toggleExamBadge('examLungs','normal')">
+                                                <i class="fa-solid fa-check"></i> Normal
+                                            </button>
+                                            <button type="button" class="exam-badge-btn abnormal"
+                                                    data-field="examLungs" data-status="abnormal"
+                                                    onclick="toggleExamBadge('examLungs','abnormal')">
+                                                <i class="fa-solid fa-triangle-exclamation"></i> Abnormal
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <select class="exam-field-input exam-select" id="examLungs" name="exam_lungs">
+                                        <option value="">— Select finding —</option>
+                                        <option value="Clear to auscultation">Clear to auscultation (Normal)</option>
+                                        <option value="Wheezing">Wheezing</option>
+                                        <option value="Crackles / Rales">Crackles / Rales</option>
+                                        <option value="Rhonchi">Rhonchi</option>
+                                        <option value="Diminished breath sounds">Diminished breath sounds</option>
+                                        <option value="Other abnormality">Other abnormality</option>
+                                    </select>
+                                </div>
+
+                                <!-- Thorax -->
+                                <div class="exam-field-group">
+                                    <div class="exam-field-label">
+                                        <span>Thorax</span>
+                                        <div class="exam-badge-row">
+                                            <button type="button" class="exam-badge-btn normal"
+                                                    data-field="examThorax" data-status="normal"
+                                                    onclick="toggleExamBadge('examThorax','normal')">
+                                                <i class="fa-solid fa-check"></i> Normal
+                                            </button>
+                                            <button type="button" class="exam-badge-btn abnormal"
+                                                    data-field="examThorax" data-status="abnormal"
+                                                    onclick="toggleExamBadge('examThorax','abnormal')">
+                                                <i class="fa-solid fa-triangle-exclamation"></i> Abnormal
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <select class="exam-field-input exam-select" id="examThorax" name="exam_thorax">
+                                        <option value="">— Select finding —</option>
+                                        <option value="Symmetric expansion">Symmetric expansion (Normal)</option>
+                                        <option value="Asymmetric expansion">Asymmetric expansion</option>
+                                        <option value="Barrel chest">Barrel chest</option>
+                                        <option value="Kyphoscoliosis">Kyphoscoliosis</option>
+                                        <option value="Other abnormality">Other abnormality</option>
+                                    </select>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- ── Abdomen & Extremities ── -->
+                        <div class="pe-section">
+                            <div class="pe-section-label">
+                                <div class="pe-section-label-icon"><i class="fa-solid fa-person"></i></div>
+                                <span class="pe-section-label-text">Abdomen &amp; Musculoskeletal</span>
+                            </div>
+                            <div class="pe-exam-grid">
+
+                                <!-- Abdomen -->
+                                <div class="exam-field-group">
+                                    <div class="exam-field-label">
+                                        <span>Abdomen</span>
+                                        <div class="exam-badge-row">
+                                            <button type="button" class="exam-badge-btn normal"
+                                                    data-field="examAbdomen" data-status="normal"
+                                                    onclick="toggleExamBadge('examAbdomen','normal')">
+                                                <i class="fa-solid fa-check"></i> Normal
+                                            </button>
+                                            <button type="button" class="exam-badge-btn abnormal"
+                                                    data-field="examAbdomen" data-status="abnormal"
+                                                    onclick="toggleExamBadge('examAbdomen','abnormal')">
+                                                <i class="fa-solid fa-triangle-exclamation"></i> Abnormal
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <select class="exam-field-input exam-select" id="examAbdomen" name="exam_abdomen">
+                                        <option value="">— Select finding —</option>
+                                        <option value="Soft, non-tender">Soft, non-tender (Normal)</option>
+                                        <option value="Tenderness on palpation">Tenderness on palpation</option>
+                                        <option value="Hepatomegaly">Hepatomegaly</option>
+                                        <option value="Splenomegaly">Splenomegaly</option>
+                                        <option value="Ascites">Ascites</option>
+                                        <option value="Rigidity / guarding">Rigidity / guarding</option>
+                                        <option value="Other abnormality">Other abnormality</option>
+                                    </select>
+                                </div>
+
+                                <!-- Skin -->
+                                <div class="exam-field-group">
+                                    <div class="exam-field-label">
+                                        <span>Skin</span>
+                                        <div class="exam-badge-row">
+                                            <button type="button" class="exam-badge-btn normal"
+                                                    data-field="examSkin" data-status="normal"
+                                                    onclick="toggleExamBadge('examSkin','normal')">
+                                                <i class="fa-solid fa-check"></i> Normal
+                                            </button>
+                                            <button type="button" class="exam-badge-btn abnormal"
+                                                    data-field="examSkin" data-status="abnormal"
+                                                    onclick="toggleExamBadge('examSkin','abnormal')">
+                                                <i class="fa-solid fa-triangle-exclamation"></i> Abnormal
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <select class="exam-field-input exam-select" id="examSkin" name="exam_skin">
+                                        <option value="">— Select finding —</option>
+                                        <option value="Normal color and turgor">Normal color and turgor (Normal)</option>
+                                        <option value="Pallor">Pallor</option>
+                                        <option value="Jaundice">Jaundice</option>
+                                        <option value="Cyanosis">Cyanosis</option>
+                                        <option value="Rash / Lesions">Rash / Lesions</option>
+                                        <option value="Edema">Edema</option>
+                                        <option value="Other abnormality">Other abnormality</option>
+                                    </select>
+                                </div>
+
+                                <!-- Extremities -->
+                                <div class="exam-field-group">
+                                    <div class="exam-field-label">
+                                        <span>Extremities</span>
+                                        <div class="exam-badge-row">
+                                            <button type="button" class="exam-badge-btn normal"
+                                                    data-field="examExtremities" data-status="normal"
+                                                    onclick="toggleExamBadge('examExtremities','normal')">
+                                                <i class="fa-solid fa-check"></i> Normal
+                                            </button>
+                                            <button type="button" class="exam-badge-btn abnormal"
+                                                    data-field="examExtremities" data-status="abnormal"
+                                                    onclick="toggleExamBadge('examExtremities','abnormal')">
+                                                <i class="fa-solid fa-triangle-exclamation"></i> Abnormal
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <select class="exam-field-input exam-select" id="examExtremities" name="exam_extremities">
+                                        <option value="">— Select finding —</option>
+                                        <option value="Full range of motion">Full range of motion (Normal)</option>
+                                        <option value="Limited ROM">Limited range of motion</option>
+                                        <option value="Peripheral edema">Peripheral edema</option>
+                                        <option value="Varicosities">Varicosities</option>
+                                        <option value="Clubbing">Clubbing</option>
+                                        <option value="Other abnormality">Other abnormality</option>
+                                    </select>
+                                </div>
+
+                                <!-- Deformities -->
+                                <div class="exam-field-group">
+                                    <div class="exam-field-label">
+                                        <span>Deformities</span>
+                                        <div class="exam-badge-row">
+                                            <button type="button" class="exam-badge-btn normal"
+                                                    data-field="examDeformities" data-status="normal"
+                                                    onclick="toggleExamBadge('examDeformities','normal')">
+                                                <i class="fa-solid fa-check"></i> None
+                                            </button>
+                                            <button type="button" class="exam-badge-btn abnormal"
+                                                    data-field="examDeformities" data-status="abnormal"
+                                                    onclick="toggleExamBadge('examDeformities','abnormal')">
+                                                <i class="fa-solid fa-triangle-exclamation"></i> Present
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <select class="exam-field-input exam-select" id="examDeformities" name="exam_deformities">
+                                        <option value="">— Select finding —</option>
+                                        <option value="None">None noted (Normal)</option>
+                                        <option value="Scoliosis">Scoliosis</option>
+                                        <option value="Kyphosis">Kyphosis</option>
+                                        <option value="Limb deformity">Limb deformity</option>
+                                        <option value="Congenital defect">Congenital defect</option>
+                                        <option value="Post-surgical deformity">Post-surgical deformity</option>
+                                        <option value="Other">Other — specify in remarks</option>
+                                    </select>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- ── Medical Remarks ── -->
+                        <div class="pe-section">
+                            <div class="pe-section-label">
+                                <div class="pe-section-label-icon"><i class="fa-solid fa-file-medical"></i></div>
+                                <span class="pe-section-label-text">Medical Remarks</span>
+                            </div>
+                            <textarea id="examRemarks" name="exam_remarks" class="pe-remarks-area"
+                                      rows="4" placeholder="Additional findings, observations, or recommendations from the examining physician…"></textarea>
+                        </div>
+
+                        <!-- ── Medical Clearance ── -->
+                        <div class="pe-section">
+                            <div class="pe-section-label">
+                                <div class="pe-section-label-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                                <span class="pe-section-label-text">Medical Clearance Result</span>
+                            </div>
+                            <div class="clearance-section">
+                                <div class="clearance-section-title">
+                                    <i class="fa-solid fa-clipboard-check"></i>
+                                    Cardio-Pulmonary Clearance Decision <span class="req">*</span>
+                                </div>
+                                <div class="clearance-options">
+                                    <div class="clearance-option" data-value="Fit" onclick="selectClearance('Fit')">
+                                        <i class="fa-solid fa-circle-check" style="color:#16a34a;"></i>
+                                        <div>
+                                            <div style="font-weight:800;">FIT</div>
+                                            <div style="font-size:.72rem;color:var(--gray-500);">Cleared for activity</div>
+                                        </div>
+                                    </div>
+                                    <div class="clearance-option" data-value="Unfit" onclick="selectClearance('Unfit')">
+                                        <i class="fa-solid fa-circle-xmark" style="color:#dc2626;"></i>
+                                        <div>
+                                            <div style="font-weight:800;">UNFIT</div>
+                                            <div style="font-size:.72rem;color:var(--gray-500);">Not cleared — needs treatment</div>
+                                        </div>
+                                    </div>
+                                    <div class="clearance-option" data-value="Pending" onclick="selectClearance('Pending')">
+                                        <i class="fa-solid fa-clock" style="color:#d97706;"></i>
+                                        <div>
+                                            <div style="font-weight:800;">PENDING</div>
+                                            <div style="font-size:.72rem;color:var(--gray-500);">Awaiting further tests</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="examCardioClearance" name="exam_cardio_clearance" value="">
+                            </div>
+                        </div>
+
+                    </div><!-- /.physexam-body -->
+                </div><!-- /#section-physical-exam -->
+
+                <!-- ════════════════════════════════════════
+                     SECTION: MEDICINES DISPENSED (3NF)
+                     Hidden for: Physical Examination, Medical Certificate
+                ════════════════════════════════════════ -->
+                <div class="consult-card" id="section-medicines" data-section="medicines">
                     <div class="card-section-label">
                         <i class="fa-solid fa-pills"></i>
                         Medicines Dispensed
                         <span class="section-note">Optional — only fill if medicine was given</span>
                     </div>
 
-                    <div id="medsList">
-                        <div class="med-entry" id="med-0">
-                            <div class="form-group med-name-group">
-                                <label for="consultMedName0">Medicine Name</label>
-                                <input type="text" id="consultMedName0" name="consultMedName[]"
-                                       placeholder="Medicine name">
-                                <span class="err-msg" id="medNameErr0"></span>
-                            </div>
-                            <div class="form-group med-qty-group">
-                                <label for="consultMedQty0">Qty</label>
-                                <input type="number" id="consultMedQty0" name="consultMedQty[]"
-                                       placeholder="0" min="1">
-                                <span class="err-msg" id="medQtyErr0"></span>
-                            </div>
-                            <div class="med-spacer"></div>
-                        </div>
-                    </div>
+                    <div id="medsList"></div>
 
-                    <button type="button" class="btn-add-med" onclick="addConsultMed()">
+                    <button type="button" class="btn-add-med" onclick="addMedRow()">
                         <i class="fa-solid fa-plus"></i>
-                        Add Another Medicine
+                        Add Medicine
                     </button>
                 </div>
 
-                <!-- PDF Upload -->
-                <div class="consult-card">
+                <!-- ════════════════════════════════════════
+                     SECTION: ATTACH DOCUMENT
+                     Hidden for: First Aid
+                     Required for: Medical Certificate
+                ════════════════════════════════════════ -->
+                <div class="consult-card" id="section-attachment" data-section="attachment">
                     <div class="card-section-label">
                         <i class="fa-solid fa-file-pdf"></i>
                         Attach Document
-                        <span class="section-note">Optional — PDF only, max 10 MB</span>
+                        <span id="attachmentRequiredBadge" class="section-note" style="display:none;">
+                            <span class="req">*</span> Required for Medical Certificate
+                        </span>
                     </div>
-                    <p class="card-section-desc">Upload a supporting document such as a lab result, referral, or medical certificate.</p>
+                    <p class="card-section-desc">Upload a supporting document such as a lab result, referral letter, or medical certificate PDF.</p>
 
                     <div class="pdf-upload-zone" id="pdfUploadZone">
                         <input type="file"
@@ -292,39 +762,91 @@ $activeSidebarItem = 'consultation';
                     </div>
                 </div>
 
-                    <!-- Consultation History -->
-                    <div class="consult-card consult-history-card">
-                        <div class="card-section-label">
-                            <i class="fa-solid fa-clock-rotate-left"></i>
-                            Consultation History
+                <!-- ════════════════════════════════════════
+                     SECTION: CONSULTATION HISTORY (EMR, READ-ONLY)
+                     Always visible below the form
+                ════════════════════════════════════════ -->
+                <div class="consult-card consult-history-card">
+                    <div class="card-section-label">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        Consultation History
+                        <span class="section-note">Read-only — previous visits</span>
+                    </div>
+
+                    <!-- History toolbar: search + date range + print -->
+                    <div class="history-toolbar">
+                        <div class="history-search-wrap">
+                            <i class="fa-solid fa-magnifying-glass" style="color:var(--gray-400);font-size:.8rem;"></i>
+                            <input type="text" placeholder="Search complaint, service, or Tx #…" oninput="onHistorySearch(this.value)">
                         </div>
-                        <div class="history-table-wrap">
-                            <table class="history-table" id="consultHistoryTable">
-                                <thead>
-                                    <tr>
-                                        <th>School ID</th>
-                                        <th>Sex</th>
-                                        <th>Transaction #</th>
-                                        <th>Created At</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="consultHistoryTbody">
-                                    <tr><td colspan="4" class="muted">Search for a patient to view history.</td></tr>
-                                </tbody>
-                            </table>
+                        <div class="history-date-wrap">
+                            <input type="date" id="historyDateFrom" onchange="filterHistoryByDate()" title="From date">
+                            <span class="history-date-sep">→</span>
+                            <input type="date" id="historyDateTo"   onchange="filterHistoryByDate()" title="To date">
+                        </div>
+                        <button type="button" class="btn-print-history" onclick="printHistory()" title="Print history">
+                            <i class="fa-solid fa-print"></i> Print
+                        </button>
+                    </div>
+
+                    <!-- Timeline view (primary) -->
+                    <div class="history-timeline" id="historyTimeline">
+                        <div class="muted" style="padding:20px 0;text-align:center;">
+                            Search for a patient to view consultation history.
                         </div>
                     </div>
 
-                    <!-- Actions -->
-                <div id="consultFormActions" class="consult-actions">
-                    <button type="submit" class="btn-save-consult">
-                        <i class="fa-solid fa-floppy-disk"></i>
-                        Save Consultation
-                    </button>
-                    <button type="button" class="btn-clear-consult" id="clearConsultForm">
-                        <i class="fa-solid fa-rotate-left"></i>
-                        Clear Form
-                    </button>
+                    <!-- Read-only detail panel (slides in on click) -->
+                    <div class="history-detail-panel" id="historyDetailPanel">
+                        <div class="history-detail-header">
+                            <h3 class="history-detail-title" id="historyDetailTitle">Transaction Details</h3>
+                            <div class="history-detail-actions">
+                                <button type="button" class="btn-print-history" onclick="printHistory()">
+                                    <i class="fa-solid fa-print"></i> Print
+                                </button>
+                                <button type="button" class="btn-export-pdf" onclick="exportHistoryPDF()">
+                                    <i class="fa-solid fa-file-pdf"></i> Export PDF
+                                </button>
+                                <button type="button" class="btn-clear-consult" onclick="closeHistoryDetail()" style="padding:7px 14px;font-size:.76rem;">
+                                    <i class="fa-solid fa-xmark"></i> Close
+                                </button>
+                            </div>
+                        </div>
+                        <div id="historyDetailBody"></div>
+                    </div>
+
+                    <!-- Table fallback (legacy compatibility) -->
+                    <div class="history-table-wrap" style="display:none;">
+                        <table class="history-table" id="consultHistoryTable">
+                            <thead>
+                                <tr>
+                                    <th>Tx #</th>
+                                    <th>Date</th>
+                                    <th>Service</th>
+                                    <th>Complaint</th>
+                                    <th>Status</th>
+                                    <th>Medicines</th>
+                                </tr>
+                            </thead>
+                            <tbody id="consultHistoryTbody">
+                                <tr><td colspan="6" class="muted">Search for a patient to view history.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ── Sticky Save Panel ── -->
+                <div class="consult-actions-sticky">
+                    <div class="consult-actions-sticky-inner">
+                        <button type="submit" class="btn-save-consult" id="btnSaveConsult">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            Save Consultation
+                        </button>
+                        <button type="button" class="btn-clear-consult" id="clearConsultForm" onclick="clearForm()">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            Clear
+                        </button>
+                    </div>
                 </div>
 
             </form>
@@ -339,6 +861,6 @@ $activeSidebarItem = 'consultation';
 </div>
 
 <script src="../../assets/js/app.js"></script>
-<script src="../../assets/js/consultation.js"></script>
+<script src="../../assets/js/consultation.js?v=3"></script>
 </body>
 </html>

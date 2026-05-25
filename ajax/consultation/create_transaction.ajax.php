@@ -3,10 +3,16 @@ declare(strict_types=1);
 
 header('Content-Type: application/json; charset=utf-8');
 
+// Suppress PHP warnings from appearing in JSON output
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
+
+if (session_status() === PHP_SESSION_NONE) session_start();
+
 $pdo = require __DIR__ . '/../../config/db_pdo.php';
 
 $spid = (int)($_POST['school_person_id'] ?? 0);
-$mode = $_POST['mode'] ?? 'auto';
+$mode = $_POST['mode'] ?? 'auto'; // 'auto' | 'next'
 
 if ($spid <= 0) {
     echo json_encode(['ok' => false, 'message' => 'Invalid school_person_id']);
@@ -16,67 +22,79 @@ if ($spid <= 0) {
 try {
     $pdo->beginTransaction();
 
-    // check history
+    // Count existing transactions for this patient
     $check = $pdo->prepare("
-        SELECT COUNT(*)
-        FROM clinic_transactions
-        WHERE SchoolPersonID = :id
+        SELECT COUNT(*) FROM clinic_transactions WHERE SchoolPersonID = :id
     ");
     $check->execute([':id' => $spid]);
+    $historyCount = (int)$check->fetchColumn();
 
-    $hasHistory = (int)$check->fetchColumn() > 0;
-
-    if ($mode === 'auto' && $hasHistory) {
+    // In auto mode, block if history exists (frontend shows modal to confirm)
+    if ($mode === 'auto' && $historyCount > 0) {
         $pdo->rollBack();
-        echo json_encode(['ok' => false, 'message' => 'History exists', 'historyCount' => $hasHistory]);
+        echo json_encode([
+            'ok'           => false,
+            'message'      => 'History exists',
+            'historyCount' => $historyCount,
+        ]);
         exit;
     }
 
-    // create transaction header
-    $ct = $pdo->prepare("
-        INSERT INTO clinic_transactions (SchoolPersonID, VisitDate)
-        VALUES (:id, CURDATE())
+    // ── 1. Insert clinic_transactions header ──────────────────────────────
+    $ctStmt = $pdo->prepare("
+        INSERT INTO clinic_transactions (
+            SchoolPersonID,
+            VisitDate,
+            ConsultationStatus,
+            CreatedAt
+        )
+        VALUES (
+            :spid,
+            CURDATE(),
+            'Waiting',
+            NOW()
+        )
     ");
-    $ct->execute([':id' => $spid]);
-
+    $ctStmt->execute([':spid' => $spid]);
     $ctid = (int)$pdo->lastInsertId();
 
-    // create physical exam (ONLY REAL COLUMNS)
-    $pe = $pdo->prepare("
+    if ($ctid <= 0) {
+        throw new RuntimeException('Failed to insert clinic_transactions row');
+    }
+
+    // ── 2. Insert blank physical_examinations row ─────────────────────────
+    // Only insert the guaranteed columns (ClinicTransactionID + ExamDate).
+    // All vitals are nullable so we omit them — no column mismatch possible.
+    $peStmt = $pdo->prepare("
         INSERT INTO physical_examinations (
             ClinicTransactionID,
-            ExamDate,
-            BloodPressure,
-            PulseRate,
-            Weight
+            ExamDate
         )
         VALUES (
             :ctid,
-            CURDATE(),
-            NULL,
-            NULL,
-            NULL
+            CURDATE()
         )
     ");
-
-    $pe->execute([':ctid' => $ctid]);
-
+    $peStmt->execute([':ctid' => $ctid]);
     $peid = (int)$pdo->lastInsertId();
+
+    if ($peid <= 0) {
+        throw new RuntimeException('Failed to insert physical_examinations row');
+    }
 
     $pdo->commit();
 
     echo json_encode([
-        'ok' => true,
-        'consultation_id' => $peid,
-        'transaction_number' => $ctid
+        'ok'                 => true,
+        'consultation_id'    => $peid,   // PhysicalExamID — used by save_consultation
+        'transaction_number' => $ctid,   // ClinicTransactionID
     ]);
 
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
-
     echo json_encode([
-        'ok' => false,
+        'ok'      => false,
         'message' => 'Transaction failed',
-        'debug' => $e->getMessage()
+        'debug'   => $e->getMessage(),   // visible in browser DevTools Network tab
     ]);
-}   
+}
