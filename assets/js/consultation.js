@@ -189,10 +189,13 @@
      * Everything not listed stays visible.
      */
     const SERVICE_HIDE_MAP = {
-        'General Consultation': [],
+        //                        consultation-details is NEVER hidden — always visible on all service types
+        'General Consultation': ['physical-exam', 'firstaid'],
+        'Dental':               ['physical-exam', 'firstaid'],
         'First Aid':            ['physical-exam', 'attachment'],
-        'Medical Certificate':  ['vitals', 'physical-exam', 'consultation-details', 'medicines', 'firstaid'],
-        'Physical Examination': ['consultation-details', 'medicines', 'firstaid']
+        'Medical Certificate':  ['vitals', 'physical-exam', 'medicines', 'firstaid'],
+        'Physical Examination': ['vitals', 'firstaid'],
+        'Other':                [],
     };
 
     function getSectionEl(key) {
@@ -376,11 +379,15 @@
        data and POSTs it in a single FormData request.
     ══════════════════════════════════════════════════ */
     const form = document.getElementById('consultationForm');
-    if (form) {
-        form.addEventListener('submit', function (e) {
-            e.preventDefault();
 
-            const consultationID = document.getElementById('consultationID')?.value;
+    /**
+     * Called by the Save button (which lives OUTSIDE the form to avoid
+     * the pointer-events:none lockout from .consult-form-area.disabled).
+     */
+    window.submitConsultForm = function () {
+        if (!form) { showToast('Form not found.', 'error'); return; }
+
+        const consultationID = document.getElementById('consultationID')?.value;
             if (!consultationID) {
                 showToast('No active transaction. Please search a patient first.', 'error');
                 return;
@@ -458,11 +465,17 @@
                 .then(r => r.json())
                 .then(resp => {
                     if (resp.ok) {
-                        showToast('Consultation saved successfully!', 'success');
+                        showToast(
+                            `Saved! ${resp.service_type ?? serviceType}` +
+                            (resp.medicines_given ? ` · ${resp.medicines_given} medicine(s) dispensed` : ''),
+                            'success'
+                        );
                         const spid = document.getElementById('consultPatientID')?.value;
                         if (spid) loadHistory(parseInt(spid, 10));
                     } else {
-                        showToast(resp.message || 'Failed to save consultation.', 'error');
+                        // Show the real server-side error so staff can act on it
+                        const errMsg = resp.message || 'Save failed. Check your connection and try again.';
+                        showToast(errMsg, 'error');
                         console.error('Save failed:', resp);
                     }
                 })
@@ -473,8 +486,7 @@
                 .finally(() => {
                     if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Consultation'; }
                 });
-        });
-    }
+    };
 
     /* ── Clear form ───────────────────────────────────── */
     window.clearForm = function () {
@@ -561,6 +573,7 @@
      * Inserts into physical_examinations on the server side.
      */
     function appendPhysExamData(formData) {
+        // Body system exam fields (dropdowns + Normal/Abnormal status)
         EXAM_FIELDS.forEach(f => {
             const el = document.getElementById(f.id);
             if (el) formData.set(f.id, el.value || '');
@@ -571,13 +584,29 @@
             }
         });
 
+        // PE-specific meta fields
         const remarksEl   = document.getElementById('examRemarks');
         const clearanceEl = document.getElementById('examCardioClearance');
         const dateEl      = document.getElementById('examDate');
 
-        if (remarksEl)   formData.set('exam_remarks', remarksEl.value || '');
+        if (remarksEl)   formData.set('exam_remarks',          remarksEl.value   || '');
         if (clearanceEl) formData.set('exam_cardio_clearance', clearanceEl.value || '');
-        if (dateEl)      formData.set('exam_date', dateEl.value || '');
+        if (dateEl)      formData.set('exam_date',             dateEl.value      || '');
+
+        // Vitals — always send from the standalone vitals fields.
+        // Even though #section-vitals is hidden for PE, the inputs are
+        // still in the DOM and their values must reach physical_examinations.
+        const vitalsMap = {
+            blood_pressure: 'consultBP',
+            temperature:    'consultTemp',
+            pulse_rate:     'consultPulse',
+            weight:         'consultWeight',
+            height:         'consultHeight',
+        };
+        Object.entries(vitalsMap).forEach(([fieldName, elId]) => {
+            const el = document.getElementById(elId);
+            if (el) formData.set(fieldName, el.value || '');
+        });
     }
 
     /** Validate required Physical Exam fields before submit */
@@ -1075,17 +1104,23 @@
             `;
         }
 
+        const notesHtml = tx.Notes
+            ? `<div style="margin:8px 0 12px;"><span class="ro-label">Clinical Notes</span>
+               <div style="font-size:.87rem;font-weight:600;color:var(--text);margin-top:4px;line-height:1.55;">${tx.Notes}</div></div>`
+            : '';
+
         bodyEl.innerHTML = `
             <div class="readonly-notice">
                 <i class="fa-solid fa-lock"></i>
                 This record is <strong>read-only</strong>. Past consultations cannot be edited or deleted.
             </div>
             <div class="ro-grid" style="margin:12px 0;">
-                ${roField('Date',          tx.VisitDate ?? tx.CreatedAt ?? '—')}
-                ${roField('Service Type',  tx.ServiceType ?? '—')}
-                ${roField('Status',        tx.Status ?? '—')}
+                ${roField('Date',            tx.VisitDate ?? tx.CreatedAt ?? '—')}
+                ${roField('Service Type',    tx.ServiceType ?? '—')}
+                ${roField('Status',          tx.Status ?? '—')}
                 ${roField('Chief Complaint', tx.Complaint ?? '—')}
             </div>
+            ${notesHtml}
             ${vitalsHtml}
             ${peHtml}
             ${medsHtml}
@@ -1195,7 +1230,9 @@
         if (!toast) return;
         toast.textContent = msg;
         toast.className   = 'consult-toast ' + (type === 'error' ? 'error-toast' : type || '');
-        setTimeout(() => toast.className = 'consult-toast', 3500);
+        // Errors stay visible longer so staff can read them
+        const duration = (type === 'error') ? 6000 : 3500;
+        setTimeout(() => toast.className = 'consult-toast', duration);
     }
 
     // Expose globally for other modules

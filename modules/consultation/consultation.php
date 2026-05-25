@@ -258,6 +258,41 @@ $activeSidebarItem = 'consultation';
                     </div>
                 </div>
 
+                <!-- ════════════════════════════════════════
+                     SECTION: DENTAL (Service-specific)
+                     Shown only when Service Type = Dental
+                ════════════════════════════════════════ -->
+                <div class="consult-card hidden" id="section-dental" data-section="dental">
+                    <div class="card-section-label">
+                        <i class="fa-solid fa-tooth"></i>
+                        Dental Information
+                    </div>
+                    <div class="dental-grid">
+                        <div class="form-group">
+                            <label for="dentalToothConcern">Tooth Concern</label>
+                            <input type="text" id="dentalToothConcern" name="tooth_concern" placeholder="e.g. Upper right molar, tooth #16">
+                        </div>
+                        <div class="form-group">
+                            <label for="dentalProcedure">Procedure Done</label>
+                            <select id="dentalProcedure" name="dental_procedure">
+                                <option value="">— Select procedure —</option>
+                                <option>Tooth Extraction</option>
+                                <option>Filling / Restoration</option>
+                                <option>Cleaning / Prophylaxis</option>
+                                <option>Oral Examination</option>
+                                <option>X-Ray</option>
+                                <option>Fluoride Treatment</option>
+                                <option>Root Canal</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group form-group--full">
+                            <label for="dentalNotes">Dentist Notes</label>
+                            <textarea id="dentalNotes" name="dentist_notes" rows="3"
+                                      placeholder="Additional notes, observations, next appointment…"></textarea>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- ════════════════════════════════════════
                      SECTION: FIRST AID (Service-specific)
@@ -333,6 +368,41 @@ $activeSidebarItem = 'consultation';
                             </div>
                         </div>
 
+                        <!-- ── PE Vitals ── -->
+                        <div class="pe-section">
+                            <div class="pe-section-label">
+                                <div class="pe-section-label-icon"><i class="fa-solid fa-heart-pulse"></i></div>
+                                <span class="pe-section-label-text">Vital Signs</span>
+                            </div>
+                            <div class="pe-vitals-grid">
+                                <div class="form-group">
+                                    <label for="peHeight">Height (cm)</label>
+                                    <input type="number" id="peHeight" name="pe_height" step="0.1" placeholder="e.g. 165" oninput="calcBMI()">
+                                </div>
+                                <div class="form-group">
+                                    <label for="peWeight">Weight (kg)</label>
+                                    <input type="number" id="peWeight" name="pe_weight" step="0.1" placeholder="e.g. 60" oninput="calcBMI()">
+                                </div>
+                                <div class="form-group">
+                                    <label for="peBP">Blood Pressure</label>
+                                    <input type="text" id="peBP" name="pe_blood_pressure" placeholder="e.g. 120/80">
+                                </div>
+                                <div class="form-group">
+                                    <label for="peTemp">Temperature (°C)</label>
+                                    <input type="number" id="peTemp" name="pe_temperature" step="0.1" placeholder="e.g. 36.6">
+                                </div>
+                                <div class="form-group">
+                                    <label for="pePulse">Pulse Rate (bpm)</label>
+                                    <input type="number" id="pePulse" name="pe_pulse_rate" step="1" placeholder="e.g. 75">
+                                </div>
+                                <!-- BMI Box -->
+                                <div class="bmi-display-box">
+                                    <div class="bmi-display-label">Body Mass Index (BMI)</div>
+                                    <div class="bmi-display-value" id="bmiValue">—</div>
+                                    <div class="bmi-display-cat" id="bmiCategory"></div>
+                                </div>
+                            </div>
+                        </div>
 
                         <!-- ── Head & Sensory ── -->
                         <div class="pe-section">
@@ -835,21 +905,23 @@ $activeSidebarItem = 'consultation';
                     </div>
                 </div>
 
-                <!-- ── Sticky Save Panel ── -->
-                <div class="consult-actions-sticky">
-                    <div class="consult-actions-sticky-inner">
-                        <button type="submit" class="btn-save-consult" id="btnSaveConsult">
-                            <i class="fa-solid fa-floppy-disk"></i>
-                            Save Consultation
-                        </button>
-                        <button type="button" class="btn-clear-consult" id="clearConsultForm" onclick="clearForm()">
-                            <i class="fa-solid fa-rotate-left"></i>
-                            Clear
-                        </button>
-                    </div>
-                </div>
 
             </form>
+
+            <!-- ── Sticky Save Panel — OUTSIDE the form so the disabled overlay never blocks it ── -->
+            <div class="consult-actions-sticky">
+                <div class="consult-actions-sticky-inner">
+                    <button type="button" class="btn-save-consult" id="btnSaveConsult" onclick="submitConsultForm()">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        Save Consultation
+                    </button>
+                    <button type="button" class="btn-clear-consult" id="clearConsultForm" onclick="clearForm()">
+                        <i class="fa-solid fa-rotate-left"></i>
+                        Clear
+                    </button>
+                </div>
+            </div>
+
         </div><!-- /.consult-form-outer -->
 
     </div><!-- /.consult-page -->
