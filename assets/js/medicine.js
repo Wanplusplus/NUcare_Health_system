@@ -247,6 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="acts">
             <button class="act-btn edit" data-action="edit" title="Edit" type="button"><i class="fa-solid fa-pen"></i></button>
             <button class="act-btn del" data-action="delete" title="Delete" type="button"><i class="fa-solid fa-trash"></i></button>
+            <button class="act-btn print" data-action="print" title="Print" type="button"><i class="fa-solid fa-print"></i></button>
           </div>
         </td>
       `;
@@ -604,6 +605,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
       populateForm(row);
     }
+
+    if (action === 'print') {
+  if (!medicineId) {
+    toast('Unable to determine medicine ID for printing', 'error');
+    return;
+  }
+
+  window.open(
+    `../../print-output/individual_medicine_output.php?id=${medicineId}`,
+    '_blank',
+    'noopener,noreferrer',
+  );
+}
   });
 
   form?.addEventListener('submit', async (e) => {
