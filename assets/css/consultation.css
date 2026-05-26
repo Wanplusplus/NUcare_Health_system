@@ -2127,3 +2127,56 @@ body.modal-open { overflow: hidden; }
     .txd-grid { grid-template-columns: 1fr 1fr; }
     .btn-modal-action span { display: none; }
 }
+/* ── Attachment viewer improvements ── */
+.ro-attach-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 6px;
+}
+.ro-attach-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+    font-size: 1.3rem;
+}
+.ro-attach-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+}
+.ro-attach-link {
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+    background: var(--gray-100);
+    color: var(--navy);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-size: .85rem;
+    transition: background .12s, color .12s;
+}
+.ro-attach-link:hover { background: var(--blue-100); color: var(--blue-600); }
+.ro-attach-dl:hover   { background: #f0fdf4; color: #15803d; }
+.ro-attach-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--r-md);
+    background: var(--white);
+}
+.ro-attach-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}

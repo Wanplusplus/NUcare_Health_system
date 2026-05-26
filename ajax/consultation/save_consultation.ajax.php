@@ -67,7 +67,13 @@ $examSkin        = nullIfEmpty(clean($_POST['examSkin']               ?? ''));
 $examExtremities = nullIfEmpty(clean($_POST['examExtremities']        ?? ''));
 $examDeformities = nullIfEmpty(clean($_POST['examDeformities']        ?? ''));
 $examRemarks     = nullIfEmpty(clean($_POST['exam_remarks']           ?? ''));
-$cardioClearance = nullIfEmpty(clean($_POST['exam_cardio_clearance']  ?? ''));
+
+// CardioClearance — must be one of the three allowed string values.
+// The physical_examinations.CardioClearance column must be ENUM('Fit','Unfit','Pending')
+// or VARCHAR. If your column is still INT/TINYINT, run the migration SQL below.
+$rawClearance    = clean($_POST['exam_cardio_clearance'] ?? '');
+$allowedClearance = ['Fit', 'Unfit', 'Pending'];
+$cardioClearance = in_array($rawClearance, $allowedClearance, true) ? $rawClearance : null;
 
 if ($isPhysExam && !$examDate)        fail('Examination date is required.');
 if ($isPhysExam && !$cardioClearance) fail('Please select a Medical Clearance result (Fit / Unfit / Pending).');

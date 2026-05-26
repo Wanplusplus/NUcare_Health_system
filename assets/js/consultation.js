@@ -47,16 +47,28 @@
         if (banner) banner.classList.add('visible');
     }
 
+    /* ── Module-level patient ID — never wiped by form.reset() ── */
+    let _currentSpid = 0;
+
     /* ── Load patient then start transaction ──────────── */
     function loadPatient(p) {
         populateBanner(p);
 
+        _currentSpid = parseInt(p.SchoolPersonID, 10);
+
         const spidInput = document.getElementById('consultPatientID');
-        if (spidInput) spidInput.value = p.SchoolPersonID;
+        if (spidInput) spidInput.value = _currentSpid;
 
         unlockForm();
-        loadHistory(p.SchoolPersonID);
-        startTransaction(p.SchoolPersonID);
+        loadHistory(_currentSpid);
+        startTransaction(_currentSpid);
+    }
+
+    /* ── Safe helper: always returns current patient SPID ── */
+    function getCurrentSpid() {
+        if (_currentSpid > 0) return _currentSpid;
+        const v = parseInt(document.getElementById('consultPatientID')?.value || '0', 10);
+        return v > 0 ? v : 0;
     }
 
     /* ── Main search ──────────────────────────────────── */
@@ -308,12 +320,11 @@
             return;
         }
 
-        const spidEl = document.getElementById('consultPatientID');
-        if (!spidEl || !spidEl.value) {
+        const spid = getCurrentSpid();
+        if (!spid) {
             alert('Patient ID missing. Please search again.');
             return;
         }
-        const spid = parseInt(spidEl.value, 10);
 
         fetch('../../ajax/consultation/create_transaction.ajax.php', {
             method: 'POST',
@@ -373,7 +384,7 @@
 
         // Always fetch fresh — never trust stale cache (patient may have changed,
         // or a new transaction may have just been saved)
-        const spid = document.getElementById('consultPatientID')?.value;
+        const spid = getCurrentSpid();
         if (!spid) return;
 
         const bodyEl = document.getElementById('modalHistBody');
@@ -499,6 +510,52 @@
         document.body.classList.remove('modal-open');
     };
 
+    /* ── Image lightbox preview ─────────────────────────────── */
+    window.openAttachmentPreview = function (url, encodedName) {
+        const modal = document.getElementById('attachPreviewModal');
+        if (!modal) return;
+        const img  = document.getElementById('attachPreviewImg');
+        const name = document.getElementById('attachPreviewName');
+        const dl   = document.getElementById('attachPreviewDl');
+        if (img)  { img.src = url; img.style.display = 'block'; }
+        if (name) name.textContent = decodeURIComponent(encodedName);
+        if (dl)   dl.href = url + '&dl=1';
+        modal.style.display = 'flex';
+    };
+
+    /* ── Fetch attachment as blob and open/download — bypasses any server redirects ── */
+    window.fetchAndOpenAttachment = function (url, encodedName, forceDownload) {
+        fetch(url, { credentials: 'same-origin' })
+            .then(r => {
+                if (!r.ok) throw new Error('Server returned ' + r.status);
+                return r.blob();
+            })
+            .then(blob => {
+                const objectUrl = URL.createObjectURL(blob);
+                if (forceDownload) {
+                    const a = document.createElement('a');
+                    a.href = objectUrl;
+                    a.download = decodeURIComponent(encodedName) || 'attachment';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                } else {
+                    window.open(objectUrl, '_blank');
+                }
+                setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
+            })
+            .catch(err => {
+                alert('Could not open file. ' + err.message);
+            });
+    };
+
+    window.closeAttachmentPreview = function () {
+        const modal = document.getElementById('attachPreviewModal');
+        if (modal) modal.style.display = 'none';
+        const img = document.getElementById('attachPreviewImg');
+        if (img) img.src = '';
+    };
+
     function buildTxDetailHTML(tx) {
         /* ── Header info ── */
         const statusClass = {
@@ -592,21 +649,41 @@
         const attachments = tx.attachments ?? tx.transaction?.attachments ?? [];
         if (Array.isArray(attachments) && attachments.length) {
             const rows = attachments.map(a => {
-                const isPDF = (a.FileType ?? '').includes('pdf');
+                const isPDF   = (a.FileType ?? '').includes('pdf');
+                const isImage = (a.FileType ?? '').startsWith('image/');
                 const iconClass = isPDF ? 'fa-file-pdf' : 'fa-image';
                 const iconStyle = isPDF ? 'background:#fee2e2;color:#dc2626;' : 'background:var(--blue-50);color:var(--blue-600);';
-                const sizeKB   = a.FileSizeBytes ? (a.FileSizeBytes / 1024).toFixed(0) + ' KB' : '';
+                const sizeKB    = a.FileSizeBytes ? (a.FileSizeBytes / 1024).toFixed(0) + ' KB' : '';
+                const aid       = a.AttachmentID ?? '';
+
+                // Serve endpoint — absolute URL from data-approot on <body>
+                // (set by consultation.php so it never depends on JS path parsing)
+                // Resolve to absolute URL NOW (at render time) so onclick strings are never relative
+                const serveBase   = new URL('../../ajax/consultation/serve_attachment_ajax.php?id=' + aid, document.baseURI).href;
+
+                const openFn     = isImage
+                    ? `openAttachmentPreview('${serveBase}','${encodeURIComponent(a.FileName ?? '')}')`
+                    : `fetchAndOpenAttachment('${serveBase}','${encodeURIComponent(a.FileName ?? '')}',false)`;
+                const dlFn       = `fetchAndOpenAttachment('${serveBase}&dl=1','${encodeURIComponent(a.FileName ?? '')}',true)`;
+
                 return `
                 <div class="ro-attach-item">
-                    <div class="ro-attach-icon" style="${iconStyle}"><i class="fa-solid ${iconClass}"></i></div>
+                    <div class="ro-attach-icon" style="${iconStyle}">
+                        <i class="fa-solid ${iconClass}"></i>
+                    </div>
                     <div class="ro-attach-info">
                         <div class="ro-attach-name">${a.FileName ?? a.StoredName ?? 'File'}</div>
                         <div class="ro-attach-meta">${a.AttachmentCategory ?? ''} ${sizeKB ? '· ' + sizeKB : ''}</div>
                         ${a.Notes ? `<div class="ro-attach-meta" style="font-style:italic;">${a.Notes}</div>` : ''}
                     </div>
-                    <a class="ro-attach-link" href="${a.FilePath ?? '#'}" target="_blank" rel="noopener" title="Open file">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    </a>
+                    <div class="ro-attach-actions">
+                        <button class="ro-attach-link" onclick="${openFn}" title="${isPDF ? 'View PDF' : isImage ? 'Preview image' : 'Open file'}">
+                            <i class="fa-solid ${isImage ? 'fa-magnifying-glass' : 'fa-arrow-up-right-from-square'}"></i>
+                        </button>
+                        <button class="ro-attach-link ro-attach-dl" onclick="${dlFn}" title="Download">
+                            <i class="fa-solid fa-download"></i>
+                        </button>
+                    </div>
                 </div>`;
             }).join('');
             attachHtml = `
@@ -757,20 +834,17 @@
                             (resp.medicines_given ? ` · ${resp.medicines_given} medicine(s) dispensed` : ''),
                             'success'
                         );
-                        const spid = document.getElementById('consultPatientID')?.value;
+                        const spid = getCurrentSpid();
                         if (spid) {
-                            loadHistory(parseInt(spid, 10));
-                            // Clear form — form.reset() wipes ALL hidden inputs including consultPatientID
+                            loadHistory(spid);
+                            // Clear form — form.reset() wipes hidden inputs, but _currentSpid is safe
                             autoClearForm();
-                            // Restore patient ID immediately after reset so the modal fetch still works
-                            const pidEl = document.getElementById('consultPatientID');
-                            if (pidEl) pidEl.value = spid;
                             document.getElementById('consultationID').value = '';
                             // Re-apply service type to reset sections
                             const sel = document.getElementById('consultService');
                             if (sel) applyServiceType(sel.value || 'General Consultation');
                             // Start new transaction
-                            startTransaction(parseInt(spid, 10));
+                            startTransaction(spid);
                         }
                     } else {
                         // Show the real server-side error so staff can act on it
@@ -796,15 +870,12 @@
 
     /* ── Auto-clear form without confirmation (used after save) ───── */
     window.autoClearForm = function () {
-        // Preserve patient ID — form.reset() wipes ALL hidden inputs inside the form,
-        // including consultPatientID, which the history modal and startTransaction both need.
-        const savedSpid = document.getElementById('consultPatientID')?.value || '';
-
+        // _currentSpid module variable is the authoritative source — never wiped by form.reset()
         if (form) form.reset();
 
-        // Restore immediately after reset
+        // Restore the hidden input too, just for any code that still reads the DOM directly
         const pidEl = document.getElementById('consultPatientID');
-        if (pidEl && savedSpid) pidEl.value = savedSpid;
+        if (pidEl && _currentSpid) pidEl.value = _currentSpid;
 
         document.getElementById('medsList')?.replaceChildren();
         medRowIndex = 0;
@@ -823,6 +894,22 @@
         if (sel) applyServiceType(sel.value || 'General Consultation');
     };
 
+    // Maps each exam field ID to its "normal" <option> value in the <select>.
+    // Clicking the Normal badge auto-sets the dropdown to this value so the
+    // finding is non-empty and actually written to physical_examinations.
+    const EXAM_NORMAL_VALUES = {
+        examEars:        'Normal',
+        examEyesPupil:   'PERRLA',
+        examHeart:       'Regular rate and rhythm',
+        examNose:        'Normal',
+        examThorax:      'Symmetric expansion',
+        examAbdomen:     'Soft, non-tender',
+        examLungs:       'Clear to auscultation',
+        examSkin:        'Normal color and turgor',
+        examExtremities: 'Full range of motion',
+        examDeformities: 'None',
+    };
+
     const EXAM_FIELDS = [
         { id: 'examEars',        label: 'Ears' },
         { id: 'examEyesPupil',   label: 'Eyes / Pupil' },
@@ -839,6 +926,12 @@
     /**
      * Toggle Normal / Abnormal badge on a PE field.
      * Called by onclick="toggleExamBadge('examEars','normal')"
+     *
+     * BUG FIX: previously this only toggled CSS classes and never set
+     * select.value, so appendPhysExamData always sent "" and PHP saved NULL.
+     * Now clicking Normal auto-sets the select to the correct normal option
+     * value so it is actually persisted to physical_examinations.
+     * Clicking Abnormal resets the select to "" so staff must pick a finding.
      */
     window.toggleExamBadge = function (fieldId, status) {
         const normalBtn   = document.querySelector(`[data-field="${fieldId}"][data-status="normal"]`);
@@ -850,11 +943,19 @@
         if (status === 'normal') {
             normalBtn.classList.add('active');
             abnormalBtn.classList.remove('active');
-            if (inputEl) inputEl.classList.remove('is-abnormal');
+            if (inputEl) {
+                inputEl.classList.remove('is-abnormal');
+                // Set the select to the normal finding so the value is saved
+                const normalVal = EXAM_NORMAL_VALUES[fieldId];
+                if (normalVal) inputEl.value = normalVal;
+            }
         } else {
             abnormalBtn.classList.add('active');
             normalBtn.classList.remove('active');
-            if (inputEl) inputEl.classList.add('is-abnormal');
+            if (inputEl) {
+                inputEl.classList.add('is-abnormal');
+                inputEl.value = '';  // force staff to pick a specific abnormal finding
+            }
         }
     };
 

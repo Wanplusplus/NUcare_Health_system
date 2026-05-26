@@ -1,15 +1,5 @@
 <?php
 declare(strict_types=1);
-/**
- * get_transaction_ajax.php
- * ------------------------
- * READ-ONLY single-transaction detail endpoint.
- * Called when a history item is clicked to load full details.
- *
- * GET ?clinic_transaction_id=N
- *
- * Returns: { ok, schema_version, transaction, medicines[], attachments[] }
- */
 
 header('Content-Type: application/json; charset=utf-8');
 ini_set('display_errors', '0');
@@ -25,7 +15,46 @@ if ($ctid <= 0) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   QUERY 1 — Transaction + patient + physical exam (1:1)
+   DETECT actual columns in physical_examinations
+══════════════════════════════════════════════════════════════ */
+try {
+    $peCols = $pdo->query("SHOW COLUMNS FROM physical_examinations")
+                  ->fetchAll(PDO::FETCH_COLUMN);
+} catch (Throwable $e) {
+    $peCols = [];
+}
+
+$wantedPeCols = [
+    'pe.PhysicalExamID',
+    'pe.ExamDate',
+    'pe.BloodPressure',
+    'pe.Temperature',
+    'pe.PulseRate',
+    'pe.Weight',
+    'pe.Height',
+    'pe.Ears',
+    'pe.EyesPupil',
+    'pe.Heart',
+    'pe.Nose',
+    'pe.Thorax',
+    'pe.Abdomen',
+    'pe.Lungs',
+    'pe.Skin',
+    'pe.Extremities',
+    'pe.Deformities',
+    'pe.Remarks',
+    'pe.CardioClearance',
+];
+
+$safePeCols = array_filter($wantedPeCols, function($col) use ($peCols) {
+    $bare = explode('.', $col)[1];
+    return in_array($bare, $peCols, true);
+});
+
+$peSelect = empty($safePeCols) ? '' : ', ' . implode(', ', $safePeCols);
+
+/* ══════════════════════════════════════════════════════════════
+   QUERY 1 — Transaction + patient + physical exam
 ══════════════════════════════════════════════════════════════ */
 $txSql = "
     SELECT
@@ -43,27 +72,8 @@ $txSql = "
         sp.FirstName,
         sp.MiddleName,
         sp.LastName,
-        sp.Sex,
-
-        pe.PhysicalExamID,
-        pe.ExamDate,
-        pe.BloodPressure,
-        pe.Temperature,
-        pe.PulseRate,
-        pe.Weight,
-        pe.Height,
-        pe.Ears,
-        pe.EyesPupil,
-        pe.Heart,
-        pe.Nose,
-        pe.Thorax,
-        pe.Abdomen,
-        pe.Lungs,
-        pe.Skin,
-        pe.Extremities,
-        pe.Deformities,
-        pe.Remarks,
-        pe.CardioClearance
+        sp.Sex
+        $peSelect
 
     FROM clinic_transactions ct
     JOIN school_people sp ON sp.SchoolPersonID = ct.SchoolPersonID
@@ -87,72 +97,52 @@ if (!$txRow) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   QUERY 2 — Medicines (1:M)
+   QUERY 2 — Medicines
 ══════════════════════════════════════════════════════════════ */
-$medSql = "
-    SELECT
-        md.DispensingID,
-        md.QuantityDispensed,
-        md.Instructions,
-        md.DispensedAt,
-        m.MedicineName,
-        m.GenericName,
-        m.Dosage,
-        m.Unit
-    FROM medicine_dispensing md
-    JOIN medicine_inventory mi ON mi.InventoryID = md.InventoryID
-    JOIN medicines m           ON m.MedicineID   = mi.MedicineID
-    WHERE md.ClinicTransactionID = :ctid
-    ORDER BY md.DispensedAt ASC
-";
-
 $medicines = [];
 try {
-    $medStmt = $pdo->prepare($medSql);
+    $medStmt = $pdo->prepare("
+        SELECT md.DispensingID, md.QuantityDispensed, md.Instructions, md.DispensedAt,
+               m.MedicineName, m.GenericName, m.Dosage, m.Unit
+        FROM medicine_dispensing md
+        JOIN medicine_inventory mi ON mi.InventoryID = md.InventoryID
+        JOIN medicines m           ON m.MedicineID   = mi.MedicineID
+        WHERE md.ClinicTransactionID = :ctid
+        ORDER BY md.DispensedAt ASC
+    ");
     $medStmt->execute([':ctid' => $ctid]);
     $medicines = $medStmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (Throwable $e) { /* medicines table unavailable */ }
+} catch (Throwable $e) {}
 
 /* ══════════════════════════════════════════════════════════════
-   QUERY 3 — Attachments (1:M — consultation_attachments)
+   QUERY 3 — Attachments
 ══════════════════════════════════════════════════════════════ */
-$attachSql = "
-    SELECT
-        AttachmentID,
-        FileName,
-        FilePath,
-        FileType,
-        FileSizeBytes,
-        AttachmentCategory,
-        Notes,
-        CreatedAt
-    FROM consultation_attachments
-    WHERE ClinicTransactionID = :ctid
-    ORDER BY CreatedAt ASC
-";
-
 $attachments = [];
 try {
-    $attachStmt = $pdo->prepare($attachSql);
+    $attachStmt = $pdo->prepare("
+        SELECT AttachmentID, FileName, FilePath, FileType, FileSizeBytes,
+               AttachmentCategory, Notes, CreatedAt
+        FROM consultation_attachments
+        WHERE ClinicTransactionID = :ctid
+        ORDER BY CreatedAt ASC
+    ");
     $attachStmt->execute([':ctid' => $ctid]);
     $attachments = $attachStmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (Throwable $e) { /* table may not exist yet — return empty */ }
+} catch (Throwable $e) {}
 
 /* ══════════════════════════════════════════════════════════════
-   BUILD RESPONSE — nested shape, no flat columns
+   BUILD RESPONSE
 ══════════════════════════════════════════════════════════════ */
-$peFields = ['ExamDate','Ears','EyesPupil','Heart','Nose','Thorax',
-             'Abdomen','Lungs','Skin','Extremities','Deformities','Remarks','CardioClearance'];
+$existingPeBare = array_map(fn($c) => explode('.', $c)[1], array_values($safePeCols));
 
 $hasPE = false;
 $pe    = [];
-foreach ($peFields as $f) {
-    $val = $txRow[$f] ?? null;
+foreach ($existingPeBare as $f) {
+    $val    = $txRow[$f] ?? null;
     $pe[$f] = $val;
     if ($val !== null && $val !== '') $hasPE = true;
 }
 
-// Build full name
 $parts    = array_filter([
     $txRow['FirstName']  ?? '',
     !empty($txRow['MiddleName']) ? mb_substr($txRow['MiddleName'], 0, 1) . '.' : '',
@@ -160,7 +150,16 @@ $parts    = array_filter([
 ]);
 $fullName = trim(implode(' ', $parts));
 
-$response = [
+$vitals = [];
+foreach (['BloodPressure','Temperature','PulseRate','Weight','Height'] as $vc) {
+    if (in_array($vc, $existingPeBare, true)) {
+        $v = $txRow[$vc] ?? null;
+        $vitals[$vc] = (in_array($vc, ['Temperature','Weight','Height'], true) && $v !== null)
+            ? (float)$v : $v;
+    }
+}
+
+echo json_encode([
     'ok'             => true,
     'schema_version' => 1,
     'transaction'    => [
@@ -171,7 +170,7 @@ $response = [
         'Notes'               => $txRow['Notes'],
         'ConsultationStatus'  => $txRow['ConsultationStatus'],
         'CreatedAt'           => $txRow['CreatedAt'],
-        'UpdatedAt'           => $txRow['UpdatedAt'],
+        'UpdatedAt'           => $txRow['UpdatedAt'] ?? null,
         'patient' => [
             'SchoolPersonID' => (int)$txRow['SchoolPersonID'],
             'SchoolID'       => $txRow['SchoolID'],
@@ -180,17 +179,9 @@ $response = [
             'LastName'       => $txRow['LastName'],
             'Sex'            => $txRow['Sex'],
         ],
-        'vitals' => [
-            'BloodPressure' => $txRow['BloodPressure'],
-            'Temperature'   => $txRow['Temperature'] !== null ? (float)$txRow['Temperature'] : null,
-            'PulseRate'     => $txRow['PulseRate'],
-            'Weight'        => $txRow['Weight'] !== null ? (float)$txRow['Weight'] : null,
-            'Height'        => $txRow['Height'] !== null ? (float)$txRow['Height'] : null,
-        ],
-        'physicalExam' => $hasPE ? $pe : null,
+        'vitals'      => $vitals,
+        'physicalExam'=> $hasPE ? $pe : null,
     ],
     'medicines'   => $medicines,
     'attachments' => $attachments,
-];
-
-echo json_encode($response, JSON_UNESCAPED_UNICODE);
+], JSON_UNESCAPED_UNICODE);

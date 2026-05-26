@@ -17,6 +17,14 @@ $activeSidebarItem = 'consultation';
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <?php
+    // <base href> pins all relative URLs to the real page location,
+    // regardless of how the router rewrites the URL.
+    // SCRIPT_NAME = /NUcare_Health_system/pages/clinic/consultation.php
+    // base = /NUcare_Health_system/pages/clinic/
+    $baseHref = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/') . '/';
+    ?>
+    <base href="<?= htmlspecialchars('http://' . $_SERVER['HTTP_HOST'] . $baseHref) ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NUCARE | Consultation</title>
     <link rel="icon" href="/NUcare_Health_system/assets/image/nucarelogo.png">
@@ -208,6 +216,16 @@ $activeSidebarItem = 'consultation';
                         <div class="modal-hist-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Attachment image preview lightbox -->
+            <div id="attachPreviewModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.82);align-items:center;justify-content:center;flex-direction:column;gap:14px;" onclick="if(event.target===this)closeAttachmentPreview()">
+                <div style="display:flex;align-items:center;gap:12px;width:min(92vw,820px);">
+                    <span id="attachPreviewName" style="color:#fff;font-size:.9rem;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+                    <a id="attachPreviewDl" href="#" download style="color:#fff;background:rgba(255,255,255,.15);border-radius:8px;padding:7px 14px;font-size:.8rem;font-weight:700;text-decoration:none;display:flex;align-items:center;gap:6px;"><i class="fa-solid fa-download"></i> Download</a>
+                    <button onclick="closeAttachmentPreview()" style="background:rgba(255,255,255,.15);border:none;border-radius:8px;color:#fff;width:36px;height:36px;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <img id="attachPreviewImg" src="" alt="Attachment preview" style="max-width:min(92vw,820px);max-height:80vh;border-radius:10px;object-fit:contain;box-shadow:0 8px 40px rgba(0,0,0,.5);">
             </div>
 
             <!-- Form lock overlay -->

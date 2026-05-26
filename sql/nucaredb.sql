@@ -754,3 +754,6 @@ CREATE TABLE consultation_attachments (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );
+
+ALTER TABLE physical_examinations
+    MODIFY COLUMN CardioClearance ENUM('Fit', 'Unfit', 'Pending') NULL DEFAULT NULL;

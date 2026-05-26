@@ -15,6 +15,46 @@ if ($id <= 0) {
 }
 
 /* ══════════════════════════════════════════════════════════════
+   DETECT actual columns in physical_examinations
+══════════════════════════════════════════════════════════════ */
+try {
+    $peCols = $pdo->query("SHOW COLUMNS FROM physical_examinations")
+                  ->fetchAll(PDO::FETCH_COLUMN);
+} catch (Throwable $e) {
+    $peCols = [];
+}
+
+// All PE columns we'd like — only include ones that exist
+$wantedPeCols = [
+    'pe.PhysicalExamID',
+    'pe.ExamDate',
+    'pe.BloodPressure',
+    'pe.Temperature',
+    'pe.PulseRate',
+    'pe.Weight',
+    'pe.Height',
+    'pe.Ears',
+    'pe.EyesPupil',
+    'pe.Heart',
+    'pe.Nose',
+    'pe.Thorax',
+    'pe.Abdomen',
+    'pe.Lungs',
+    'pe.Skin',
+    'pe.Extremities',
+    'pe.Deformities',
+    'pe.Remarks',
+    'pe.CardioClearance',
+];
+
+$safePeCols = array_filter($wantedPeCols, function($col) use ($peCols) {
+    $bare = explode('.', $col)[1]; // strip "pe." prefix
+    return in_array($bare, $peCols, true);
+});
+
+$peSelect = empty($safePeCols) ? '' : ', ' . implode(', ', $safePeCols);
+
+/* ══════════════════════════════════════════════════════════════
    MAIN QUERY
 ══════════════════════════════════════════════════════════════ */
 $sql = "
@@ -30,27 +70,8 @@ $sql = "
         sp.SchoolID,
         sp.FirstName,
         sp.LastName,
-        sp.Sex,
-
-        pe.PhysicalExamID,
-        pe.ExamDate,
-        pe.BloodPressure,
-        pe.Temperature,
-        pe.PulseRate,
-        pe.Weight,
-        pe.Height,
-        pe.Ears,
-        pe.EyesPupil,
-        pe.Heart,
-        pe.Nose,
-        pe.Thorax,
-        pe.Abdomen,
-        pe.Lungs,
-        pe.Skin,
-        pe.Extremities,
-        pe.Deformities,
-        pe.Remarks,
-        pe.CardioClearance
+        sp.Sex
+        $peSelect
 
     FROM clinic_transactions ct
     JOIN school_people sp
@@ -68,6 +89,11 @@ try {
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Throwable $e) {
     echo json_encode(['ok' => false, 'message' => $e->getMessage()]);
+    exit;
+}
+
+if (empty($rows)) {
+    echo json_encode(['ok' => true, 'transactions' => []]);
     exit;
 }
 
@@ -92,7 +118,7 @@ $dispSql = "
 ";
 
 /* ══════════════════════════════════════════════════════════════
-   ATTACHMENTS QUERY (consultation_attachments — 3NF table)
+   ATTACHMENTS QUERY
 ══════════════════════════════════════════════════════════════ */
 $attachSql = "
     SELECT
@@ -112,12 +138,16 @@ $attachSql = "
 
 $dispStmt   = null;
 $attachStmt = null;
-try { $dispStmt   = $pdo->prepare($dispSql);   } catch (Throwable $e) { /* graceful — medicines unavailable */ }
-try { $attachStmt = $pdo->prepare($attachSql); } catch (Throwable $e) { /* graceful — run migration SQL first */ }
+try { $dispStmt   = $pdo->prepare($dispSql);   } catch (Throwable $e) {}
+try { $attachStmt = $pdo->prepare($attachSql); } catch (Throwable $e) {}
 
 /* ══════════════════════════════════════════════════════════════
    ASSEMBLE RESPONSE
 ══════════════════════════════════════════════════════════════ */
+
+// Which PE columns actually exist (bare names, no "pe." prefix)
+$existingPeBare = array_map(fn($c) => explode('.', $c)[1], array_values($safePeCols));
+
 $transactions = [];
 
 foreach ($rows as $tx) {
@@ -139,12 +169,11 @@ foreach ($rows as $tx) {
         $tx['attachments'] = [];
     }
 
-    // Physical exam sub-object
-    $tx['physicalExam'] = buildPE($tx);
+    // Build physicalExam sub-object from whatever columns exist
+    $tx['physicalExam'] = buildPE($tx, $existingPeBare);
 
-    // Remove flat PE columns from the top-level tx object
-    foreach (['ExamDate','Ears','EyesPupil','Heart','Nose','Thorax','Abdomen',
-              'Lungs','Skin','Extremities','Deformities','Remarks','CardioClearance'] as $col) {
+    // Remove flat PE columns from top-level
+    foreach ($existingPeBare as $col) {
         unset($tx[$col]);
     }
 
@@ -156,15 +185,12 @@ echo json_encode(['ok' => true, 'transactions' => $transactions]);
 /* ══════════════════════════════════════════════════════════════
    HELPER
 ══════════════════════════════════════════════════════════════ */
-function buildPE(array $tx): ?array
+function buildPE(array $tx, array $peFields): ?array
 {
-    $peFields = ['ExamDate','Ears','EyesPupil','Heart','Nose',
-                 'Thorax','Abdomen','Lungs','Skin',
-                 'Extremities','Deformities','Remarks','CardioClearance'];
     $hasData = false;
     $pe      = [];
     foreach ($peFields as $f) {
-        $val = $tx[$f] ?? null;
+        $val    = $tx[$f] ?? null;
         $pe[$f] = $val;
         if ($val !== null && $val !== '') $hasData = true;
     }
