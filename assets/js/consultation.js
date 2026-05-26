@@ -1287,15 +1287,32 @@
         if (sizeEl) sizeEl.textContent = (file.size / 1024).toFixed(1) + ' KB';
         if (zone)    zone.style.display    = 'none';
         if (preview) preview.style.display = 'flex';
+
+        const metaRow = document.getElementById('attachMetaRow');
+        if (metaRow) metaRow.style.display = '';
     };
 
     window.removeAttachment = function () {
         const input   = document.getElementById('consultAttachmentFile');
         const preview = document.getElementById('pdfFilePreview');
         const zone    = document.getElementById('pdfUploadZone');
+        const metaRow = document.getElementById('attachMetaRow');
         if (input)   input.value = '';
         if (preview) preview.style.display = 'none';
         if (zone)    zone.style.display    = '';
+        if (metaRow) metaRow.style.display = 'none';
+        // Also reset MC fields
+        const mcFields = document.getElementById('mcExtraFields');
+        if (mcFields) mcFields.style.display = 'none';
+        const catSel = document.getElementById('attachmentCategory');
+        if (catSel) catSel.value = 'Other';
+    };
+
+    // Show/hide Medical Certificate extra fields based on selected category
+    window.onAttachCategoryChange = function (val) {
+        const mcFields = document.getElementById('mcExtraFields');
+        if (!mcFields) return;
+        mcFields.style.display = (val === 'Medical Certificate') ? '' : 'none';
     };
 
     // Drag-and-drop support for attachment zone

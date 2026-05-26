@@ -120,15 +120,40 @@ try {
 $attachments = [];
 try {
     $attachStmt = $pdo->prepare("
-        SELECT AttachmentID, FileName, FilePath, FileType, FileSizeBytes,
-               AttachmentCategory, Notes, CreatedAt
-        FROM consultation_attachments
-        WHERE ClinicTransactionID = :ctid
-        ORDER BY CreatedAt ASC
+        SELECT ca.AttachmentID, ca.FileName, ca.FilePath, ca.FileType, ca.FileSizeBytes,
+               ca.DocumentTypeID,
+               adt.Category        AS AttachmentCategory,
+               adt.DocumentType    AS DocumentTypeName,
+               ca.Notes, ca.CreatedAt
+        FROM consultation_attachments ca
+        LEFT JOIN attachment_document_types adt ON adt.DocumentTypeID = ca.DocumentTypeID
+        WHERE ca.ClinicTransactionID = :ctid
+        ORDER BY ca.CreatedAt ASC
     ");
     $attachStmt->execute([':ctid' => $ctid]);
     $attachments = $attachStmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Throwable $e) {}
+
+/* ══════════════════════════════════════════════════════════════
+   QUERY 4 — Dental transaction (only when ServiceType = Dental)
+══════════════════════════════════════════════════════════════ */
+$dental = null;
+if (($txRow['ServiceType'] ?? '') === 'Dental') {
+    try {
+        $dentalStmt = $pdo->prepare("
+            SELECT dt.DentalTransactionID,
+                   dt.ClinicTransactionID,
+                   dt.InventoryID,
+                   dt.AttachmentID,
+                   dt.AttachmentCategory
+            FROM dental_transactions dt
+            WHERE dt.ClinicTransactionID = :ctid
+            LIMIT 1
+        ");
+        $dentalStmt->execute([':ctid' => $ctid]);
+        $dental = $dentalStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    } catch (Throwable $e) {}
+}
 
 /* ══════════════════════════════════════════════════════════════
    BUILD RESPONSE
@@ -184,4 +209,5 @@ echo json_encode([
     ],
     'medicines'   => $medicines,
     'attachments' => $attachments,
+    'dental'      => $dental,
 ], JSON_UNESCAPED_UNICODE);

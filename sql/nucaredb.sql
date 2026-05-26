@@ -757,3 +757,238 @@ CREATE TABLE consultation_attachments (
 
 ALTER TABLE physical_examinations
     MODIFY COLUMN CardioClearance ENUM('Fit', 'Unfit', 'Pending') NULL DEFAULT NULL;
+
+
+    -- ══════════════════════════════════════════════════════════════
+-- dental_transactions — stripped to pure FK/junction table
+-- ══════════════════════════════════════════════════════════════
+
+-- Option A: Drop and recreate (clean slate)
+DROP TABLE IF EXISTS dental_transactions;
+
+CREATE TABLE dental_transactions (
+    DentalTransactionID   INT  NOT NULL AUTO_INCREMENT,
+    ClinicTransactionID   INT  NOT NULL,
+    InventoryID           INT  NULL,          -- FK → medicine_inventory (medicine dispensed)
+    AttachmentID          INT  NULL,          -- FK → consultation_attachments (scanned form)
+    AttachmentCategory    VARCHAR(100) NULL,  -- mirrors consultation_attachments.AttachmentCategory
+
+    PRIMARY KEY (DentalTransactionID),
+    UNIQUE KEY uq_dental_ctid (ClinicTransactionID),   -- one dental record per visit
+
+    CONSTRAINT fk_dental_ct
+        FOREIGN KEY (ClinicTransactionID) REFERENCES clinic_transactions (ClinicTransactionID)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+
+    CONSTRAINT fk_dental_inv
+        FOREIGN KEY (InventoryID) REFERENCES medicine_inventory (InventoryID)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+
+    CONSTRAINT fk_dental_att
+        FOREIGN KEY (AttachmentID) REFERENCES consultation_attachments (AttachmentID)
+        ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+-- ──────────────────────────────────────────────────────────────
+-- Option B: ALTER existing table (keeps data, removes old cols)
+-- Run this block instead of the DROP/CREATE above if you want
+-- to preserve any existing rows.
+-- ──────────────────────────────────────────────────────────────
+/*
+ALTER TABLE dental_transactions
+    -- drop old data columns
+    DROP COLUMN IF EXISTS CurrentAge,
+    DROP COLUMN IF EXISTS TeethCount,
+    DROP COLUMN IF EXISTS OperationLower,
+    DROP COLUMN IF EXISTS ConditionLower,
+    DROP COLUMN IF EXISTS OperationUpper,
+    DROP COLUMN IF EXISTS ConditionUpper,
+    DROP COLUMN IF EXISTS PresenceOfCalculus,
+    DROP COLUMN IF EXISTS InflammationOfGingiva,
+    DROP COLUMN IF EXISTS PeriodontalPocket,
+    DROP COLUMN IF EXISTS DentofacialAnomaly,
+    DROP COLUMN IF EXISTS Caries,
+    DROP COLUMN IF EXISTS ForExtraction,
+    DROP COLUMN IF EXISTS RootFragment,
+    DROP COLUMN IF EXISTS LostDueToCaries,
+    DROP COLUMN IF EXISTS FilledOrRestored,
+    DROP COLUMN IF EXISTS FluorideTherapy,
+    DROP COLUMN IF EXISTS Diagnosis,
+
+    -- add the three new FK columns
+    ADD COLUMN InventoryID         INT         NULL AFTER ClinicTransactionID,
+    ADD COLUMN AttachmentID        INT         NULL AFTER InventoryID,
+    ADD COLUMN AttachmentCategory  VARCHAR(100) NULL AFTER AttachmentID,
+
+    -- unique constraint: one dental record per clinic visit
+    ADD UNIQUE KEY uq_dental_ctid (ClinicTransactionID),
+
+    ADD CONSTRAINT fk_dental_inv
+        FOREIGN KEY (InventoryID) REFERENCES medicine_inventory (InventoryID)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+
+    ADD CONSTRAINT fk_dental_att
+        FOREIGN KEY (AttachmentID) REFERENCES consultation_attachments (AttachmentID)
+        ON DELETE SET NULL ON UPDATE CASCADE;
+*/
+
+-- ──────────────────────────────────────────────────────────────
+-- If consultation_attachments.AttachmentCategory is an ENUM,
+-- add 'Dental Form' to it:
+-- ──────────────────────────────────────────────────────────────
+/*
+ALTER TABLE consultation_attachments
+    MODIFY COLUMN AttachmentCategory
+        ENUM('Lab Result','Medical Certificate','Referral','X-Ray','Prescription','Dental Form','Other')
+        NOT NULL DEFAULT 'Other';
+*/
+
+ALTER TABLE medical_certificates
+DROP COLUMN remarks;
+
+
+-- ══════════════════════════════════════════════════════════════════════════
+-- NUcare — Attachment Category Normalization
+-- Replaces ENUM string in consultation_attachments.AttachmentCategory
+-- with a proper FK to a lookup table (3NF, scalable)
+-- ══════════════════════════════════════════════════════════════════════════
+
+-- ── STEP 1: Create the lookup table ──────────────────────────────────────
+CREATE TABLE IF NOT EXISTS attachment_document_types (
+    DocumentTypeID   SMALLINT     NOT NULL AUTO_INCREMENT,
+    Category         VARCHAR(60)  NOT NULL,   -- broad group (for filtering/reporting)
+    DocumentType     VARCHAR(100) NOT NULL,   -- specific label shown in UI
+    IsActive         TINYINT(1)   NOT NULL DEFAULT 1,
+    SortOrder        SMALLINT     NOT NULL DEFAULT 0,
+
+    PRIMARY KEY (DocumentTypeID),
+    UNIQUE KEY uq_doc_type (Category, DocumentType)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+-- ── STEP 2: Seed with clean, normalized document types ───────────────────
+--
+-- Design rules applied:
+--   • Category   = broad group used for FILTERING and REPORTING (≤ 8 values)
+--   • DocumentType = specific label shown to staff in the UI dropdown
+--   • No trailing spaces, consistent Title Case
+--   • "Medical Certificate" is a Category; specific MC variants are DocumentTypes under it
+--   • School-specific forms (Dress Down, Absence, Permit to Leave) live under "School Form"
+--   • "Other" always last as the catch-all
+-- ─────────────────────────────────────────────────────────────────────────
+
+INSERT INTO attachment_document_types (Category, DocumentType, SortOrder) VALUES
+
+-- Laboratory
+('Laboratory',           'Lab Result',                        10),
+('Laboratory',           'CBC (Complete Blood Count)',         11),
+('Laboratory',           'Urinalysis',                        12),
+('Laboratory',           'Blood Chemistry',                   13),
+('Laboratory',           'Drug Test Result',                  14),
+
+-- Imaging
+('Imaging',              'X-Ray',                             20),
+('Imaging',              'Ultrasound',                        21),
+('Imaging',              'ECG / EKG',                         22),
+
+-- Medical Certificate
+('Medical Certificate',  'Medical Certificate',               30),
+('Medical Certificate',  'Medical Certificate – Dress Down',  31),
+('Medical Certificate',  'Medical Certificate – Absence',     32),
+('Medical Certificate',  'Fit-to-Return Clearance',          33),
+('Medical Certificate',  'Medical Clearance',                 34),
+
+-- School Form
+('School Form',          'Health Status Declaration Form',    40),
+('School Form',          'Permit to Leave Form',              41),
+('School Form',          'Physical Examination Form',         42),
+('School Form',          'Immunization Record',               43),
+
+-- Dental
+('Dental',               'Dental Examination Form',           50),
+('Dental',               'Dental Treatment Record',           51),
+
+-- Prescription & Referral
+('Prescription',         'Prescription',                      60),
+('Referral',             'Referral Letter',                   70),
+('Referral',             'Referral – Specialist',             71),
+
+-- Other
+('Other',                'Other',                             99);
+
+
+-- ── STEP 3: Add FK column to consultation_attachments ────────────────────
+--
+-- We ADD a new nullable FK column alongside the old string column.
+-- Once the application is fully migrated, you can drop AttachmentCategory.
+-- Running both in parallel avoids breaking the live system during rollout.
+-- ─────────────────────────────────────────────────────────────────────────
+
+ALTER TABLE consultation_attachments
+    ADD COLUMN DocumentTypeID SMALLINT NULL
+        AFTER AttachmentCategory,
+    ADD CONSTRAINT fk_ca_doctype
+        FOREIGN KEY (DocumentTypeID)
+        REFERENCES attachment_document_types (DocumentTypeID)
+        ON DELETE SET NULL ON UPDATE CASCADE;
+
+
+-- ── STEP 4: Backfill DocumentTypeID from old string column ───────────────
+--
+-- Maps old free-text values → new DocumentTypeID.
+-- Safe to run multiple times (WHERE DocumentTypeID IS NULL guard).
+-- ─────────────────────────────────────────────────────────────────────────
+
+UPDATE consultation_attachments ca
+JOIN attachment_document_types adt
+    ON TRIM(ca.AttachmentCategory) = adt.DocumentType
+SET ca.DocumentTypeID = adt.DocumentTypeID
+WHERE ca.DocumentTypeID IS NULL;
+
+-- Catch old values that don't match exactly → fallback to 'Other'
+UPDATE consultation_attachments
+SET DocumentTypeID = (
+    SELECT DocumentTypeID FROM attachment_document_types
+    WHERE DocumentType = 'Other' LIMIT 1
+)
+WHERE DocumentTypeID IS NULL
+  AND AttachmentCategory IS NOT NULL
+  AND AttachmentCategory != '';
+
+
+-- ── STEP 5 (FUTURE — run after app is fully on DocumentTypeID) ───────────
+-- Once all code reads DocumentTypeID instead of AttachmentCategory string:
+--
+--   ALTER TABLE consultation_attachments
+--       DROP FOREIGN KEY fk_ca_doctype,   -- drop first so we can re-add after modify
+--       MODIFY COLUMN DocumentTypeID SMALLINT NOT NULL,
+--       DROP COLUMN AttachmentCategory,
+--       ADD CONSTRAINT fk_ca_doctype
+--           FOREIGN KEY (DocumentTypeID)
+--           REFERENCES attachment_document_types (DocumentTypeID)
+--           ON DELETE RESTRICT ON UPDATE CASCADE;
+-- ─────────────────────────────────────────────────────────────────────────
+
+
+-- ── REFERENCE: query the lookup table (use in your PHP dropdowns) ─────────
+--
+--   SELECT DocumentTypeID, Category, DocumentType
+--   FROM attachment_document_types
+--   WHERE IsActive = 1
+--   ORDER BY SortOrder ASC;
+--
+-- Returns rows grouped naturally by SortOrder so PHP can build
+-- <optgroup label="Category"> sections with a single pass.
+-- ─────────────────────────────────────────────────────────────────────────
+
+
+ALTER TABLE medical_certificates
+    ADD COLUMN AttachmentID INT NULL AFTER ClinicTransactionID,
+    ADD CONSTRAINT fk_mc_attachment
+        FOREIGN KEY (AttachmentID)
+        REFERENCES consultation_attachments (AttachmentID)
+        ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE medical_certificates
+    MODIFY COLUMN IssuedByMedProfID INT NULL;

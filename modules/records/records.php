@@ -21,7 +21,7 @@ $activeSidebarItem = 'records';
     <title>NUCARE | Patient Records</title>
     <link rel="icon" href="/NUcare_Health_system/assets/image/nucarelogo.png">
     <link rel="stylesheet" href="../../assets/css/app.css?v=1">
-    <link rel="stylesheet" href="../../assets/css/records.css?v=1">
+    <link rel="stylesheet" href="../../assets/css/records.css?v=2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
@@ -152,16 +152,17 @@ $activeSidebarItem = 'records';
 
     </div><!-- /.records-page -->
 
+
     <!-- ══════════════════════════════════════════
          PATIENT RECORD MODAL
     ══════════════════════════════════════════ -->
-    <div id="recordModal" class="modal-backdrop">
+    <div id="recordModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalPatientName">
         <div class="modal-box">
 
             <!-- Modal Header -->
             <div class="modal-header">
                 <div class="modal-header-left">
-                    <div class="modal-avatar">
+                    <div class="modal-avatar" id="modalAvatarIcon">
                         <i class="fa-solid fa-user-nurse"></i>
                     </div>
                     <div>
@@ -174,29 +175,36 @@ $activeSidebarItem = 'records';
                         </div>
                     </div>
                 </div>
-                <button class="modal-close" id="modalCloseBtn" title="Close">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
+                <div class="modal-header-actions">
+                    <button class="modal-print-btn" id="modalPrintBtn" title="Print record" aria-label="Print patient record">
+                        <i class="fa-solid fa-print"></i>
+                    </button>
+                    <button class="modal-close" id="modalCloseBtn" title="Close" aria-label="Close modal">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- Modal Tabs -->
-            <div class="modal-tabs">
-                <button class="modal-tab active" data-tab="tabInfo">
+            <div class="modal-tabs" role="tablist">
+                <button class="modal-tab active" data-tab="tabInfo" role="tab" aria-selected="true">
                     <i class="fa-solid fa-circle-info"></i>
                     Patient Info
                 </button>
-                <button class="modal-tab" data-tab="tabHistory">
+                <button class="modal-tab" data-tab="tabHistory" role="tab" aria-selected="false">
                     <i class="fa-solid fa-notes-medical"></i>
                     Clinic History
-                    <span id="tabHistoryCount" style="background:var(--navy);color:#fff;border-radius:999px;padding:1px 7px;font-size:.65rem;"></span>
+                    <span class="tab-count-badge" id="tabHistoryCount"></span>
                 </button>
-                <button class="modal-tab" data-tab="tabEmergency">
+                <button class="modal-tab" data-tab="tabEmergency" role="tab" aria-selected="false">
                     <i class="fa-solid fa-kit-medical"></i>
                     Emergencies
+                    <span class="tab-count-badge tab-count-red" id="tabEmergencyCount"></span>
                 </button>
-                <button class="modal-tab" data-tab="tabCerts">
+                <button class="modal-tab" data-tab="tabCerts" role="tab" aria-selected="false">
                     <i class="fa-solid fa-file-shield"></i>
                     Certificates
+                    <span class="tab-count-badge tab-count-green" id="tabCertsCount"></span>
                 </button>
             </div>
 
@@ -204,13 +212,16 @@ $activeSidebarItem = 'records';
             <div class="modal-body">
 
                 <!-- ── Tab: Patient Info ── -->
-                <div id="tabInfo" class="tab-panel active">
+                <div id="tabInfo" class="tab-panel active" role="tabpanel">
 
                     <div class="patient-info-grid">
 
                         <!-- Personal Info -->
                         <div class="info-block">
-                            <div class="info-section-title"><i class="fa-solid fa-user"></i> Personal Information</div>
+                            <div class="info-section-title">
+                                <i class="fa-solid fa-user"></i>
+                                Personal Information
+                            </div>
                             <div class="info-fields">
                                 <div class="info-field">
                                     <span class="info-label">School ID</span>
@@ -232,15 +243,22 @@ $activeSidebarItem = 'records';
                                     <span class="info-label">Email</span>
                                     <span class="info-val" id="infoEmail">—</span>
                                 </div>
+                                <div class="info-field">
+                                    <span class="info-label">Contact Number</span>
+                                    <span class="info-val" id="infoContact">—</span>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Academic / Employment Info -->
                         <div class="info-block">
-                            <div class="info-section-title"><i class="fa-solid fa-building-columns"></i> Academic / Employment</div>
+                            <div class="info-section-title">
+                                <i class="fa-solid fa-building-columns"></i>
+                                Academic / Employment
+                            </div>
                             <div class="info-fields">
                                 <div class="info-field">
-                                    <span class="info-label">Type</span>
+                                    <span class="info-label">Person Type</span>
                                     <span class="info-val" id="infoPersonType">—</span>
                                 </div>
                                 <div class="info-field">
@@ -248,7 +266,11 @@ $activeSidebarItem = 'records';
                                     <span class="info-val" id="infoProgram">—</span>
                                 </div>
                                 <div class="info-field">
-                                    <span class="info-label">Year &amp; Section / Position</span>
+                                    <span class="info-label">Department</span>
+                                    <span class="info-val" id="infoDepartment">—</span>
+                                </div>
+                                <div class="info-field">
+                                    <span class="info-label">Year &amp; Section</span>
                                     <span class="info-val" id="infoSection">—</span>
                                 </div>
                                 <div class="info-field">
@@ -264,9 +286,39 @@ $activeSidebarItem = 'records';
 
                         <!-- Known Conditions / Diseases -->
                         <div class="info-block info-block--full">
-                            <div class="info-section-title"><i class="fa-solid fa-virus"></i> Known Medical Conditions</div>
+                            <div class="info-section-title">
+                                <i class="fa-solid fa-virus"></i>
+                                Known Medical Conditions
+                            </div>
                             <div class="disease-tags" id="infoDiseases">
                                 <span class="disease-tag empty">Loading…</span>
+                            </div>
+                        </div>
+
+                        <!-- Summary Stats Strip -->
+                        <div class="info-block info-block--full info-summary-strip" id="infoSummaryStrip">
+                            <div class="summary-stat">
+                                <i class="fa-solid fa-calendar-check"></i>
+                                <span class="summary-stat-val" id="summaryVisits">0</span>
+                                <span class="summary-stat-label">Total Visits</span>
+                            </div>
+                            <div class="summary-stat-divider"></div>
+                            <div class="summary-stat">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                <span class="summary-stat-val" id="summaryEmergencies">0</span>
+                                <span class="summary-stat-label">Emergencies</span>
+                            </div>
+                            <div class="summary-stat-divider"></div>
+                            <div class="summary-stat">
+                                <i class="fa-solid fa-file-shield"></i>
+                                <span class="summary-stat-val" id="summaryCerts">0</span>
+                                <span class="summary-stat-label">Certificates</span>
+                            </div>
+                            <div class="summary-stat-divider"></div>
+                            <div class="summary-stat">
+                                <i class="fa-solid fa-clock-rotate-left"></i>
+                                <span class="summary-stat-val" id="summaryLastVisit">—</span>
+                                <span class="summary-stat-label">Last Visit</span>
                             </div>
                         </div>
 
@@ -274,20 +326,24 @@ $activeSidebarItem = 'records';
                 </div>
 
                 <!-- ── Tab: Clinic History ── -->
-                <div id="tabHistory" class="tab-panel">
-                    <div class="history-filters">
-                        <button class="history-filter-btn active" onclick="filterHistory('all', this)">
-                            <i class="fa-solid fa-list"></i> All Visits
-                        </button>
-                        <button class="history-filter-btn" onclick="filterHistory('general', this)">
-                            <i class="fa-solid fa-stethoscope"></i> General
-                        </button>
-                        <button class="history-filter-btn" onclick="filterHistory('dental', this)">
-                            <i class="fa-solid fa-tooth"></i> Dental
-                        </button>
-                        <button class="history-filter-btn" onclick="filterHistory('physical', this)">
-                            <i class="fa-solid fa-clipboard-list"></i> Physical Exam
-                        </button>
+                <div id="tabHistory" class="tab-panel" role="tabpanel">
+
+                    <div class="history-toolbar">
+                        <div class="history-filters">
+                            <button class="history-filter-btn active" data-filter="all" onclick="filterHistory('all', this)">
+                                <i class="fa-solid fa-list"></i> All Visits
+                            </button>
+                            <button class="history-filter-btn" data-filter="general" onclick="filterHistory('general', this)">
+                                <i class="fa-solid fa-stethoscope"></i> General
+                            </button>
+                            <button class="history-filter-btn" data-filter="dental" onclick="filterHistory('dental', this)">
+                                <i class="fa-solid fa-tooth"></i> Dental
+                            </button>
+                            <button class="history-filter-btn" data-filter="physical" onclick="filterHistory('physical', this)">
+                                <i class="fa-solid fa-clipboard-list"></i> Physical Exam
+                            </button>
+                        </div>
+                        <div class="history-count-label" id="historyVisibleCount"></div>
                     </div>
 
                     <div class="timeline" id="clinicTimeline">
@@ -296,14 +352,33 @@ $activeSidebarItem = 'records';
                 </div>
 
                 <!-- ── Tab: Emergencies ── -->
-                <div id="tabEmergency" class="tab-panel">
+                <div id="tabEmergency" class="tab-panel" role="tabpanel">
                     <div class="emergency-list" id="emergencyList">
                         <!-- Populated by JS -->
                     </div>
                 </div>
 
-                <!-- ── Tab: Certificates ── -->
-                <div id="tabCerts" class="tab-panel">
+                <!-- ── Tab: Certificates / Attachments ── -->
+                <div id="tabCerts" class="tab-panel" role="tabpanel">
+
+                    <div class="cert-toolbar">
+                        <div class="cert-filter-row">
+                            <button class="cert-filter-btn active" data-cat="all" onclick="filterCerts('all', this)">
+                                <i class="fa-solid fa-layer-group"></i> All
+                            </button>
+                            <button class="cert-filter-btn" data-cat="certificate" onclick="filterCerts('certificate', this)">
+                                <i class="fa-solid fa-file-shield"></i> Certificates
+                            </button>
+                            <button class="cert-filter-btn" data-cat="clearance" onclick="filterCerts('clearance', this)">
+                                <i class="fa-solid fa-check-circle"></i> Clearances
+                            </button>
+                            <button class="cert-filter-btn" data-cat="other" onclick="filterCerts('other', this)">
+                                <i class="fa-solid fa-file"></i> Other
+                            </button>
+                        </div>
+                        <div class="cert-count-label" id="certVisibleCount"></div>
+                    </div>
+
                     <div class="cert-list" id="certList">
                         <!-- Populated by JS -->
                     </div>
@@ -314,12 +389,12 @@ $activeSidebarItem = 'records';
     </div><!-- /.modal-backdrop -->
 
     <!-- Toast -->
-    <div id="recordsToast" class="records-toast"></div>
+    <div id="recordsToast" class="records-toast" role="status" aria-live="polite"></div>
 
     </main>
 </div>
 
 <script src="../../assets/js/app.js"></script>
-<script src="../../assets/js/records.js"></script>
+<script src="../../assets/js/records.js?v=2"></script>
 </body>
 </html>

@@ -122,18 +122,21 @@ $dispSql = "
 ══════════════════════════════════════════════════════════════ */
 $attachSql = "
     SELECT
-        AttachmentID,
-        FileName,
-        StoredName,
-        FilePath,
-        FileType,
-        FileSizeBytes,
-        AttachmentCategory,
-        Notes,
-        CreatedAt
-    FROM consultation_attachments
-    WHERE ClinicTransactionID = :ctid
-    ORDER BY CreatedAt ASC
+        ca.AttachmentID,
+        ca.FileName,
+        ca.StoredName,
+        ca.FilePath,
+        ca.FileType,
+        ca.FileSizeBytes,
+        ca.DocumentTypeID,
+        adt.Category     AS AttachmentCategory,
+        adt.DocumentType AS DocumentTypeName,
+        ca.Notes,
+        ca.CreatedAt
+    FROM consultation_attachments ca
+    LEFT JOIN attachment_document_types adt ON adt.DocumentTypeID = ca.DocumentTypeID
+    WHERE ca.ClinicTransactionID = :ctid
+    ORDER BY ca.CreatedAt ASC
 ";
 
 $dispStmt   = null;

@@ -39,7 +39,7 @@ $resolvedService = ($serviceType === 'Other' && $serviceOther !== '') ? $service
 
 // Validation
 if ($serviceType === '') fail('Please select a Service Type before saving.');
-if (!in_array($serviceType, ['Medical Certificate', 'Physical Examination'], true) && $complaint === '') {
+if (!in_array($serviceType, ['Medical Certificate', 'Physical Examination', 'Dental'], true) && $complaint === '') {
     fail('Chief Complaint is required.');
 }
 
@@ -80,9 +80,14 @@ if ($isPhysExam && !$cardioClearance) fail('Please select a Medical Clearance re
 
 /* ── Attachment category (optional POST field) ── */
 $attachCategory = clean($_POST['attachment_category'] ?? 'Other');
-$allowedCategories = ['Lab Result', 'Medical Certificate', 'Referral', 'X-Ray', 'Prescription', 'Other'];
+$allowedCategories = ['Lab Result', 'Medical Certificate', 'X-Ray / Imaging', 'Prescription', 'Referral', 'Dental Form', 'School Form', 'Other'];
 if (!in_array($attachCategory, $allowedCategories, true)) $attachCategory = 'Other';
 $attachNotes = nullIfEmpty(clean($_POST['attachment_notes'] ?? ''));
+
+/* ── Medical Certificate extra fields (only used when category = Medical Certificate) ── */
+$mcCertificateType = nullIfEmpty(clean($_POST['mc_certificate_type'] ?? ''));
+$mcValidUntil      = nullIfEmpty(clean($_POST['mc_valid_until']      ?? ''));
+$issuedByMedProfID = null; // TODO: resolve MedProfID from session UserID once medical_professionals.UserID FK is set up
 
 /* ── Medicines ── */
 $medInventoryIDs = array_map('intval', (array)($_POST['med_inventory_id']  ?? []));
@@ -304,6 +309,52 @@ try {
             ':fnotes' => $attachNotes,
         ]);
         $attachmentID = (int)$pdo->lastInsertId();
+    }
+
+    /* ── 6. Medical Certificate — insert into medical_certificates ── */
+    if ($attachCategory === 'Medical Certificate' && $attachmentID !== null) {
+        $pdo->prepare("
+            INSERT INTO medical_certificates
+                (ClinicTransactionID, AttachmentID, IssuedByMedProfID, CertificateType, ValidUntil, CreatedAt)
+            VALUES
+                (:ctid, :attid, :medprof, :certtype, :validuntil, NOW())
+            ON DUPLICATE KEY UPDATE
+                AttachmentID      = VALUES(AttachmentID),
+                IssuedByMedProfID = VALUES(IssuedByMedProfID),
+                CertificateType   = VALUES(CertificateType),
+                ValidUntil        = VALUES(ValidUntil)
+        ")->execute([
+            ':ctid'      => $ctid,
+            ':attid'     => $attachmentID,
+            ':medprof'   => $issuedByMedProfID,
+            ':certtype'  => $mcCertificateType ?? 'Medical Certificate',
+            ':validuntil'=> $mcValidUntil,
+        ]);
+    }
+
+    /* ── 7. Dental — insert/update dental_transactions header row ── */
+    if ($serviceType === 'Dental') {
+        // InventoryID: first medicine dispensed (if any), else null
+        $dentalInventoryID  = !empty($dispensed) ? $dispensed[0] : null;
+        // AttachmentID: the file just saved (if any), else null
+        $dentalAttachmentID = $attachmentID ?: null;
+        $dentalAttachCat    = $dentalAttachmentID ? $attachCategory : null;
+
+        $pdo->prepare("
+            INSERT INTO dental_transactions
+                (ClinicTransactionID, InventoryID, AttachmentID, AttachmentCategory)
+            VALUES
+                (:ctid, :invid, :attid, :attcat)
+            ON DUPLICATE KEY UPDATE
+                InventoryID         = VALUES(InventoryID),
+                AttachmentID        = VALUES(AttachmentID),
+                AttachmentCategory  = VALUES(AttachmentCategory)
+        ")->execute([
+            ':ctid'   => $ctid,
+            ':invid'  => $dentalInventoryID,
+            ':attid'  => $dentalAttachmentID,
+            ':attcat' => $dentalAttachCat,
+        ]);
     }
 
     $pdo->commit();

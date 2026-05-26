@@ -909,18 +909,39 @@ $activeSidebarItem = 'consultation';
                     <div class="attach-meta-row" id="attachMetaRow" style="display:none;">
                         <div class="form-group">
                             <label for="attachmentCategory">Document Category</label>
-                            <select id="attachmentCategory" name="attachment_category" class="attach-category-select">
+                            <select id="attachmentCategory" name="attachment_category" class="attach-category-select"
+                                    onchange="onAttachCategoryChange(this.value)">
                                 <option value="Other">Other</option>
                                 <option value="Lab Result">Lab Result</option>
                                 <option value="Medical Certificate">Medical Certificate</option>
-                                <option value="Referral">Referral</option>
-                                <option value="X-Ray">X-Ray</option>
+                                <option value="X-Ray / Imaging">X-Ray / Imaging</option>
                                 <option value="Prescription">Prescription</option>
+                                <option value="Referral">Referral</option>
+                                <option value="Dental Form">Dental Form</option>
+                                <option value="School Form">School Form</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="attachmentNotes">Notes (optional)</label>
-                            <input type="text" id="attachmentNotes" name="attachment_notes" placeholder="e.g. CBC result from St. Luke's">
+                            <label for="attachmentNotes">Notes <span style="font-weight:400;color:var(--gray-400);">(optional)</span></label>
+                            <input type="text" id="attachmentNotes" name="attachment_notes" placeholder="e.g. CBC result from St. Luke's, Dress Down request">
+                        </div>
+
+                        <!-- Medical Certificate extra fields — shown only when category = Medical Certificate -->
+                        <div id="mcExtraFields" style="display:none;">
+                            <div class="form-group">
+                                <label for="mcCertificateType">Certificate Type</label>
+                                <select id="mcCertificateType" name="mc_certificate_type">
+                                    <option value="Medical Certificate">Medical Certificate</option>
+                                    <option value="Medical Certificate - Dress Down">Medical Certificate - Dress Down</option>
+                                    <option value="Medical Certificate - Absence">Medical Certificate - Absence</option>
+                                    <option value="Fit-to-Return Clearance">Fit-to-Return Clearance</option>
+                                    <option value="Medical Clearance">Medical Clearance</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="mcValidUntil">Valid Until <span style="font-weight:400;color:var(--gray-400);">(optional)</span></label>
+                                <input type="date" id="mcValidUntil" name="mc_valid_until">
+                            </div>
                         </div>
                     </div>
                 </div>
