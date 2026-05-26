@@ -28,9 +28,11 @@ $sql = "
         m.MedicineID,
         m.MedicineName,
         m.GenericName,
+        m.MedicineType,
         m.Dosage,
         m.Unit,
         mi.Quantity      AS AvailableQty,
+        mi.ReorderLevel,
         mi.BatchNumber,
         mi.ExpiryDate,
         mi.Status

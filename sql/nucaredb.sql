@@ -721,3 +721,36 @@ INSERT INTO permissions (PermissionName, Description) VALUES
 ('delete', 'Can delete records'),
 ('approve', 'Can approve requests'),
 ('manage', 'Full management permissions');
+
+
+CREATE TABLE consultation_attachments (
+    AttachmentID        INT NOT NULL AUTO_INCREMENT,
+    ClinicTransactionID INT NOT NULL,
+    UploadedBy          INT NULL,
+    FileName            VARCHAR(255) NOT NULL,
+    StoredName          VARCHAR(255) NOT NULL,
+    FilePath            VARCHAR(500) NOT NULL,
+
+    FileType            ENUM('image/jpeg','image/png','application/pdf') NOT NULL,
+    FileSizeBytes       INT NOT NULL,
+
+    AttachmentCategory  ENUM(
+        'Lab Result',
+        'Medical Certificate',
+        'Dental',
+        'X-Ray',
+        'Prescription',
+        'Other'
+    ) NOT NULL DEFAULT 'Other',
+
+    Notes               VARCHAR(500) NULL,
+    CreatedAt           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (AttachmentID),
+
+    CONSTRAINT fk_attach_transaction
+        FOREIGN KEY (ClinicTransactionID)
+        REFERENCES clinic_transactions(ClinicTransactionID)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);

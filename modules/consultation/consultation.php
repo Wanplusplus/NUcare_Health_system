@@ -119,28 +119,93 @@ $activeSidebarItem = 'consultation';
         <!-- ══ CONSULTATION FORM ══ -->
         <div class="consult-form-outer">
 
-            <!-- History-exists modal -->
+            <!-- ══ HISTORY-EXISTS MODAL (3-button) ══ -->
             <div id="txConfirmModal" class="modal" style="display:none;">
-                <div class="modal-overlay"></div>
-                <div class="modal-card">
+                <div class="modal-overlay" onclick="closeTxConfirm()"></div>
+                <div class="modal-card modal-card--choice">
                     <div class="modal-head">
                         <div class="modal-title">
                             <i class="fa-solid fa-clock-rotate-left"></i>
-                            Patient has existing records
+                            Existing Consultation Records Found
                         </div>
                         <button type="button" class="modal-close" onclick="closeTxConfirm()" aria-label="Close">&times;</button>
                     </div>
                     <div class="modal-body">
-                        <p id="txConfirmText">This patient already has consultation history. Would you like to start a new transaction?</p>
-                        <div class="modal-sub">All previous consultations will remain preserved.</div>
+                        <p id="txConfirmText">This patient already has consultation history. How would you like to proceed?</p>
+                        <div class="modal-sub">All previous consultations are preserved and read-only.</div>
                     </div>
-                    <div class="modal-actions">
-                        <button type="button" class="btn-modal btn-yes" onclick="confirmAddAnother(true)">
-                            <i class="fa-solid fa-plus"></i> New Transaction
+                    <div class="modal-actions modal-actions--col">
+                        <button type="button" class="btn-modal btn-choice btn-choice--new" onclick="confirmAddAnother(true)">
+                            <span class="btn-choice-icon"><i class="fa-solid fa-plus"></i></span>
+                            <span class="btn-choice-body">
+                                <span class="btn-choice-label">New Transaction</span>
+                                <span class="btn-choice-desc">Start a fresh consultation for this visit</span>
+                            </span>
                         </button>
-                        <button type="button" class="btn-modal btn-no" onclick="confirmAddAnother(false)">
-                            Cancel
+                        <button type="button" class="btn-modal btn-choice btn-choice--history" onclick="openPatientHistoryModal()">
+                            <span class="btn-choice-icon"><i class="fa-solid fa-folder-open"></i></span>
+                            <span class="btn-choice-body">
+                                <span class="btn-choice-label">View Previous Transactions</span>
+                                <span class="btn-choice-desc">Browse and open past consultation records</span>
+                            </span>
                         </button>
+                        <button type="button" class="btn-modal btn-choice btn-choice--cancel" onclick="closeTxConfirm()">
+                            <span class="btn-choice-icon"><i class="fa-solid fa-xmark"></i></span>
+                            <span class="btn-choice-body">
+                                <span class="btn-choice-label">Cancel</span>
+                                <span class="btn-choice-desc">Go back without starting a transaction</span>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══ PATIENT HISTORY MODAL ══ -->
+            <div id="patientHistoryModal" class="modal" style="display:none;">
+                <div class="modal-overlay" onclick="closePatientHistoryModal()"></div>
+                <div class="modal-card modal-card--history">
+                    <div class="modal-head modal-head--history">
+                        <div>
+                            <div class="modal-title">
+                                <i class="fa-solid fa-clock-rotate-left"></i>
+                                Consultation History
+                            </div>
+                            <div class="modal-sub" id="histModalPatientName" style="margin-top:2px;color:var(--gray-400);font-size:.78rem;"></div>
+                        </div>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <div class="modal-hist-search">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="modalHistSearchInput" placeholder="Search complaint, service…" oninput="onModalHistSearch(this.value)">
+                            </div>
+                            <button type="button" class="modal-close" onclick="closePatientHistoryModal()" aria-label="Close">&times;</button>
+                        </div>
+                    </div>
+                    <div class="modal-hist-body" id="modalHistBody">
+                        <div class="modal-hist-loading">
+                            <i class="fa-solid fa-spinner fa-spin"></i> Loading records…
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══ TRANSACTION DETAIL MODAL (READ-ONLY) ══ -->
+            <div id="txDetailModal" class="modal" style="display:none;">
+                <div class="modal-overlay" onclick="closeTxDetailModal()"></div>
+                <div class="modal-card modal-card--detail">
+                    <div class="modal-head modal-head--detail">
+                        <div>
+                            <div class="modal-title" id="txDetailModalTitle">Transaction Details</div>
+                            <div class="modal-sub" id="txDetailModalSub" style="margin-top:2px;color:var(--gray-400);font-size:.78rem;"></div>
+                        </div>
+                        <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+                            <button type="button" class="btn-modal-action btn-modal-back" onclick="closeTxDetailModal(); openPatientHistoryModal();">
+                                <i class="fa-solid fa-arrow-left"></i> Back
+                            </button>
+                            <button type="button" class="modal-close" onclick="closeTxDetailModal()" aria-label="Close">&times;</button>
+                        </div>
+                    </div>
+                    <div class="modal-detail-body" id="txDetailModalBody">
+                        <div class="modal-hist-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</div>
                     </div>
                 </div>
             </div>
@@ -770,10 +835,6 @@ $activeSidebarItem = 'consultation';
                     </div><!-- /.physexam-body -->
                 </div><!-- /#section-physical-exam -->
 
-                <!-- ════════════════════════════════════════
-                     SECTION: MEDICINES DISPENSED (3NF)
-                     Hidden for: Physical Examination, Medical Certificate
-                ════════════════════════════════════════ -->
                 <div class="consult-card" id="section-medicines" data-section="medicines">
                     <div class="card-section-label">
                         <i class="fa-solid fa-pills"></i>
@@ -788,15 +849,10 @@ $activeSidebarItem = 'consultation';
                         Add Medicine
                     </button>
                 </div>
-
-                <!-- ════════════════════════════════════════
-                     SECTION: ATTACH DOCUMENT
-                     Hidden for: First Aid
-                     Required for: Medical Certificate
-                ════════════════════════════════════════ -->
+    
                 <div class="consult-card" id="section-attachment" data-section="attachment">
                     <div class="card-section-label">
-                        <i class="fa-solid fa-file-pdf"></i>
+                        <i class="fa-solid fa-paperclip"></i>
                         Attach Document
                         <span id="attachmentRequiredBadge" class="section-note" style="display:none;">
                             <span class="req">*</span> Required for Medical Certificate
@@ -829,6 +885,25 @@ $activeSidebarItem = 'consultation';
                     <div class="pdf-err-msg" id="pdfErrMsg">
                         <i class="fa-solid fa-circle-exclamation"></i>
                         <span id="pdfErrText"></span>
+                    </div>
+
+                    <!-- Attachment metadata (stored in consultation_attachments, 3NF) -->
+                    <div class="attach-meta-row" id="attachMetaRow" style="display:none;">
+                        <div class="form-group">
+                            <label for="attachmentCategory">Document Category</label>
+                            <select id="attachmentCategory" name="attachment_category" class="attach-category-select">
+                                <option value="Other">Other</option>
+                                <option value="Lab Result">Lab Result</option>
+                                <option value="Medical Certificate">Medical Certificate</option>
+                                <option value="Referral">Referral</option>
+                                <option value="X-Ray">X-Ray</option>
+                                <option value="Prescription">Prescription</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="attachmentNotes">Notes (optional)</label>
+                            <input type="text" id="attachmentNotes" name="attachment_notes" placeholder="e.g. CBC result from St. Luke's">
+                        </div>
                     </div>
                 </div>
 

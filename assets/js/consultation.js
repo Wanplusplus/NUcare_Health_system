@@ -1,14 +1,5 @@
 (function () {
-    /* ══════════════════════════════════════════════════════
-       NUCARE — Consultation JS (v3)
-       1. Physical Examination workflow
-       2. Medicine Dispensing (3NF, inventory-aware)
-       3. Transactional saving (DB transaction wrapper)
-       4. Consultation History (EMR read-only viewer)
-       5. Service Type dynamic UI (5 service types)
-    ══════════════════════════════════════════════════════ */
 
-    /* ── DOM refs ─────────────────────────────────────── */
     const qInput   = document.getElementById('consultSearchInput');
     const feedback = document.getElementById('searchFeedback');
     const acList   = document.getElementById('searchAutocomplete');
@@ -353,6 +344,310 @@
         if (modal) modal.style.display = 'none';
     };
 
+    /* ══════════════════════════════════════════════════
+       PATIENT HISTORY MODAL
+    ══════════════════════════════════════════════════ */
+
+    let _histModalData     = [];  // cached transactions for the modal
+    let _histModalPatient  = '';  // patient name for header
+
+    window.openPatientHistoryModal = function () {
+        // Close the choice modal if open
+        const choiceModal = document.getElementById('txConfirmModal');
+        if (choiceModal) choiceModal.style.display = 'none';
+
+        const modal = document.getElementById('patientHistoryModal');
+        if (!modal) return;
+        modal.style.display = 'block';
+        document.body.classList.add('modal-open');
+
+        // Set patient name in header
+        const patientName = document.getElementById('cpcName')?.textContent || '';
+        const patientID   = document.getElementById('cpcID')?.textContent   || '';
+        const nameEl = document.getElementById('histModalPatientName');
+        if (nameEl) nameEl.textContent = patientName + (patientID ? '  ·  ' + patientID : '');
+
+        // Clear search input
+        const searchInput = document.getElementById('modalHistSearchInput');
+        if (searchInput) searchInput.value = '';
+
+        // Always fetch fresh — never trust stale cache (patient may have changed,
+        // or a new transaction may have just been saved)
+        const spid = document.getElementById('consultPatientID')?.value;
+        if (!spid) return;
+
+        const bodyEl = document.getElementById('modalHistBody');
+        if (bodyEl) bodyEl.innerHTML = '<div class="modal-hist-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading records…</div>';
+
+        fetch('../../ajax/consultation/list_transactions.ajax.php?school_person_id=' + encodeURIComponent(spid))
+            .then(r => r.json())
+            .then(resp => {
+                if (!resp.ok || !Array.isArray(resp.transactions) || !resp.transactions.length) {
+                    if (bodyEl) bodyEl.innerHTML = '<div class="modal-hist-empty"><i class="fa-solid fa-folder-open"></i><span>No consultation history found for this patient.</span></div>';
+                    _histModalData = [];
+                    return;
+                }
+                _histModalData = resp.transactions;
+                renderModalHistoryList(_histModalData);
+            })
+            .catch(() => {
+                if (bodyEl) bodyEl.innerHTML = '<div class="modal-hist-empty" style="color:var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i><span>Failed to load history. Check your connection and try again.</span></div>';
+            });
+    };
+
+    window.closePatientHistoryModal = function () {
+        const modal = document.getElementById('patientHistoryModal');
+        if (modal) modal.style.display = 'none';
+        document.body.classList.remove('modal-open');
+    };
+
+    function renderModalHistoryList(transactions) {
+        const bodyEl = document.getElementById('modalHistBody');
+        if (!bodyEl) return;
+        if (!transactions.length) {
+            bodyEl.innerHTML = '<div class="modal-hist-empty"><i class="fa-solid fa-folder-open"></i><span>No records match your search.</span></div>';
+            return;
+        }
+        bodyEl.innerHTML = '';
+        transactions.forEach(tx => {
+            const ctid = tx.TransactionNumber ?? tx.ClinicTransactionID;
+            const statusClass = {
+                'Completed' : 'hist-status-done',
+                'Cancelled' : 'hist-status-cancel',
+                'Waiting'   : 'hist-status-wait',
+                'Consulting': 'hist-status-active',
+            }[tx.Status] || '';
+            const medCount = Array.isArray(tx.medicines) ? tx.medicines.length : 0;
+
+            const row = document.createElement('div');
+            row.className = 'mhist-row';
+            row.setAttribute('data-ctid', ctid);
+            row.innerHTML = `
+                <div class="mhist-row-left">
+                    <div class="mhist-dot"></div>
+                    <div class="mhist-info">
+                        <div class="mhist-top">
+                            <span class="mhist-txnum">#${ctid}</span>
+                            <span class="mhist-date"><i class="fa-regular fa-calendar"></i> ${tx.VisitDate ?? tx.CreatedAt ?? '—'}</span>
+                            <span class="hist-status ${statusClass}">${tx.Status ?? ''}</span>
+                        </div>
+                        <div class="mhist-service"><i class="fa-solid fa-stethoscope"></i> ${tx.ServiceType ?? 'General'}</div>
+                        <div class="mhist-complaint">${tx.Complaint ?? '<em style="color:var(--gray-400);">No chief complaint recorded</em>'}</div>
+                        ${medCount ? `<div class="mhist-med-count"><i class="fa-solid fa-pills"></i> ${medCount} medicine${medCount > 1 ? 's' : ''} dispensed</div>` : ''}
+                    </div>
+                </div>
+                <div class="mhist-row-right">
+                    <button class="btn-mhist-open" title="Open record">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            `;
+            row.addEventListener('click', () => openTxDetailModal(tx));
+            bodyEl.appendChild(row);
+        });
+    }
+
+    let _histSearchTimer = null;
+    window.onModalHistSearch = function (val) {
+        clearTimeout(_histSearchTimer);
+        _histSearchTimer = setTimeout(() => {
+            const q = val.trim().toLowerCase();
+            if (!q) { renderModalHistoryList(_histModalData); return; }
+            const filtered = _histModalData.filter(tx =>
+                (tx.Complaint    ?? '').toLowerCase().includes(q) ||
+                (tx.ServiceType  ?? '').toLowerCase().includes(q) ||
+                String(tx.TransactionNumber ?? tx.ClinicTransactionID ?? '').includes(q) ||
+                (tx.Status ?? '').toLowerCase().includes(q)
+            );
+            renderModalHistoryList(filtered);
+        }, 200);
+    };
+
+    /* ══════════════════════════════════════════════════
+       TRANSACTION DETAIL MODAL (READ-ONLY)
+    ══════════════════════════════════════════════════ */
+
+    window.openTxDetailModal = function (tx) {
+        // Hide history list modal, show detail modal
+        const histModal = document.getElementById('patientHistoryModal');
+        if (histModal) histModal.style.display = 'none';
+
+        const modal = document.getElementById('txDetailModal');
+        if (!modal) return;
+        modal.style.display = 'block';
+        document.body.classList.add('modal-open');
+
+        const ctid = tx.TransactionNumber ?? tx.ClinicTransactionID;
+
+        const titleEl = document.getElementById('txDetailModalTitle');
+        if (titleEl) titleEl.textContent = `Transaction #${ctid}  —  ${tx.ServiceType ?? 'Consultation'}`;
+
+        const subEl = document.getElementById('txDetailModalSub');
+        if (subEl) subEl.textContent = `Visit Date: ${tx.VisitDate ?? tx.CreatedAt ?? '—'}  ·  Status: ${tx.Status ?? '—'}`;
+
+        const bodyEl = document.getElementById('txDetailModalBody');
+        if (!bodyEl) return;
+
+        // Build the detail body from the tx object we already have
+        // (same data the timeline uses — no extra AJAX needed)
+        bodyEl.innerHTML = buildTxDetailHTML(tx);
+    };
+
+    window.closeTxDetailModal = function () {
+        const modal = document.getElementById('txDetailModal');
+        if (modal) modal.style.display = 'none';
+        document.body.classList.remove('modal-open');
+    };
+
+    function buildTxDetailHTML(tx) {
+        /* ── Header info ── */
+        const statusClass = {
+            'Completed' : 'hist-status-done',
+            'Cancelled' : 'hist-status-cancel',
+            'Waiting'   : 'hist-status-wait',
+            'Consulting': 'hist-status-active',
+        }[tx.Status] || '';
+
+        /* ── Vitals ── */
+        const v = tx.vitals ?? tx; // support both nested (get_transaction) and flat (list_transactions)
+        const hasVitals = v.BloodPressure || v.Temperature || v.PulseRate || v.Weight || v.Height;
+        let vitalsHtml = '';
+        if (hasVitals) {
+            vitalsHtml = `
+            <div class="txd-section">
+                <div class="txd-section-title"><i class="fa-solid fa-heart-pulse"></i> Vital Signs</div>
+                <div class="txd-grid">
+                    ${txdField('Height',        v.Height       ? v.Height + ' cm'        : '—')}
+                    ${txdField('Weight',        v.Weight       ? v.Weight + ' kg'        : '—')}
+                    ${txdField('Blood Pressure',v.BloodPressure || '—')}
+                    ${txdField('Temperature',   v.Temperature  ? v.Temperature + ' °C'   : '—')}
+                    ${txdField('Pulse Rate',    v.PulseRate    ? v.PulseRate + ' bpm'     : '—')}
+                </div>
+            </div>`;
+        }
+
+        /* ── Physical Exam ── */
+        let peHtml = '';
+        const pe = tx.physicalExam ?? tx.transaction?.physicalExam;
+        if (pe) {
+            const peRows = [
+                ['Exam Date',    pe.ExamDate],
+                ['Ears',         pe.Ears],
+                ['Eyes / Pupil', pe.EyesPupil],
+                ['Heart',        pe.Heart],
+                ['Nose',         pe.Nose],
+                ['Thorax',       pe.Thorax],
+                ['Abdomen',      pe.Abdomen],
+                ['Lungs',        pe.Lungs],
+                ['Skin',         pe.Skin],
+                ['Extremities',  pe.Extremities],
+                ['Deformities',  pe.Deformities],
+            ].filter(([,v]) => v).map(([l,v]) => txdField(l, v)).join('');
+
+            const clearanceCls = {
+                'Fit'    : 'txd-clearance-fit',
+                'Unfit'  : 'txd-clearance-unfit',
+                'Pending': 'txd-clearance-pending',
+            }[pe.CardioClearance] || '';
+
+            peHtml = `
+            <div class="txd-section">
+                <div class="txd-section-title"><i class="fa-solid fa-clipboard-list"></i> Physical Examination</div>
+                <div class="txd-grid">${peRows}</div>
+                ${pe.CardioClearance ? `<div class="txd-clearance ${clearanceCls}">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    Cardio-Pulmonary Clearance: <strong>${pe.CardioClearance}</strong>
+                </div>` : ''}
+                ${pe.Remarks ? `<div class="txd-remarks"><span class="ro-label">Remarks</span><div>${pe.Remarks}</div></div>` : ''}
+            </div>`;
+        }
+
+        /* ── Medicines ── */
+        let medsHtml = '';
+        const meds = tx.medicines ?? tx.transaction?.medicines ?? [];
+        if (Array.isArray(meds) && meds.length) {
+            const rows = meds.map(m => `
+                <div class="txd-med-row">
+                    <div class="txd-med-icon"><i class="fa-solid fa-pills"></i></div>
+                    <div class="txd-med-info">
+                        <div class="txd-med-name">${m.MedicineName}${m.Dosage ? ' <span style="color:var(--gray-400);">'+m.Dosage+'</span>' : ''}</div>
+                        ${m.GenericName ? `<div class="txd-med-generic">${m.GenericName}</div>` : ''}
+                        ${m.Instructions ? `<div class="txd-med-sig"><i class="fa-solid fa-file-prescription"></i> ${m.Instructions}</div>` : ''}
+                    </div>
+                    <div class="txd-med-qty">
+                        <span class="txd-med-qty-num">${m.QuantityDispensed ?? '—'}</span>
+                        <span class="txd-med-qty-label">dispensed</span>
+                    </div>
+                </div>
+            `).join('');
+            medsHtml = `
+            <div class="txd-section">
+                <div class="txd-section-title"><i class="fa-solid fa-pills"></i> Medicines Dispensed</div>
+                <div class="txd-med-list">${rows}</div>
+            </div>`;
+        }
+
+        /* ── Attachments ── */
+        let attachHtml = '';
+        const attachments = tx.attachments ?? tx.transaction?.attachments ?? [];
+        if (Array.isArray(attachments) && attachments.length) {
+            const rows = attachments.map(a => {
+                const isPDF = (a.FileType ?? '').includes('pdf');
+                const iconClass = isPDF ? 'fa-file-pdf' : 'fa-image';
+                const iconStyle = isPDF ? 'background:#fee2e2;color:#dc2626;' : 'background:var(--blue-50);color:var(--blue-600);';
+                const sizeKB   = a.FileSizeBytes ? (a.FileSizeBytes / 1024).toFixed(0) + ' KB' : '';
+                return `
+                <div class="ro-attach-item">
+                    <div class="ro-attach-icon" style="${iconStyle}"><i class="fa-solid ${iconClass}"></i></div>
+                    <div class="ro-attach-info">
+                        <div class="ro-attach-name">${a.FileName ?? a.StoredName ?? 'File'}</div>
+                        <div class="ro-attach-meta">${a.AttachmentCategory ?? ''} ${sizeKB ? '· ' + sizeKB : ''}</div>
+                        ${a.Notes ? `<div class="ro-attach-meta" style="font-style:italic;">${a.Notes}</div>` : ''}
+                    </div>
+                    <a class="ro-attach-link" href="${a.FilePath ?? '#'}" target="_blank" rel="noopener" title="Open file">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    </a>
+                </div>`;
+            }).join('');
+            attachHtml = `
+            <div class="txd-section">
+                <div class="txd-section-title"><i class="fa-solid fa-paperclip"></i> Attachments</div>
+                <div class="ro-attach-list">${rows}</div>
+            </div>`;
+        }
+
+        const notesHtml = tx.Notes
+            ? `<div class="txd-notes"><span class="ro-label">Clinical Notes / Assessment</span><div>${tx.Notes}</div></div>`
+            : '';
+
+        return `
+        <div class="txd-readonly-banner">
+            <i class="fa-solid fa-lock"></i>
+            This record is <strong>read-only</strong>. Past consultations cannot be edited or deleted.
+        </div>
+
+        <div class="txd-section txd-section--overview">
+            <div class="txd-grid">
+                ${txdField('Transaction #', '#' + (tx.TransactionNumber ?? tx.ClinicTransactionID ?? '—'))}
+                ${txdField('Visit Date',    tx.VisitDate ?? tx.CreatedAt ?? '—')}
+                ${txdField('Service Type',  tx.ServiceType ?? '—')}
+                ${txdField('Status',        `<span class="hist-status ${statusClass}" style="font-size:.75rem;">${tx.Status ?? '—'}</span>`)}
+            </div>
+            ${tx.Complaint ? `<div class="txd-complaint"><span class="ro-label">Chief Complaint</span><div>${tx.Complaint}</div></div>` : ''}
+            ${notesHtml}
+        </div>
+
+        ${vitalsHtml}
+        ${peHtml}
+        ${medsHtml}
+        ${attachHtml}
+        `;
+    }
+
+    function txdField(label, value) {
+        return `<div class="ro-field"><span class="ro-label">${label}</span><span class="ro-value">${value}</span></div>`;
+    }
+
     function unlockForm() {
         const area    = document.getElementById('consultFormArea') || document.getElementById('consultationForm');
         const overlay = document.getElementById('disabledOverlay');
@@ -449,15 +744,7 @@
             /* Mark which sections are active so server can skip irrelevant ones */
             formData.set('active_service_type', serviceType);
 
-            /*
-             * SERVER MUST:
-             * 1. BEGIN TRANSACTION
-             * 2. INSERT / UPDATE clinic_transactions (use consultationID)
-             * 3. If Physical Examination: INSERT into physical_examinations
-             * 4. If medicines present: INSERT into medicine_dispensing, UPDATE medicine_inventory
-             * 5. If attachment: save file, record path
-             * 6. COMMIT — or ROLLBACK on any failure
-             */
+ 
             fetch('../../ajax/consultation/save_consultation.ajax.php', {
                 method: 'POST',
                 body: formData
@@ -471,7 +758,20 @@
                             'success'
                         );
                         const spid = document.getElementById('consultPatientID')?.value;
-                        if (spid) loadHistory(parseInt(spid, 10));
+                        if (spid) {
+                            loadHistory(parseInt(spid, 10));
+                            // Clear form — form.reset() wipes ALL hidden inputs including consultPatientID
+                            autoClearForm();
+                            // Restore patient ID immediately after reset so the modal fetch still works
+                            const pidEl = document.getElementById('consultPatientID');
+                            if (pidEl) pidEl.value = spid;
+                            document.getElementById('consultationID').value = '';
+                            // Re-apply service type to reset sections
+                            const sel = document.getElementById('consultService');
+                            if (sel) applyServiceType(sel.value || 'General Consultation');
+                            // Start new transaction
+                            startTransaction(parseInt(spid, 10));
+                        }
                     } else {
                         // Show the real server-side error so staff can act on it
                         const errMsg = resp.message || 'Save failed. Check your connection and try again.';
@@ -488,10 +788,24 @@
                 });
     };
 
-    /* ── Clear form ───────────────────────────────────── */
+    /* ── Clear form with confirmation ───────────────────────────── */
     window.clearForm = function () {
         if (!confirm('Clear the form? Unsaved data will be lost.')) return;
+        autoClearForm();
+    };
+
+    /* ── Auto-clear form without confirmation (used after save) ───── */
+    window.autoClearForm = function () {
+        // Preserve patient ID — form.reset() wipes ALL hidden inputs inside the form,
+        // including consultPatientID, which the history modal and startTransaction both need.
+        const savedSpid = document.getElementById('consultPatientID')?.value || '';
+
         if (form) form.reset();
+
+        // Restore immediately after reset
+        const pidEl = document.getElementById('consultPatientID');
+        if (pidEl && savedSpid) pidEl.value = savedSpid;
+
         document.getElementById('medsList')?.replaceChildren();
         medRowIndex = 0;
 
@@ -509,14 +823,6 @@
         if (sel) applyServiceType(sel.value || 'General Consultation');
     };
 
-    /* ══════════════════════════════════════════════════
-       1. PHYSICAL EXAMINATION WORKFLOW
-    ══════════════════════════════════════════════════ */
-
-    /**
-     * All exam field IDs used in the PE form.
-     * Must match the id attributes in the HTML.
-     */
     const EXAM_FIELDS = [
         { id: 'examEars',        label: 'Ears' },
         { id: 'examEyesPupil',   label: 'Eyes / Pupil' },
@@ -593,19 +899,23 @@
         if (clearanceEl) formData.set('exam_cardio_clearance', clearanceEl.value || '');
         if (dateEl)      formData.set('exam_date',             dateEl.value      || '');
 
-        // Vitals — always send from the standalone vitals fields.
-        // Even though #section-vitals is hidden for PE, the inputs are
-        // still in the DOM and their values must reach physical_examinations.
-        const vitalsMap = {
-            blood_pressure: 'consultBP',
-            temperature:    'consultTemp',
-            pulse_rate:     'consultPulse',
-            weight:         'consultWeight',
-            height:         'consultHeight',
-        };
-        Object.entries(vitalsMap).forEach(([fieldName, elId]) => {
-            const el = document.getElementById(elId);
-            if (el) formData.set(fieldName, el.value || '');
+        // Vitals — the PE form has its own inputs (peHeight, peBP etc, named pe_*)
+        // that the user fills in when Physical Examination is active.
+        // Remap those to the server-side field names (blood_pressure, height, etc).
+        // Fall back to the standard vitals inputs if the PE inputs are empty
+        // (shouldn't happen, but defensive).
+        const peVitalsMap = [
+            { postKey: 'blood_pressure', peId: 'peBP',     stdId: 'consultBP'     },
+            { postKey: 'temperature',    peId: 'peTemp',    stdId: 'consultTemp'   },
+            { postKey: 'pulse_rate',     peId: 'pePulse',   stdId: 'consultPulse'  },
+            { postKey: 'weight',         peId: 'peWeight',  stdId: 'consultWeight' },
+            { postKey: 'height',         peId: 'peHeight',  stdId: 'consultHeight' },
+        ];
+        peVitalsMap.forEach(({ postKey, peId, stdId }) => {
+            const peEl  = document.getElementById(peId);
+            const stdEl = document.getElementById(stdId);
+            const val   = (peEl && peEl.value) ? peEl.value : (stdEl ? stdEl.value : '');
+            formData.set(postKey, val || '');
         });
     }
 
@@ -795,7 +1105,7 @@
 
                         if (isOut) li.style.opacity = '.5';
 
-                        li.addEventListener('click', () => {
+                        li.addEventListener('mousedown', (e) => { e.preventDefault(); // prevent blur closing dropdown before value is set
                             if (isOut) { showToast('This medicine is currently out of stock.', 'error'); return; }
 
                             inputEl.value = m.MedicineName + (m.Dosage ? ' ' + m.Dosage : '');
@@ -915,13 +1225,6 @@
         });
     })();
 
-    /* ══════════════════════════════════════════════════
-       4. CONSULTATION HISTORY — EMR READ-ONLY VIEWER
-       - Timeline view (primary) with clickable cards
-       - Detail panel: read-only, cannot be edited
-       - Filters: search, date range
-       - Actions: print, export PDF
-    ══════════════════════════════════════════════════ */
     let historyData         = [];
     let historyFilterTimer  = null;
 
@@ -944,11 +1247,13 @@
                         No consultation history yet.
                     </div>`;
                     if (tableFallback) tableFallback.innerHTML = '<tr><td colspan="6" class="muted">No consultation history yet.</td></tr>';
-                    historyData = [];
+                    historyData    = [];
+                    _histModalData = []; // clear stale data from previous patient
                     return;
                 }
 
-                historyData = resp.transactions;
+                historyData    = resp.transactions;
+                _histModalData = resp.transactions; // also cache for the history modal
                 renderHistoryTimeline(historyData);
                 if (tableFallback) renderHistoryTable(historyData, tableFallback);
             })
@@ -1235,7 +1540,6 @@
         setTimeout(() => toast.className = 'consult-toast', duration);
     }
 
-    // Expose globally for other modules
     window.showConsultToast = showToast;
 
 })();

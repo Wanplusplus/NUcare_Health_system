@@ -16,9 +16,6 @@ if ($id <= 0) {
 
 /* ══════════════════════════════════════════════════════════════
    MAIN QUERY
-   clinic_transactions  → core consultation record
-   school_people        → patient info
-   physical_examinations→ vitals + ALL body system fields
 ══════════════════════════════════════════════════════════════ */
 $sql = "
     SELECT
@@ -75,7 +72,7 @@ try {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   MEDICINES QUERY — per transaction
+   MEDICINES QUERY
 ══════════════════════════════════════════════════════════════ */
 $dispSql = "
     SELECT
@@ -94,34 +91,58 @@ $dispSql = "
     ORDER BY md.DispensedAt ASC
 ";
 
-try {
-    $dispStmt = $pdo->prepare($dispSql);
-} catch (Throwable $e) {
-    // If prepare fails, return transactions without medicines rather than crashing
-    echo json_encode([
-        'ok'           => true,
-        'transactions' => array_map(fn($tx) => array_merge($tx, ['medicines' => [], 'physicalExam' => buildPE($tx)]), $rows),
-    ]);
-    exit;
-}
+/* ══════════════════════════════════════════════════════════════
+   ATTACHMENTS QUERY (consultation_attachments — 3NF table)
+══════════════════════════════════════════════════════════════ */
+$attachSql = "
+    SELECT
+        AttachmentID,
+        FileName,
+        StoredName,
+        FilePath,
+        FileType,
+        FileSizeBytes,
+        AttachmentCategory,
+        Notes,
+        CreatedAt
+    FROM consultation_attachments
+    WHERE ClinicTransactionID = :ctid
+    ORDER BY CreatedAt ASC
+";
+
+$dispStmt   = null;
+$attachStmt = null;
+try { $dispStmt   = $pdo->prepare($dispSql);   } catch (Throwable $e) { /* graceful — medicines unavailable */ }
+try { $attachStmt = $pdo->prepare($attachSql); } catch (Throwable $e) { /* graceful — run migration SQL first */ }
 
 /* ══════════════════════════════════════════════════════════════
-   ASSEMBLE — merge medicines + physicalExam sub-object into each tx
+   ASSEMBLE RESPONSE
 ══════════════════════════════════════════════════════════════ */
 $transactions = [];
+
 foreach ($rows as $tx) {
-    // Fetch medicines for this transaction
-    try {
-        $dispStmt->execute([':ctid' => $tx['TransactionNumber']]);
-        $tx['medicines'] = $dispStmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (Throwable $e) {
+    $ctid = $tx['TransactionNumber'];
+
+    // Medicines
+    if ($dispStmt) {
+        try { $dispStmt->execute([':ctid' => $ctid]); $tx['medicines'] = $dispStmt->fetchAll(PDO::FETCH_ASSOC); }
+        catch (Throwable $e) { $tx['medicines'] = []; }
+    } else {
         $tx['medicines'] = [];
     }
 
-    // Pull PE body-system fields into a clean sub-object for the JS history viewer
+    // Attachments
+    if ($attachStmt) {
+        try { $attachStmt->execute([':ctid' => $ctid]); $tx['attachments'] = $attachStmt->fetchAll(PDO::FETCH_ASSOC); }
+        catch (Throwable $e) { $tx['attachments'] = []; }
+    } else {
+        $tx['attachments'] = [];
+    }
+
+    // Physical exam sub-object
     $tx['physicalExam'] = buildPE($tx);
 
-    // Remove the flat PE columns from the top-level tx object (they're in physicalExam now)
+    // Remove flat PE columns from the top-level tx object
     foreach (['ExamDate','Ears','EyesPupil','Heart','Nose','Thorax','Abdomen',
               'Lungs','Skin','Extremities','Deformities','Remarks','CardioClearance'] as $col) {
         unset($tx[$col]);
@@ -130,30 +151,22 @@ foreach ($rows as $tx) {
     $transactions[] = $tx;
 }
 
-echo json_encode([
-    'ok'           => true,
-    'transactions' => $transactions,
-]);
+echo json_encode(['ok' => true, 'transactions' => $transactions]);
 
 /* ══════════════════════════════════════════════════════════════
-   HELPER: build physicalExam sub-object from flat row
-   Returns null if no meaningful PE data exists
+   HELPER
 ══════════════════════════════════════════════════════════════ */
 function buildPE(array $tx): ?array
 {
-    $peFields = [
-        'ExamDate', 'Ears', 'EyesPupil', 'Heart', 'Nose',
-        'Thorax', 'Abdomen', 'Lungs', 'Skin',
-        'Extremities', 'Deformities', 'Remarks', 'CardioClearance',
-    ];
-
+    $peFields = ['ExamDate','Ears','EyesPupil','Heart','Nose',
+                 'Thorax','Abdomen','Lungs','Skin',
+                 'Extremities','Deformities','Remarks','CardioClearance'];
     $hasData = false;
-    $pe = [];
+    $pe      = [];
     foreach ($peFields as $f) {
         $val = $tx[$f] ?? null;
         $pe[$f] = $val;
         if ($val !== null && $val !== '') $hasData = true;
     }
-
     return $hasData ? $pe : null;
 }
