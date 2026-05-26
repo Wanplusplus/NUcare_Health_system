@@ -1,7 +1,8 @@
 /* =============================================
    NUCARE — Schedule JS
    Grid rendering, slot modal, availability
-   toggling, and DB save via schedule_ajax.php
+   toggling, DB save, and Booking Requests
+   (accept / decline patient bookings)
    ============================================= */
 
 'use strict';
@@ -12,7 +13,6 @@ const TIMES = [
     { label: '9:00',  period: 'AM' },
     { label: '10:00', period: 'AM' },
     { label: '11:00', period: 'AM' },
-    // Lunch break row injected before index 4
     { label: '1:00',  period: 'PM' },
     { label: '2:00',  period: 'PM' },
     { label: '3:00',  period: 'PM' },
@@ -27,8 +27,6 @@ const VISIT_TYPES = { general: 'General Consultation', dental: 'Dental Check-up'
 const CHIP_CLASS  = { general: 'chip-general', dental: 'chip-dental', physical: 'chip-physical' };
 
 /* ── AJAX endpoint ──────────────────────────── */
-// If schedule_ajax.php is in the same folder as the page, this is correct.
-// If it's in a sub-folder change this path, e.g. 'modules/schedule/schedule_ajax.php'
 const AJAX = '../../ajax/schedule.ajax.php';
 
 /* ── State ──────────────────────────────────── */
@@ -36,8 +34,8 @@ let weekOffset    = 0;
 let currentProfId = null;
 let professionals = [];
 let slotsData     = {};
-let activeSlot    = null;   // { dayIdx, timeLabel }
-let pendingAvail  = null;   // true = available, false = blocked
+let activeSlot    = null;
+let pendingAvail  = null;
 
 /* ── DOM helpers ────────────────────────────── */
 const $  = id => document.getElementById(id);
@@ -62,6 +60,7 @@ function bindUI() {
     $('professionalSelect').addEventListener('change', e => {
         currentProfId = e.target.value;
         refreshGrid();
+        loadPendingBookings();
     });
     $('modalCloseBtn').addEventListener('click',  closeModal);
     $('modalCancelBtn').addEventListener('click',  closeModal);
@@ -72,6 +71,21 @@ function bindUI() {
         if (e.target === $('slotModal')) closeModal();
     });
     $('btnExport').addEventListener('click', exportSchedule);
+
+    /* Booking respond modal */
+    $('respondModalCloseBtn').addEventListener('click',  closeRespondModal);
+    $('respondModalCancelBtn').addEventListener('click', closeRespondModal);
+    $('respondModal').addEventListener('click', e => {
+        if (e.target === $('respondModal')) closeRespondModal();
+    });
+    $('btnAcceptBooking').addEventListener('click',  () => submitBookingResponse('accept'));
+    $('btnDeclineBooking').addEventListener('click', () => {
+        const declineSection = $('declineReasonSection');
+        declineSection.style.display = declineSection.style.display === 'none' ? 'block' : 'none';
+        $('btnDeclineConfirm').style.display = declineSection.style.display === 'block' ? 'inline-flex' : 'none';
+        $('btnDeclineBooking').style.display  = declineSection.style.display === 'block' ? 'none'         : 'inline-flex';
+    });
+    $('btnDeclineConfirm').addEventListener('click', () => submitBookingResponse('decline'));
 }
 
 /* ════════════════════════════════════════════
@@ -84,7 +98,6 @@ async function loadProfessionals() {
         if (!res.ok) {
             const txt = await res.text();
             showToast(`Server error ${res.status} — ${txt.slice(0, 150)}`, 'error');
-            console.error('get_professionals HTTP error', res.status, txt);
             professionals = [];
             populateProfessionalSelect();
             return;
@@ -94,9 +107,7 @@ async function loadProfessionals() {
         try {
             data = await res.json();
         } catch {
-            const txt = await res.clone().text();
             showToast('Server returned invalid JSON. Check PHP error log.', 'error');
-            console.error('JSON parse error. Raw:', txt);
             professionals = [];
             populateProfessionalSelect();
             return;
@@ -107,18 +118,11 @@ async function loadProfessionals() {
         } else {
             const msg = data.message || 'No professionals found in the database.';
             showToast(msg, 'error');
-            console.warn('get_professionals response:', data);
             professionals = [];
         }
 
     } catch (err) {
-        showToast(
-            'Network error — cannot reach schedule_ajax.php. '
-            + 'Make sure the file exists in the same folder as this page '
-            + 'and DEV_BYPASS is set to true in schedule_ajax.php.',
-            'error'
-        );
-        console.error('fetch error (get_professionals):', err);
+        showToast('Network error — cannot reach schedule_ajax.php.', 'error');
         professionals = [];
     }
 
@@ -137,7 +141,6 @@ function populateProfessionalSelect() {
         return;
     }
 
-    /* Group by profession type for optgroup labels */
     const groups = {};
     professionals.forEach(p => {
         const grp = p.specialty || 'Other';
@@ -145,14 +148,13 @@ function populateProfessionalSelect() {
         groups[grp].push(p);
     });
 
-    const groupOrder  = ['Doctor', 'Dentist', 'Nurse', 'Other'];
+    const groupOrder   = ['Doctor', 'Dentist', 'Nurse', 'Other'];
     const sortedGroups = [
         ...groupOrder.filter(g => groups[g]),
         ...Object.keys(groups).filter(g => !groupOrder.includes(g)),
     ];
 
     if (sortedGroups.length === 1) {
-        /* Only one profession type — flat list, no optgroups */
         professionals.forEach(p => {
             const opt = document.createElement('option');
             opt.value = p.id;
@@ -163,7 +165,6 @@ function populateProfessionalSelect() {
             sel.appendChild(opt);
         });
     } else {
-        /* Multiple profession types — use optgroups */
         sortedGroups.forEach(grp => {
             const og = document.createElement('optgroup');
             og.label = grp + 's';
@@ -181,7 +182,11 @@ function populateProfessionalSelect() {
     }
 
     currentProfId = professionals[0]?.id ?? null;
+    if (currentProfId !== null) {
+        sel.value = String(currentProfId);
+    }
     refreshGrid();
+    loadPendingBookings();
 }
 
 /* ════════════════════════════════════════════
@@ -266,7 +271,6 @@ async function loadSlots() {
     }
 }
 
-/* Fallback when server is unreachable */
 function buildFallbackSlots() {
     const slots = {};
     TIMES.forEach(t => {
@@ -290,7 +294,6 @@ function buildGrid() {
     tbody.innerHTML = '';
 
     TIMES.forEach((timeObj, ti) => {
-        /* Lunch break separator */
         if (ti === 4) {
             const lr = el('tr', 'lunch-row');
             lr.innerHTML = `<td colspan="8"><i class="fa-solid fa-utensils"></i>Lunch Break — 12:00 to 1:00 PM</td>`;
@@ -298,13 +301,10 @@ function buildGrid() {
         }
 
         const tr = el('tr');
-
-        /* Time label */
         const tc = el('td', 'time-cell');
         tc.innerHTML = `${timeObj.label}<span class="time-period">${timeObj.period}</span>`;
         tr.appendChild(tc);
 
-        /* One cell per day */
         DAY_KEYS.forEach((_, di) => {
             const dt      = new Date(ws); dt.setDate(dt.getDate() + di);
             const isToday = dt.getTime() === today.getTime();
@@ -341,10 +341,15 @@ function buildGrid() {
 }
 
 function buildChip(booking) {
-    const chip = el('div', `booking-chip ${CHIP_CLASS[booking.type] || 'chip-general'}`);
+    const isPending  = booking.status === 'Pending';
+    const chipClass  = isPending
+        ? 'booking-chip chip-pending'
+        : `booking-chip ${CHIP_CLASS[booking.type] || 'chip-general'}`;
+
+    const chip = el('div', chipClass);
     chip.innerHTML = `
         <div class="chip-name">${escHtml(booking.patient)}</div>
-        <div class="chip-type">${VISIT_TYPES[booking.type] || booking.type}</div>
+        <div class="chip-type">${isPending ? '⏳ Pending Review' : (VISIT_TYPES[booking.type] || booking.type)}</div>
     `;
     return chip;
 }
@@ -366,11 +371,14 @@ async function updateStats() {
             $('statAvailable').textContent     = data.open;
             $('statDisabled').textContent      = data.blocked;
             $('statProfessionals').textContent = data.professionals;
+
+            /* Update pending badge in requests panel */
+            const badge = $('pendingBadge');
+            if (badge) badge.textContent = data.pending ?? '';
             return;
         }
     } catch (_) { /* fall through */ }
 
-    /* Local fallback count */
     let booked = 0, blocked = 0, open = 0;
     TIMES.forEach(t => {
         DAY_KEYS.forEach((_, di) => {
@@ -399,7 +407,6 @@ function openModal(dayIdx, timeLabel) {
     activeSlot   = { dayIdx, timeLabel };
     pendingAvail = !slot.disabled;
 
-    /* Header */
     $('modalSlotTime').textContent = timeLabel + (parseInt(timeLabel) < 12 ? ' AM' : ' PM');
     $('modalDayFull').textContent  = DAY_FULL[dayIdx] + ', '
         + fmtDate(dt, { month: 'long', day: 'numeric', year: 'numeric' });
@@ -469,6 +476,7 @@ function renderBookingContent(booking) {
 
     const initials  = booking.patient.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
     const typeLabel = VISIT_TYPES[booking.type] || booking.type;
+    const isPending = booking.status === 'Pending';
 
     container.innerHTML = `
         <div class="booking-detail-card">
@@ -494,9 +502,25 @@ function renderBookingContent(booking) {
                 </div>
                 <div class="bd-field">
                     <div class="bd-field-label">Booking Status</div>
-                    <div class="bd-field-val">${escHtml(booking.status ?? '')}</div>
+                    <div class="bd-field-val">
+                        <span class="inline-status-badge status-${(booking.status || '').toLowerCase()}">
+                            ${escHtml(booking.status ?? '')}
+                        </span>
+                    </div>
                 </div>
             </div>
+            ${isPending ? `
+            <div class="slot-respond-actions">
+                <div class="slot-respond-hint">
+                    <i class="fa-solid fa-triangle-exclamation" style="color:var(--warning)"></i>
+                    This booking is awaiting your response.
+                </div>
+                <div class="slot-respond-btns">
+                    <button class="btn-accept-inline" onclick="openRespondModal(${booking.booking_id})">
+                        <i class="fa-solid fa-circle-check"></i> Accept / Decline
+                    </button>
+                </div>
+            </div>` : ''}
         </div>`;
 }
 
@@ -510,23 +534,22 @@ async function saveSlot() {
     const ws    = isoDate(getWeekStart(weekOffset));
     const notes = $('slotNotes').value.trim();
 
-    /* Disable button while saving */
     const saveBtn = $('modalSaveBtn');
     saveBtn.disabled = true;
     saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…';
 
     const payload = {
         action          : 'save_slot',
-        professional_id : currentProfId,   // MedProfID
-        week_start      : ws,              // YYYY-MM-DD of Sunday
-        day_index       : dayIdx,          // 0=Sun … 6=Sat
-        time_label      : timeLabel,       // e.g. "8:00"
-        disabled        : !pendingAvail,   // true = Unavailable
+        professional_id : currentProfId,
+        week_start      : ws,
+        day_index       : dayIdx,
+        time_label      : timeLabel,
+        disabled        : !pendingAvail,
         notes           : notes,
     };
 
-    let savedOk  = false;
-    let savedId  = null;
+    let savedOk = false;
+    let savedId = null;
 
     try {
         const res  = await fetch(AJAX, {
@@ -539,9 +562,7 @@ async function saveSlot() {
         try {
             data = await res.json();
         } catch {
-            const raw = await res.clone().text();
-            showToast('Server returned invalid JSON on save. Check PHP logs.', 'error');
-            console.error('save_slot JSON error. Raw:', raw);
+            showToast('Server returned invalid JSON on save.', 'error');
             restoreSaveBtn(saveBtn);
             return;
         }
@@ -549,21 +570,17 @@ async function saveSlot() {
         if (data.status === 'ok') {
             savedOk = true;
             savedId = data.availability_id ?? null;
-            console.info('Slot saved →', data);
         } else {
             showToast('Save failed: ' + (data.message || 'Unknown error'), 'error');
-            console.error('save_slot error response:', data);
         }
 
     } catch (err) {
-        showToast('Network error — could not save slot. Is schedule_ajax.php reachable?', 'error');
-        console.error('save_slot fetch error:', err);
+        showToast('Network error — could not save slot.', 'error');
     }
 
     restoreSaveBtn(saveBtn);
     if (!savedOk) return;
 
-    /* Update local slotsData so grid reflects change immediately */
     const key = `${dayIdx}-${timeLabel}`;
     slotsData[key] = {
         ...(slotsData[key] || { booking: null }),
@@ -589,7 +606,196 @@ function restoreSaveBtn(btn) {
 }
 
 /* ════════════════════════════════════════════
-   EXPORT (stub — extend as needed)
+   BOOKING REQUESTS PANEL
+   ════════════════════════════════════════════ */
+async function loadPendingBookings() {
+    if (!currentProfId) return;
+
+    const list = $('bookingRequestsList');
+    if (!list) return;
+
+    list.innerHTML = `<div class="requests-loading">
+        <i class="fa-solid fa-spinner fa-spin"></i> Loading requests…
+    </div>`;
+
+    try {
+        const res  = await fetch(`${AJAX}?action=get_pending_bookings&professional_id=${encodeURIComponent(currentProfId)}`);
+        const data = await res.json();
+
+        if (data.status === 'ok') {
+            renderPendingList(data.bookings || []);
+        } else {
+            list.innerHTML = `<div class="requests-empty">
+                <i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i>
+                <p>${escHtml(data.message || 'Could not load requests.')}</p>
+            </div>`;
+        }
+    } catch (err) {
+        list.innerHTML = `<div class="requests-empty">
+            <i class="fa-solid fa-wifi" style="color:var(--gray-400)"></i>
+            <p>Network error loading requests.</p>
+        </div>`;
+    }
+}
+
+function renderPendingList(bookings) {
+    const list = $('bookingRequestsList');
+
+    /* Update count badge */
+    const badge = $('pendingBadge');
+    if (badge) badge.textContent = bookings.length || '';
+
+    if (!bookings.length) {
+        list.innerHTML = `<div class="requests-empty">
+            <i class="fa-solid fa-inbox"></i>
+            <p>No pending booking requests</p>
+            <span>All caught up! New patient bookings will appear here.</span>
+        </div>`;
+        return;
+    }
+
+    list.innerHTML = '';
+    bookings.forEach(bk => {
+        const dateObj = new Date(bk.AppointmentDate + 'T00:00:00');
+        const dateStr = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        const timeStr = fmtTime(bk.AppointmentStart);
+        const initials = (bk.patient_name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+        const card = el('div', 'request-card');
+
+        card.innerHTML = `
+            <div class="request-card-header">
+                <div class="request-avatar">${escHtml(initials)}</div>
+                <div class="request-info">
+                    <div class="request-patient">${escHtml(bk.patient_name)}</div>
+                    <div class="request-meta">
+                        <span><i class="fa-solid fa-id-card"></i> ${escHtml(bk.school_id || '—')}</span>
+                        <span><i class="fa-solid fa-graduation-cap"></i> ${escHtml(bk.program_or_dept || bk.person_type || '—')}</span>
+                    </div>
+                </div>
+                <span class="request-badge">Pending</span>
+            </div>
+            <div class="request-details">
+                <div class="request-detail-item">
+                    <i class="fa-solid fa-calendar"></i>
+                    <span>${escHtml(dateStr)}</span>
+                </div>
+                <div class="request-detail-item">
+                    <i class="fa-solid fa-clock"></i>
+                    <span>${escHtml(timeStr)}</span>
+                </div>
+                <div class="request-detail-item">
+                    <i class="fa-solid fa-stethoscope"></i>
+                    <span>${escHtml(bk.ServiceType || '—')}</span>
+                </div>
+                ${bk.ReasonForVisit ? `<div class="request-detail-item request-reason">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>${escHtml(bk.ReasonForVisit)}</span>
+                </div>` : ''}
+            </div>
+            <div class="request-actions">
+                <button class="btn-accept" onclick="openRespondModal(${(int = bk.BookingID, int)})">
+                    <i class="fa-solid fa-circle-check"></i> Accept
+                </button>
+                <button class="btn-decline" onclick="openRespondModal(${bk.BookingID}, true)">
+                    <i class="fa-solid fa-circle-xmark"></i> Decline
+                </button>
+            </div>`;
+
+        list.appendChild(card);
+    });
+}
+
+/* helper: format "HH:MM:SS" or "HH:MM" → "h:MM AM/PM" */
+function fmtTime(str) {
+    if (!str) return '—';
+    const [h, m] = str.split(':').map(Number);
+    const ampm   = h >= 12 ? 'PM' : 'AM';
+    const h12    = ((h % 12) || 12);
+    return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
+/* ════════════════════════════════════════════
+   RESPOND MODAL — ACCEPT / DECLINE
+   ════════════════════════════════════════════ */
+let activeBookingId = null;
+
+function openRespondModal(bookingId, showDeclineFirst = false) {
+    activeBookingId = bookingId;
+
+    /* Reset modal state */
+    $('declineReasonSection').style.display = 'none';
+    $('declineReasonText').value            = '';
+    $('btnDeclineConfirm').style.display    = 'none';
+    $('btnDeclineBooking').style.display    = 'inline-flex';
+    $('respondBookingId').textContent       = `#${bookingId}`;
+    $('respondModal').classList.add('open');
+
+    /* Close the slot modal if open */
+    $('slotModal').classList.remove('open');
+
+    if (showDeclineFirst) {
+        $('declineReasonSection').style.display = 'block';
+        $('btnDeclineConfirm').style.display    = 'inline-flex';
+        $('btnDeclineBooking').style.display    = 'none';
+    }
+}
+
+function closeRespondModal() {
+    $('respondModal').classList.remove('open');
+    activeBookingId = null;
+}
+
+async function submitBookingResponse(action) {
+    if (!activeBookingId) return;
+
+    const declineReason = ($('declineReasonText').value || '').trim();
+    const acceptBtn  = $('btnAcceptBooking');
+    const declineBtn = $('btnDeclineConfirm');
+    const btn        = action === 'accept' ? acceptBtn : declineBtn;
+
+    btn.disabled = true;
+    const orig   = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…';
+
+    try {
+        const res  = await fetch(AJAX, {
+            method  : 'POST',
+            headers : { 'Content-Type': 'application/json' },
+            body    : JSON.stringify({
+                action         : 'respond_booking',
+                booking_id     : activeBookingId,
+                response       : action,
+                decline_reason : declineReason,
+            }),
+        });
+        const data = await res.json();
+
+        if (data.status === 'ok') {
+            const resolvedId = activeBookingId;
+            closeRespondModal();
+            const msg = action === 'accept'
+                ? `Booking #${resolvedId} has been approved and the patient has been notified.`
+                : `Booking #${resolvedId} has been declined. The slot has been released.`;
+            showToast(msg, action === 'accept' ? 'success' : 'info');
+
+            /* Refresh both the grid and the requests panel */
+            await refreshGrid();
+            await loadPendingBookings();
+        } else {
+            showToast('Error: ' + (data.message || 'Unknown error'), 'error');
+            btn.disabled  = false;
+            btn.innerHTML = orig;
+        }
+
+    } catch (err) {
+        showToast('Network error — could not save response.', 'error');
+        btn.disabled  = false;
+        btn.innerHTML = orig;
+    }
+}
+
+/* ════════════════════════════════════════════
+   EXPORT (stub)
    ════════════════════════════════════════════ */
 function exportSchedule() {
     const ws   = isoDate(getWeekStart(weekOffset));
@@ -606,7 +812,7 @@ function showToast(msg, type = 'success') {
     t.innerHTML = `<i class="fa-solid ${icons[type] || 'fa-circle-info'}" style="margin-right:6px"></i>${msg}`;
     t.className = `schedule-toast ${type} show`;
     clearTimeout(t._timer);
-    t._timer = setTimeout(() => { t.className = 'schedule-toast'; }, 4000);
+    t._timer = setTimeout(() => { t.className = 'schedule-toast'; }, 5000);
 }
 
 function escHtml(str) {

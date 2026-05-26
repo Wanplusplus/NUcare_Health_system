@@ -3,21 +3,20 @@
  * schedule_ajax.php  —  NUCARE Schedule AJAX Endpoint
  *
  * Actions:
- *   get_professionals  – list all medical professionals
- *   get_slots          – fetch availability + bookings for a professional/week
- *   save_slot          – INSERT or UPDATE medical_professional_availability
- *   get_stats          – booking/open/blocked counts for a week
- *   debug              – DB + session diagnostics (remove in production)
+ *   get_professionals    – list all medical professionals
+ *   get_slots            – fetch availability + bookings for a professional/week
+ *   save_slot            – INSERT or UPDATE medical_professional_availability
+ *   get_stats            – booking/open/blocked counts for a week
+ *   get_pending_bookings – list all Pending bookings for a professional
+ *   respond_booking      – Accept or Decline a patient booking request
+ *   debug                – DB + session diagnostics (remove in production)
  */
 
-/* ── Prevent ANY stray output before JSON headers ── */
 ob_start();
 
-/* ── Allow same-origin AJAX from any page in your project ── */
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
-/* ── Session (must start before reading $_SESSION) ── */
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -28,17 +27,11 @@ if (session_status() === PHP_SESSION_NONE) {
 define('_DB_HOST', 'localhost');
 define('_DB_PORT', '3306');
 define('_DB_NAME', 'nucaredb');
-define('_DB_USER', 'root');   // ← your MySQL username
-define('_DB_PASS', '');       // ← your MySQL password (blank if none)
+define('_DB_USER', 'root');
+define('_DB_PASS', '');
 
 /* ════════════════════════════════════════════════════
    ② AUTH GUARD
-   Lists every $_SESSION key your login.php can set.
-   If NONE of these are set the request is rejected.
-
-   ▸ WHILE TESTING: set DEV_BYPASS = true to skip the
-     auth check entirely. Set it back to false before
-     going live.
    ════════════════════════════════════════════════════ */
 define('DEV_BYPASS', true);   // ← set false in production
 
@@ -98,43 +91,31 @@ if ($rawInput !== '' && $rawInput !== false) {
     }
 }
 
-/* Merge GET, POST, and JSON body — JSON body wins on conflict */
 $params = array_merge($_GET, $_POST, $jsonBody);
 $action = trim($params['action'] ?? '');
 
-/* Discard any stray output from includes/session etc. */
 ob_end_clean();
 
 switch ($action) {
-    case 'get_professionals': getProfessionals($pdo);        break;
-    case 'get_slots':         getSlots($pdo, $params);       break;
-    case 'save_slot':         saveSlot($pdo, $params);       break;
-    case 'get_stats':         getStats($pdo, $params);       break;
-    case 'debug':             debugInfo($pdo);               break;
+    case 'get_professionals':    getProfessionals($pdo);              break;
+    case 'get_slots':            getSlots($pdo, $params);             break;
+    case 'save_slot':            saveSlot($pdo, $params);             break;
+    case 'get_stats':            getStats($pdo, $params);             break;
+    case 'get_pending_bookings': getPendingBookings($pdo, $params);   break;
+    case 'respond_booking':      respondBooking($pdo, $params);       break;
+    case 'debug':                debugInfo($pdo);                     break;
     default:
         echo json_encode([
             'status'  => 'error',
-            'message' => "Unknown action: '{$action}'. Valid: get_professionals, get_slots, save_slot, get_stats, debug",
+            'message' => "Unknown action: '{$action}'. Valid: get_professionals, get_slots, save_slot, get_stats, get_pending_bookings, respond_booking, debug",
         ]);
 }
 
 /* ════════════════════════════════════════════════════
    get_professionals
-   Returns every medical professional with a display
-   name built from school_people via users.
-   Falls back to "Profession #ID" when join misses.
    ════════════════════════════════════════════════════ */
 function getProfessionals(PDO $pdo): void
 {
-    /*
-     * Strategy: try the full join first (medical_professionals → users → school_people).
-     * If the users table lacks a SchoolPersonID column (older schema), fall back to a
-     * direct join on school_people via a UserID-based sub-select, then finally fall back
-     * to returning the professional with a generated display name so the dropdown is
-     * never empty when professionals exist in the DB.
-     */
-
-    // Attempt 1 — standard 3-table join
     $sql = "
         SELECT
             mp.MedProfID  AS id,
@@ -155,7 +136,6 @@ function getProfessionals(PDO $pdo): void
     try {
         $rows = $pdo->query($sql)->fetchAll();
     } catch (PDOException $e) {
-        // If join fails (e.g. column doesn't exist), fall back to professionals only
         try {
             $rows = $pdo->query("
                 SELECT
@@ -177,9 +157,7 @@ function getProfessionals(PDO $pdo): void
     if (empty($rows)) {
         echo json_encode([
             'status'  => 'error',
-            'message' => 'No medical professionals found in the database. '
-                       . 'Ensure rows exist in medical_professionals and their '
-                       . 'UserID values link to school_people via the users table.',
+            'message' => 'No medical professionals found in the database.',
         ]);
         return;
     }
@@ -196,13 +174,6 @@ function getProfessionals(PDO $pdo): void
 
 /* ════════════════════════════════════════════════════
    get_slots
-   Slot key format : "dayIndex-timeLabel"  e.g. "1-8:00"
-   dayIndex        : 0 = Sun … 6 = Sat
-
-   Logic:
-   • Sun (0) / Sat (6)              → always disabled
-   • Weekday with NO availability row → default Available
-   • Row with AvailabilityStatus ≠ 'Available' → disabled
    ════════════════════════════════════════════════════ */
 function getSlots(PDO $pdo, array $p): void
 {
@@ -219,7 +190,6 @@ function getSlots(PDO $pdo, array $p): void
     $wsFmt   = $ws->format('Y-m-d');
     $weFmt   = $weekEnd->format('Y-m-d');
 
-    /* 1 — Availability rows for this prof + week */
     try {
         $stmtA = $pdo->prepare("
             SELECT AvailabilityID, AvailableDate, StartTime, AvailabilityStatus, Notes
@@ -235,13 +205,11 @@ function getSlots(PDO $pdo, array $p): void
         return;
     }
 
-    /* Index: date → "HH:MM" → row */
     $availIndex = [];
     foreach ($availRows as $row) {
         $availIndex[$row['AvailableDate']][substr($row['StartTime'], 0, 5)] = $row;
     }
 
-    /* 2 — Bookings for this prof + week */
     try {
         $stmtB = $pdo->prepare("
             SELECT
@@ -283,14 +251,11 @@ function getSlots(PDO $pdo, array $p): void
         return;
     }
 
-    /* Index: date → "HH:MM" → booking */
     $bookIndex = [];
     foreach ($bookingRows as $bk) {
         $bookIndex[$bk['AppointmentDate']][substr($bk['AppointmentStart'], 0, 5)] = $bk;
     }
 
-    /* 3 — Build slot map */
-    /* Time label (JS) → 24h "HH:MM" (DB) */
     $timeMap = [
         '8:00'  => '08:00',
         '9:00'  => '09:00',
@@ -308,7 +273,6 @@ function getSlots(PDO $pdo, array $p): void
     for ($di = 0; $di <= 6; $di++) {
         $date = (clone $ws)->modify("+{$di} days")->format('Y-m-d');
 
-        /* Weekends — always blocked, no DB check needed */
         if ($di === 0 || $di === 6) {
             foreach (array_keys($timeMap) as $label) {
                 $slots["{$di}-{$label}"] = [
@@ -321,12 +285,10 @@ function getSlots(PDO $pdo, array $p): void
             continue;
         }
 
-        /* Weekdays */
         foreach ($timeMap as $label => $hhmm) {
             $availRow = $availIndex[$date][$hhmm] ?? null;
 
             if ($availRow === null) {
-                /* No row in DB → default: Available */
                 $disabled = false;
                 $notes    = '';
                 $availId  = null;
@@ -365,22 +327,15 @@ function getSlots(PDO $pdo, array $p): void
 
 /* ════════════════════════════════════════════════════
    save_slot
-   INSERT or UPDATE medical_professional_availability.
-   Called when the clinician clicks "Save Changes" in
-   the slot modal. Stores Available / Unavailable and
-   optional notes for the chosen professional + date.
    ════════════════════════════════════════════════════ */
 function saveSlot(PDO $pdo, array $p): void
 {
-    /* ── Parse & validate input ── */
     $profId    = (int)  ($p['professional_id'] ?? 0);
     $ws        =         $p['week_start']       ?? '';
     $dayIdx    = (int)  ($p['day_index']        ?? -1);
     $timeLabel =  trim(  $p['time_label']       ?? '');
     $notes     =  trim(  $p['notes']            ?? '');
-
-    /* filter_var handles both JSON booleans and "true"/"false" strings */
-    $disabled = filter_var($p['disabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
+    $disabled  = filter_var($p['disabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
     if (!$profId) {
         echo json_encode(['status' => 'error', 'message' => 'professional_id is required']);
@@ -403,7 +358,6 @@ function saveSlot(PDO $pdo, array $p): void
         return;
     }
 
-    /* ── Time maps ── */
     $startMap = [
         '8:00'  => '08:00:00', '9:00'  => '09:00:00',
         '10:00' => '10:00:00', '11:00' => '11:00:00',
@@ -429,7 +383,6 @@ function saveSlot(PDO $pdo, array $p): void
     $endTime   = $endMap[$timeLabel];
     $status    = $disabled ? 'Unavailable' : 'Available';
 
-    /* ── Verify the professional exists ── */
     try {
         $chkProf = $pdo->prepare("SELECT MedProfID FROM medical_professionals WHERE MedProfID = :id LIMIT 1");
         $chkProf->execute([':id' => $profId]);
@@ -442,9 +395,7 @@ function saveSlot(PDO $pdo, array $p): void
         return;
     }
 
-    /* ── UPSERT ── */
     try {
-        /* Check for an existing row for this prof + date + start time */
         $check = $pdo->prepare("
             SELECT AvailabilityID
             FROM   medical_professional_availability
@@ -457,7 +408,6 @@ function saveSlot(PDO $pdo, array $p): void
         $existing = $check->fetch();
 
         if ($existing) {
-            /* UPDATE existing row */
             $upd = $pdo->prepare("
                 UPDATE medical_professional_availability
                 SET    AvailabilityStatus = :status,
@@ -474,7 +424,6 @@ function saveSlot(PDO $pdo, array $p): void
             $message = 'Slot updated';
             $availId = (int) $existing['AvailabilityID'];
         } else {
-            /* INSERT new row */
             $ins = $pdo->prepare("
                 INSERT INTO medical_professional_availability
                     (MedProfID, AvailableDate, StartTime, EndTime,
@@ -527,7 +476,6 @@ function getStats(PDO $pdo, array $p): void
     $weFmt   = $weekEnd->format('Y-m-d');
 
     try {
-        /* Active bookings this week for this prof */
         $stmtBk = $pdo->prepare("
             SELECT COUNT(*) FROM bookings
             WHERE  MedProfID        = :prof
@@ -537,7 +485,6 @@ function getStats(PDO $pdo, array $p): void
         $stmtBk->execute([':prof' => $profId, ':ws' => $wsFmt, ':we' => $weFmt]);
         $bookings = (int) $stmtBk->fetchColumn();
 
-        /* Blocked / unavailable slots this week for this prof */
         $stmtBl = $pdo->prepare("
             SELECT COUNT(*) FROM medical_professional_availability
             WHERE  MedProfID          = :prof
@@ -547,7 +494,17 @@ function getStats(PDO $pdo, array $p): void
         $stmtBl->execute([':prof' => $profId, ':ws' => $wsFmt, ':we' => $weFmt]);
         $blocked = (int) $stmtBl->fetchColumn();
 
-        $totalWeekdaySlots = 5 * 9;   /* Mon–Fri × 9 time slots */
+        /* Pending count */
+        $stmtPd = $pdo->prepare("
+            SELECT COUNT(*) FROM bookings
+            WHERE  MedProfID       = :prof
+              AND  AppointmentDate BETWEEN :ws AND :we
+              AND  BookingStatus   = 'Pending'
+        ");
+        $stmtPd->execute([':prof' => $profId, ':ws' => $wsFmt, ':we' => $weFmt]);
+        $pending = (int) $stmtPd->fetchColumn();
+
+        $totalWeekdaySlots = 5 * 9;
         $open              = max(0, $totalWeekdaySlots - $bookings - $blocked);
         $professionals     = (int) $pdo->query("SELECT COUNT(*) FROM medical_professionals")->fetchColumn();
 
@@ -556,6 +513,7 @@ function getStats(PDO $pdo, array $p): void
             'bookings'      => $bookings,
             'open'          => $open,
             'blocked'       => $blocked,
+            'pending'       => $pending,
             'professionals' => $professionals,
         ]);
 
@@ -565,8 +523,187 @@ function getStats(PDO $pdo, array $p): void
 }
 
 /* ════════════════════════════════════════════════════
+   get_pending_bookings
+   Returns all Pending bookings for a given professional.
+   Used to populate the Booking Requests panel.
+   ════════════════════════════════════════════════════ */
+function getPendingBookings(PDO $pdo, array $p): void
+{
+    $profId = (int) ($p['professional_id'] ?? 0);
+
+    if (!$profId) {
+        echo json_encode(['status' => 'error', 'message' => 'professional_id is required']);
+        return;
+    }
+
+    try {
+        $stmt = $pdo->prepare("
+            SELECT
+                b.BookingID,
+                b.AppointmentDate,
+                b.AppointmentStart,
+                b.AppointmentEnd,
+                b.ServiceType,
+                b.ReasonForVisit,
+                b.BookingStatus,
+                b.BookingType,
+                COALESCE(
+                    NULLIF(TRIM(CONCAT(sp.FirstName, ' ', sp.LastName)), ''),
+                    'Unknown Patient'
+                )                           AS patient_name,
+                COALESCE(sp.SchoolID,   '') AS school_id,
+                COALESCE(sp.PersonType, '') AS person_type,
+                COALESCE(
+                    (SELECT pr.ProgramName
+                     FROM   student_enrollments se
+                     JOIN   programs pr ON pr.ProgramID = se.ProgramID
+                     WHERE  se.SchoolPersonID = b.SchoolPersonID
+                     ORDER  BY se.EnrollmentID DESC LIMIT 1),
+                    (SELECT ea.Department
+                     FROM   employee_assignments ea
+                     WHERE  ea.SchoolPersonID  = b.SchoolPersonID
+                       AND  ea.EmploymentStatus = 'Employed'
+                     LIMIT 1),
+                    sp.PersonType
+                )                           AS program_or_dept
+            FROM bookings b
+            LEFT JOIN school_people sp ON sp.SchoolPersonID = b.SchoolPersonID
+            WHERE b.MedProfID     = :prof
+              AND b.BookingStatus = 'Pending'
+            ORDER BY b.AppointmentDate ASC, b.AppointmentStart ASC
+        ");
+        $stmt->execute([':prof' => $profId]);
+        $rows = $stmt->fetchAll();
+
+        echo json_encode(['status' => 'ok', 'bookings' => array_values($rows)]);
+
+    } catch (PDOException $e) {
+        echo json_encode(['status' => 'error', 'message' => 'DB error (get_pending_bookings): ' . $e->getMessage()]);
+    }
+}
+
+/* ════════════════════════════════════════════════════
+   respond_booking
+   Medical staff accepts or declines a patient booking.
+
+   Expected params:
+     booking_id  – int
+     response    – 'accept' | 'decline'
+     decline_reason (optional) – string, shown to patient
+
+   On Accept  → BookingStatus = 'Approved'
+              → availability slot remains Unavailable
+   On Decline → BookingStatus = 'Declined'
+              → availability slot flipped back to 'Available'
+              → DeclineReason stored (requires column — see note)
+   ════════════════════════════════════════════════════ */
+function respondBooking(PDO $pdo, array $p): void
+{
+    $bookingId     = (int)  ($p['booking_id']     ?? 0);
+    $response      = strtolower(trim($p['response'] ?? ''));
+    $declineReason = trim($p['decline_reason'] ?? '');
+
+    if (!$bookingId) {
+        echo json_encode(['status' => 'error', 'message' => 'booking_id is required']);
+        return;
+    }
+    if (!in_array($response, ['accept', 'decline'], true)) {
+        echo json_encode(['status' => 'error', 'message' => "response must be 'accept' or 'decline'"]);
+        return;
+    }
+
+    try {
+        /* Fetch the booking to verify it exists and is still Pending */
+        $fetch = $pdo->prepare("
+            SELECT BookingID, BookingStatus, AvailabilityID, MedProfID
+            FROM   bookings
+            WHERE  BookingID = :id
+            LIMIT  1
+        ");
+        $fetch->execute([':id' => $bookingId]);
+        $booking = $fetch->fetch();
+
+        if (!$booking) {
+            echo json_encode(['status' => 'error', 'message' => "Booking #{$bookingId} not found"]);
+            return;
+        }
+
+        if (strtolower($booking['BookingStatus']) !== 'pending') {
+            echo json_encode([
+                'status'  => 'error',
+                'message' => "Booking #{$bookingId} is already '{$booking['BookingStatus']}' and cannot be changed",
+            ]);
+            return;
+        }
+
+        /* ── ACCEPT ── */
+        if ($response === 'accept') {
+            $upd = $pdo->prepare("
+                UPDATE bookings
+                SET    BookingStatus = 'Approved'
+                WHERE  BookingID     = :id
+            ");
+            $upd->execute([':id' => $bookingId]);
+
+            echo json_encode([
+                'status'     => 'ok',
+                'action'     => 'accepted',
+                'booking_id' => $bookingId,
+                'message'    => "Booking #{$bookingId} has been accepted. The patient will be notified.",
+            ]);
+            return;
+        }
+
+        /* ── DECLINE ── */
+        /* BookingStatus ENUM only allows: Pending, Approved, Completed, Cancelled.
+           'Declined' is not a valid value — use 'Cancelled' instead. */
+        try {
+            $upd = $pdo->prepare("
+                UPDATE bookings
+                SET    BookingStatus  = 'Cancelled',
+                       DeclineReason = :reason
+                WHERE  BookingID     = :id
+            ");
+            $upd->execute([':reason' => $declineReason ?: null, ':id' => $bookingId]);
+        } catch (PDOException $colErr) {
+            /* Column DeclineReason doesn't exist yet — update without it */
+            $upd = $pdo->prepare("
+                UPDATE bookings
+                SET    BookingStatus = 'Cancelled'
+                WHERE  BookingID    = :id
+            ");
+            $upd->execute([':id' => $bookingId]);
+        }
+
+        /* Release the availability slot back to Available */
+        if (!empty($booking['AvailabilityID'])) {
+            try {
+                $rel = $pdo->prepare("
+                    UPDATE medical_professional_availability
+                    SET    AvailabilityStatus = 'Available'
+                    WHERE  AvailabilityID     = :avid
+                ");
+                $rel->execute([':avid' => (int) $booking['AvailabilityID']]);
+            } catch (PDOException $e2) {
+                /* Non-fatal — log but don't fail the whole request */
+                error_log('schedule_ajax respond_booking (release slot): ' . $e2->getMessage());
+            }
+        }
+
+        echo json_encode([
+            'status'     => 'ok',
+            'action'     => 'declined',
+            'booking_id' => $bookingId,
+            'message'    => "Booking #{$bookingId} has been declined. The slot has been released and the patient will be notified.",
+        ]);
+
+    } catch (PDOException $e) {
+        echo json_encode(['status' => 'error', 'message' => 'DB error (respond_booking): ' . $e->getMessage()]);
+    }
+}
+
+/* ════════════════════════════════════════════════════
    debug  ⚠ REMOVE or RESTRICT in production
-   Visit: schedule_ajax.php?action=debug
    ════════════════════════════════════════════════════ */
 function debugInfo(PDO $pdo): void
 {
@@ -597,9 +734,13 @@ function debugInfo(PDO $pdo): void
             LEFT JOIN school_people sp ON sp.SchoolPersonID = u.SchoolPersonID
         ")->fetchAll();
 
-        /* Sample availability rows */
         $info['avail_sample'] = $pdo->query(
             "SELECT * FROM medical_professional_availability ORDER BY CreatedAt DESC LIMIT 10"
+        )->fetchAll();
+
+        /* Sample of pending bookings */
+        $info['pending_bookings_sample'] = $pdo->query(
+            "SELECT BookingID, MedProfID, BookingStatus, AppointmentDate FROM bookings WHERE BookingStatus = 'Pending' LIMIT 10"
         )->fetchAll();
 
     } catch (PDOException $e) {

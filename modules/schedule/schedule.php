@@ -21,7 +21,7 @@ $activeSidebarItem = 'schedule';
     <title>NUCARE | Schedule</title>
     <link rel="icon" href="/NUcare_Health_system/assets/image/nucarelogo.png">
     <link rel="stylesheet" href="../../assets/css/app.css?v=1">
-    <link rel="stylesheet" href="../../assets/css/schedule.css?v=1">
+    <link rel="stylesheet" href="../../assets/css/schedule.css?v=2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
@@ -86,66 +86,96 @@ $activeSidebarItem = 'schedule';
             </div>
         </div>
 
-        <!-- ══ SCHEDULE CARD ══ -->
-        <div class="schedule-card">
-            <div class="card-toolbar">
-                <div class="card-section-label">
-                    <i class="fa-solid fa-calendar-week"></i>
-                    Weekly Schedule
-                </div>
-                <div class="toolbar-right">
-                    <select class="professional-select" id="professionalSelect">
-                        <!-- Populated by JS via API -->
-                    </select>
-                    <div class="week-nav">
-                        <button class="nav-btn" id="prevWeek" title="Previous Week">
-                            <i class="fa-solid fa-chevron-left"></i>
-                        </button>
-                        <span class="week-label" id="weekLabel">Loading…</span>
-                        <button class="nav-btn" id="nextWeek" title="Next Week">
-                            <i class="fa-solid fa-chevron-right"></i>
-                        </button>
+        <!-- ══ MAIN LAYOUT (Schedule + Booking Requests side by side) ══ -->
+        <div class="schedule-main-layout">
+
+            <!-- ══ SCHEDULE CARD ══ -->
+            <div class="schedule-card">
+                <div class="card-toolbar">
+                    <div class="card-section-label">
+                        <i class="fa-solid fa-calendar-week"></i>
+                        Weekly Schedule
+                    </div>
+                    <div class="toolbar-right">
+                        <select class="professional-select" id="professionalSelect">
+                            <!-- Populated by JS via API -->
+                        </select>
+                        <div class="week-nav">
+                            <button class="nav-btn" id="prevWeek" title="Previous Week">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </button>
+                            <span class="week-label" id="weekLabel">Loading…</span>
+                            <button class="nav-btn" id="nextWeek" title="Next Week">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Grid -->
-            <div class="schedule-grid-wrap">
-                <table class="schedule-grid">
-                    <thead>
-                        <tr>
-                            <th class="time-head">TIME</th>
-                            <th id="hSun">SUN</th>
-                            <th id="hMon">MON</th>
-                            <th id="hTue">TUE</th>
-                            <th id="hWed">WED</th>
-                            <th id="hThu">THU</th>
-                            <th id="hFri">FRI</th>
-                            <th id="hSat">SAT</th>
-                        </tr>
-                    </thead>
-                    <tbody id="scheduleBody">
-                        <!-- Populated by JS -->
-                    </tbody>
-                </table>
-            </div>
+                <!-- Grid -->
+                <div class="schedule-grid-wrap">
+                    <table class="schedule-grid">
+                        <thead>
+                            <tr>
+                                <th class="time-head">TIME</th>
+                                <th id="hSun">SUN</th>
+                                <th id="hMon">MON</th>
+                                <th id="hTue">TUE</th>
+                                <th id="hWed">WED</th>
+                                <th id="hThu">THU</th>
+                                <th id="hFri">FRI</th>
+                                <th id="hSat">SAT</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduleBody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
 
-            <!-- Legend -->
-            <div class="legend-row">
-                <div class="legend-item">
-                    <div class="legend-dot dot-available"></div> Available
+                <!-- Legend -->
+                <div class="legend-row">
+                    <div class="legend-item">
+                        <div class="legend-dot dot-available"></div> Available
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot dot-booked"></div> Booked
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot dot-pending"></div> Pending
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot dot-blocked"></div> Blocked
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot dot-today"></div> Today
+                    </div>
                 </div>
-                <div class="legend-item">
-                    <div class="legend-dot dot-booked"></div> Booked
+            </div><!-- /.schedule-card -->
+
+            <!-- ══ BOOKING REQUESTS PANEL ══ -->
+            <div class="booking-requests-panel">
+                <div class="card-toolbar">
+                    <div class="card-section-label">
+                        <i class="fa-solid fa-inbox"></i>
+                        Booking Requests
+                        <span class="pending-count-badge" id="pendingBadge"></span>
+                    </div>
+                    <button class="btn-refresh-requests nav-btn" title="Refresh requests" onclick="loadPendingBookings()">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
                 </div>
-                <div class="legend-item">
-                    <div class="legend-dot dot-blocked"></div> Blocked
+                <div class="requests-hint">
+                    Review and accept or decline appointment requests submitted by patients.
                 </div>
-                <div class="legend-item">
-                    <div class="legend-dot dot-today"></div> Today
+                <div class="booking-requests-list" id="bookingRequestsList">
+                    <div class="requests-loading">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Loading requests…
+                    </div>
                 </div>
-            </div>
-        </div>
+            </div><!-- /.booking-requests-panel -->
+
+        </div><!-- /.schedule-main-layout -->
 
     </div><!-- /.schedule-page -->
 
@@ -230,6 +260,79 @@ $activeSidebarItem = 'schedule';
         </div><!-- /.modal-box -->
     </div><!-- /.modal-backdrop -->
 
+
+    <!-- ══════════════════════════════════════════
+         BOOKING RESPOND MODAL (Accept / Decline)
+    ══════════════════════════════════════════ -->
+    <div id="respondModal" class="modal-backdrop">
+        <div class="modal-box modal-box--respond">
+
+            <!-- Header -->
+            <div class="modal-header">
+                <div class="modal-header-info">
+                    <div class="modal-slot-badge respond-badge">
+                        <i class="fa-solid fa-inbox"></i>
+                        Booking Request
+                    </div>
+                    <div class="modal-title">Respond to Appointment Request</div>
+                    <div class="modal-subtitle">
+                        Booking <strong id="respondBookingId">#—</strong> is awaiting your decision.
+                    </div>
+                </div>
+                <button class="modal-close" id="respondModalCloseBtn" title="Close">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="modal-body-scroll">
+                <div class="respond-info-box">
+                    <div class="respond-info-row">
+                        <i class="fa-solid fa-circle-check" style="color:var(--success)"></i>
+                        <div>
+                            <strong>Accept</strong> — The booking will be confirmed and the patient will be notified that their appointment has been approved.
+                        </div>
+                    </div>
+                    <div class="respond-info-row" style="margin-top:10px">
+                        <i class="fa-solid fa-circle-xmark" style="color:var(--danger)"></i>
+                        <div>
+                            <strong>Decline</strong> — The booking will be rejected, the slot will be released, and the patient will be notified that the doctor is unavailable to accept the appointment.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Decline reason (shown only when declining) -->
+                <div id="declineReasonSection" style="display:none; margin-top:16px;">
+                    <div class="modal-section-label" style="margin-bottom:8px;">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        Reason for Declining <span style="color:var(--gray-400);font-weight:500">(optional — sent to patient)</span>
+                    </div>
+                    <textarea
+                        id="declineReasonText"
+                        class="slot-notes-textarea"
+                        rows="3"
+                        placeholder="e.g. The doctor is fully booked on that date. Please try booking another available slot…"></textarea>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-footer">
+                <button class="btn-outline" id="respondModalCancelBtn">Cancel</button>
+                <button class="btn-decline-modal" id="btnDeclineBooking">
+                    <i class="fa-solid fa-circle-xmark"></i> Decline
+                </button>
+                <button class="btn-decline-modal btn-decline-confirm" id="btnDeclineConfirm" style="display:none;">
+                    <i class="fa-solid fa-paper-plane"></i> Send Decline
+                </button>
+                <button class="btn-success" id="btnAcceptBooking">
+                    <i class="fa-solid fa-circle-check"></i> Accept Booking
+                </button>
+            </div>
+
+        </div><!-- /.modal-box -->
+    </div><!-- /.modal-backdrop -->
+
+
     <!-- Toast -->
     <div id="scheduleToast" class="schedule-toast"></div>
 
@@ -237,6 +340,6 @@ $activeSidebarItem = 'schedule';
 </div><!-- /.app-shell -->
 
 <script src="../../assets/js/app.js"></script>
-<script src="../../assets/js/schedule.js"></script>
+<script src="../../assets/js/schedule.js?v=2"></script>
 </body>
 </html>
