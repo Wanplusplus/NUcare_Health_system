@@ -86,11 +86,11 @@ $activeSidebarItem = 'schedule';
             </div>
         </div>
 
-        <!-- ══ MAIN LAYOUT (Schedule + Booking Requests side by side) ══ -->
-        <div class="schedule-main-layout">
+        <!-- ══ MAIN LAYOUT (Schedule full width) ══ -->
+        <div class="schedule-main-layout" style="display:block;">
 
             <!-- ══ SCHEDULE CARD ══ -->
-            <div class="schedule-card">
+            <div class="schedule-card" style="width:100%;max-width:100%;">
                 <div class="card-toolbar">
                     <div class="card-section-label">
                         <i class="fa-solid fa-calendar-week"></i>
@@ -153,27 +153,7 @@ $activeSidebarItem = 'schedule';
                 </div>
             </div><!-- /.schedule-card -->
 
-            <!-- ══ BOOKING REQUESTS PANEL ══ -->
-            <div class="booking-requests-panel">
-                <div class="card-toolbar">
-                    <div class="card-section-label">
-                        <i class="fa-solid fa-inbox"></i>
-                        Booking Requests
-                        <span class="pending-count-badge" id="pendingBadge"></span>
-                    </div>
-                    <button class="btn-refresh-requests nav-btn" title="Refresh requests" onclick="loadPendingBookings()">
-                        <i class="fa-solid fa-rotate-right"></i>
-                    </button>
-                </div>
-                <div class="requests-hint">
-                    Review and accept or decline appointment requests submitted by patients.
-                </div>
-                <div class="booking-requests-list" id="bookingRequestsList">
-                    <div class="requests-loading">
-                        <i class="fa-solid fa-spinner fa-spin"></i> Loading requests…
-                    </div>
-                </div>
-            </div><!-- /.booking-requests-panel -->
+
 
         </div><!-- /.schedule-main-layout -->
 

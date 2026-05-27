@@ -186,6 +186,52 @@ $cancelledCount = count(array_filter($upcoming, fn($a) => strtolower($a['Booking
     <link rel="stylesheet" href="../../assets/css/app.css?v=1">
     <link rel="stylesheet" href="../../assets/css/my_schedule.css?v=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        /* ── Scrollable appointment lists ── */
+        .appt-list {
+            max-height: 420px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+        .appt-list::-webkit-scrollbar { width: 6px; }
+        .appt-list::-webkit-scrollbar-track { background: transparent; }
+        .appt-list::-webkit-scrollbar-thumb { background: var(--gray-300, #d1d5db); border-radius: 3px; }
+        .appt-list::-webkit-scrollbar-thumb:hover { background: var(--gray-400, #9ca3af); }
+
+        /* ── Scrollable Step 2 body ── */
+        .book-step-body--grid {
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            max-height: calc(70vh - 180px);
+            scroll-behavior: smooth;
+        }
+        .book-step-body--grid::-webkit-scrollbar { width: 6px; }
+        .book-step-body--grid::-webkit-scrollbar-track { background: transparent; }
+        .book-step-body--grid::-webkit-scrollbar-thumb { background: var(--gray-300, #d1d5db); border-radius: 3px; }
+        .book-step-body--grid::-webkit-scrollbar-thumb:hover { background: var(--gray-400, #9ca3af); }
+
+        /* ── Past-date cell styling ── */
+        .cell-past {
+            opacity: 0.45;
+            cursor: not-allowed !important;
+        }
+        .chip-past {
+            font-size: 0.6rem;
+            font-weight: 700;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            line-height: 1;
+        }
+
+        /* ── Disabled Prev Week button ── */
+        #bkPrevWeek:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+    </style>
 </head>
 <body>
 <div class="app-shell">
