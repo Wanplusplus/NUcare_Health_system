@@ -200,14 +200,23 @@
     const AJAX_URL = '../../ajax/schedule.ajax.php';
     const TIMES = [
         { label: '8:00',  period: 'AM' },
+        { label: '8:30',  period: 'AM' },
         { label: '9:00',  period: 'AM' },
+        { label: '9:30',  period: 'AM' },
         { label: '10:00', period: 'AM' },
+        { label: '10:30', period: 'AM' },
         { label: '11:00', period: 'AM' },
+        { label: '11:30', period: 'AM' },
         { label: '1:00',  period: 'PM' },
+        { label: '1:30',  period: 'PM' },
         { label: '2:00',  period: 'PM' },
+        { label: '2:30',  period: 'PM' },
         { label: '3:00',  period: 'PM' },
+        { label: '3:30',  period: 'PM' },
         { label: '4:00',  period: 'PM' },
+        { label: '4:30',  period: 'PM' },
         { label: '5:00',  period: 'PM' },
+        { label: '5:30',  period: 'PM' },
     ];
     const DAY_KEYS  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     const DAY_FULL  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -321,7 +330,7 @@
         let html = '';
         TIMES.forEach((t, ti) => {
             // Lunch break row before PM block
-            if (ti === 4) {
+            if (ti === 8) {
                 html += `<tr class="lunch-row">
                     <td class="time-cell lunch-label">
                         <span class="time-label">LUNCH</span>
@@ -344,14 +353,19 @@
                 const isToday   = di === todayIdx;
                 const isSelected = bk.selectedDayIdx === di && bk.selectedTimeLabel === t.label;
 
+                // Compute the actual date for this cell and check if it's in the past
+                const cellDate = new Date(ws); cellDate.setDate(cellDate.getDate() + di);
+                const isPast = cellDate < today;
+
                 let cellClass = 'sched-cell';
                 if (isToday)   cellClass += ' cell-today';
                 if (isWeekend) cellClass += ' cell-disabled';
 
                 let inner = '';
-                if (!slot || isWeekend) {
+                if (!slot || isWeekend || isPast) {
                     cellClass += ' cell-blocked';
-                    inner = `<div class="cell-dot dot-blocked"></div>`;
+                    if (isPast && !isWeekend) cellClass += ' cell-past';
+                    inner = `<div class="cell-dot dot-blocked"></div>${isPast && !isWeekend ? '<div class="cell-chip chip-past" title="Past date">Past</div>' : ''}`;
                 } else if (slot.booking) {
                     const status = (slot.booking.status || '').toLowerCase();
                     if (status === 'pending') {
@@ -402,12 +416,26 @@
 
         // Map time label to HH:MM:SS
         const startMap = {
-            '8:00':'08:00:00','9:00':'09:00:00','10:00':'10:00:00','11:00':'11:00:00',
-            '1:00':'13:00:00','2:00':'14:00:00','3:00':'15:00:00','4:00':'16:00:00','5:00':'17:00:00'
+            '8:00':'08:00:00','8:30':'08:30:00',
+            '9:00':'09:00:00','9:30':'09:30:00',
+            '10:00':'10:00:00','10:30':'10:30:00',
+            '11:00':'11:00:00','11:30':'11:30:00',
+            '1:00':'13:00:00','1:30':'13:30:00',
+            '2:00':'14:00:00','2:30':'14:30:00',
+            '3:00':'15:00:00','3:30':'15:30:00',
+            '4:00':'16:00:00','4:30':'16:30:00',
+            '5:00':'17:00:00','5:30':'17:30:00',
         };
         const endMap = {
-            '8:00':'09:00:00','9:00':'10:00:00','10:00':'11:00:00','11:00':'12:00:00',
-            '1:00':'14:00:00','2:00':'15:00:00','3:00':'16:00:00','4:00':'17:00:00','5:00':'18:00:00'
+            '8:00':'08:30:00','8:30':'09:00:00',
+            '9:00':'09:30:00','9:30':'10:00:00',
+            '10:00':'10:30:00','10:30':'11:00:00',
+            '11:00':'11:30:00','11:30':'12:00:00',
+            '1:00':'13:30:00','1:30':'14:00:00',
+            '2:00':'14:30:00','2:30':'15:00:00',
+            '3:00':'15:30:00','3:30':'16:00:00',
+            '4:00':'16:30:00','4:30':'17:00:00',
+            '5:00':'17:30:00','5:30':'18:00:00',
         };
 
         bk.startTime = startMap[tl] || '';
@@ -454,6 +482,7 @@
         if (!bk.profId) return;
 
         clearBkSelection();
+        updatePrevWeekBtn();
         if (bkGridWrap)    bkGridWrap.style.display    = 'none';
         if (bkGridLoading) bkGridLoading.style.display = 'flex';
 
@@ -481,8 +510,17 @@
     }
 
     /* ── Week nav ── */
-    if (bkPrevWeek) bkPrevWeek.addEventListener('click', () => { bk.weekOffset--; loadBkGrid(); });
-    if (bkNextWeek) bkNextWeek.addEventListener('click', () => { bk.weekOffset++; loadBkGrid(); });
+    function updatePrevWeekBtn() {
+        if (bkPrevWeek) bkPrevWeek.disabled = bk.weekOffset <= 0;
+    }
+
+    if (bkPrevWeek) bkPrevWeek.addEventListener('click', () => {
+        if (bk.weekOffset <= 0) return;
+        bk.weekOffset--;
+        updatePrevWeekBtn();
+        loadBkGrid();
+    });
+    if (bkNextWeek) bkNextWeek.addEventListener('click', () => { bk.weekOffset++; updatePrevWeekBtn(); loadBkGrid(); });
     if (bkClearSlot) bkClearSlot.addEventListener('click', clearBkSelection);
 
     /* ── Progress bar ── */

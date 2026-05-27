@@ -10,14 +10,23 @@
 /* ── Time slots ─────────────────────────────── */
 const TIMES = [
     { label: '8:00',  period: 'AM' },
+    { label: '8:30',  period: 'AM' },
     { label: '9:00',  period: 'AM' },
+    { label: '9:30',  period: 'AM' },
     { label: '10:00', period: 'AM' },
+    { label: '10:30', period: 'AM' },
     { label: '11:00', period: 'AM' },
+    { label: '11:30', period: 'AM' },
     { label: '1:00',  period: 'PM' },
+    { label: '1:30',  period: 'PM' },
     { label: '2:00',  period: 'PM' },
+    { label: '2:30',  period: 'PM' },
     { label: '3:00',  period: 'PM' },
+    { label: '3:30',  period: 'PM' },
     { label: '4:00',  period: 'PM' },
+    { label: '4:30',  period: 'PM' },
     { label: '5:00',  period: 'PM' },
+    { label: '5:30',  period: 'PM' },
 ];
 
 const DAY_KEYS    = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -294,7 +303,7 @@ function buildGrid() {
     tbody.innerHTML = '';
 
     TIMES.forEach((timeObj, ti) => {
-        if (ti === 4) {
+        if (ti === 8) {
             const lr = el('tr', 'lunch-row');
             lr.innerHTML = `<td colspan="8"><i class="fa-solid fa-utensils"></i>Lunch Break — 12:00 to 1:00 PM</td>`;
             tbody.appendChild(lr);
@@ -313,15 +322,17 @@ function buildGrid() {
             const slotDefault = { disabled: (di === 0 || di === 6), booking: null, notes: '', availability_id: null };
             const slot        = slotsData[key] ?? slotDefault;
 
+            const isPast = dt < today;
+
             const td = el('td');
             td.className = 'slot-cell'
                 + (isToday       ? ' today-col' : '')
-                + (slot.disabled ? ' blocked'   : '');
+                + (slot.disabled || isPast ? ' blocked'   : '');
 
             td.dataset.day  = di;
             td.dataset.time = timeObj.label;
 
-            if (!slot.disabled) {
+            if (!slot.disabled && !isPast) {
                 td.addEventListener('click', () => openModal(di, timeObj.label));
 
                 if (slot.booking) {
@@ -772,6 +783,8 @@ async function submitBookingResponse(action) {
 
         if (data.status === 'ok') {
             const resolvedId = activeBookingId;
+            btn.disabled  = false;
+            btn.innerHTML = orig;
             closeRespondModal();
             const msg = action === 'accept'
                 ? `Booking #${resolvedId} has been approved and the patient has been notified.`
