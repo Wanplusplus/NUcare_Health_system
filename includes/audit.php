@@ -35,7 +35,31 @@ function auditLog(
         }
 
         $userId = $actorUserId;
-        $action = $actionType;
+
+        // Backward-compatible normalization for legacy/vague action codes.
+        // Only rewrite when actionType matches a known short/raw label.
+        $rawAction = strtolower(trim($actionType));
+        $actionMap = [
+            'create' => 'Created record',
+            'add' => 'Added record',
+            'edit' => 'Updated record',
+            'update' => 'Updated record',
+            'delete' => 'Deleted record',
+            'remove' => 'Deleted record',
+            'failed_login' => 'Failed login attempt',
+            'failed_signup' => 'Failed signup attempt',
+            'login' => 'User logged in',
+            'logout' => 'User logged out',
+            'password_reset' => 'Requested password reset',
+            'role_assignment' => 'Updated RBAC permissions',
+            'role_removal' => 'Updated RBAC permissions',
+            'account_activation' => 'Activated account',
+            'account_deactivation' => 'Deactivated account',
+            'enrollment_change' => 'Updated enrollment status',
+        ];
+
+        $action = $actionMap[$rawAction] ?? $actionType;
+
         $moduleName = $entityType;
         $tableAffected = $details;
         // RecordID column is INT. Some legacy callers pass non-numeric data in $entityId.
