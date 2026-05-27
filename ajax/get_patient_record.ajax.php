@@ -11,50 +11,138 @@ if (session_status() === PHP_SESSION_NONE) {
 
 $pdo = require __DIR__ . '/../../config/db_pdo.php';
 
-$schoolPersonID = (int)($_GET['schoolpersonid'] ?? $_GET['school_person_id'] ?? 0);
+$schoolPersonID = (int)($_GET['school_person_id'] ?? $_GET['schoolpersonid'] ?? $_GET['id'] ?? 0);
 
 if ($schoolPersonID <= 0) {
-    echo json_encode(['ok' => false, 'message' => 'Invalid schoolpersonid.']);
+    echo json_encode(['ok' => false, 'message' => 'Invalid school_person_id.'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-/* ─────────────────────────────────────────────
-   HELPERS
-───────────────────────────────────────────── */
-
-function tableExists(PDO $pdo, string $table): bool
+function latestColumnName(PDO $pdo, string $table, array $candidates): ?string
 {
     try {
-        $pdo->query("SELECT 1 FROM `{$table}` LIMIT 1");
-        return true;
+        $stmt = $pdo->query('SHOW COLUMNS FROM ' . $table);
+        $columns = array_map(static fn(array $row): string => (string)$row['Field'], $stmt->fetchAll(PDO::FETCH_ASSOC));
     } catch (Throwable $e) {
-        return false;
+        return null;
     }
-}
 
-function columnsOf(PDO $pdo, string $table): array
-{
-    try {
-        return $pdo->query("SHOW COLUMNS FROM `{$table}`")->fetchAll(PDO::FETCH_COLUMN);
-    } catch (Throwable $e) {
-        return [];
+    foreach ($candidates as $candidate) {
+        if (in_array($candidate, $columns, true)) {
+            return $candidate;
+        }
     }
-}
 
-function firstExistingTable(PDO $pdo, array $tables): ?string
-{
-    foreach ($tables as $table) {
-        if (tableExists($pdo, $table)) return $table;
-    }
     return null;
 }
 
-/* ─────────────────────────────────────────────
-   PATIENT / PERSON PROFILE
-───────────────────────────────────────────── */
+function buildFullName(array $row): string
+{
+    $parts = array_filter([
+        trim((string)($row['FirstName'] ?? '')),
+        !empty($row['MiddleName']) ? substr(trim((string)$row['MiddleName']), 0, 1) . '.' : '',
+        trim((string)($row['LastName'] ?? '')),
+    ]);
+
+    return trim(implode(' ', $parts));
+}
+
+function buildInClause(array $ids, string $prefix): array
+{
+    $placeholders = [];
+    $params = [];
+
+    foreach (array_values($ids) as $index => $id) {
+        $key = ':' . $prefix . $index;
+        $placeholders[] = $key;
+        $params[$key] = (int)$id;
+    }
+
+    return [$placeholders, $params];
+}
+
+function attachmentServeUrl(int $attachmentID, bool $download = false): string
+{
+    return '../../ajax/consultation/serve_attachment.ajax.php?id=' . $attachmentID . ($download ? '&dl=1' : '');
+}
+
+function formatYearSection(?string $academicYear, ?string $semester): string
+{
+    $academicYear = trim((string)$academicYear);
+    $semester = trim((string)$semester);
+
+    if ($academicYear === '' && $semester === '') {
+        return '';
+    }
+
+    if ($academicYear !== '' && $semester !== '') {
+        return $academicYear . ' • ' . $semester;
+    }
+
+    return $academicYear !== '' ? $academicYear : $semester;
+}
+
+function normalizeStudentStatus(?string $status): ?string
+{
+    $value = strtolower(trim((string)$status));
+    if ($value === '') {
+        return null;
+    }
+
+    return $value === 'enrolled' ? 'Active' : 'Inactive';
+}
+
+function normalizeEmploymentStatus(?string $status): ?string
+{
+    $value = strtolower(trim((string)$status));
+    if ($value === '') {
+        return null;
+    }
+
+    return $value === 'employed' ? 'Active' : 'Inactive';
+}
+
+function attachmentLabel(array $row): string
+{
+    $documentType = trim((string)($row['DocumentType'] ?? ''));
+    if ($documentType !== '') {
+        return $documentType;
+    }
+
+    $category = trim((string)($row['DocumentCategory'] ?? ''));
+    if ($category !== '') {
+        return $category;
+    }
+
+    $attachmentCategory = trim((string)($row['AttachmentCategory'] ?? ''));
+    if ($attachmentCategory !== '') {
+        return $attachmentCategory;
+    }
+
+    return 'Attachment';
+}
+
+function isCertificateAttachment(array $row): bool
+{
+    $text = strtolower(trim(
+        (string)($row['DocumentCategory'] ?? '') . ' ' .
+        (string)($row['DocumentType'] ?? '') . ' ' .
+        (string)($row['AttachmentCategory'] ?? '')
+    ));
+
+    return str_contains($text, 'medical certificate')
+        || str_contains($text, 'certificate')
+        || str_contains($text, 'clearance');
+}
 
 try {
-    $personSql = "
+    $birthdayColumn = latestColumnName($pdo, 'school_people', ['Birthday', 'BirthDate', 'BirthDay']);
+    $contactColumn = latestColumnName($pdo, 'school_people', ['ContactNumber', 'ContactNo', 'Phone', 'Mobile']);
+
+    $birthdaySelect = $birthdayColumn ? 'sp.`' . $birthdayColumn . '` AS Birthday' : 'NULL AS Birthday';
+    $contactSelect = $contactColumn ? 'sp.`' . $contactColumn . '` AS ContactNumber' : 'NULL AS ContactNumber';
+
+    $personStmt = $pdo->prepare("
         SELECT
             sp.SchoolPersonID,
             sp.SchoolID,
@@ -64,368 +152,488 @@ try {
             sp.Email,
             sp.PersonType,
             sp.Sex,
+            {$birthdaySelect},
+            {$contactSelect},
+
+            se.ProgramID,
             se.AcademicYear,
             se.Semester,
             se.EnrollmentStatus,
-            pr.ProgramName AS program,
-            pr.Department   AS department
+            pr.ProgramName,
+            pr.Department AS StudentDepartment,
+
+            ea.Department AS EmployeeDepartment,
+            ea.PositionTitle,
+            ea.EmploymentStatus
         FROM school_people sp
-        LEFT JOIN student_enrollments se
-            ON se.EnrollmentID = (
-                SELECT MAX(se2.EnrollmentID)
-                FROM student_enrollments se2
-                WHERE se2.SchoolPersonID = sp.SchoolPersonID
-            )
-        LEFT JOIN programs pr ON pr.ProgramID = se.ProgramID
+        LEFT JOIN (
+            SELECT se1.*
+            FROM student_enrollments se1
+            INNER JOIN (
+                SELECT SchoolPersonID, MAX(EnrollmentID) AS EnrollmentID
+                FROM student_enrollments
+                GROUP BY SchoolPersonID
+            ) latest_enrollment
+                ON latest_enrollment.EnrollmentID = se1.EnrollmentID
+        ) se
+            ON se.SchoolPersonID = sp.SchoolPersonID
+        LEFT JOIN programs pr
+            ON pr.ProgramID = se.ProgramID
+        LEFT JOIN (
+            SELECT ea1.*
+            FROM employee_assignments ea1
+            INNER JOIN (
+                SELECT SchoolPersonID, MAX(AssignmentID) AS AssignmentID
+                FROM employee_assignments
+                GROUP BY SchoolPersonID
+            ) latest_assignment
+                ON latest_assignment.AssignmentID = ea1.AssignmentID
+        ) ea
+            ON ea.SchoolPersonID = sp.SchoolPersonID
         WHERE sp.SchoolPersonID = :id
         LIMIT 1
-    ";
-    $stmt = $pdo->prepare($personSql);
-    $stmt->execute([':id' => $schoolPersonID]);
-    $person = $stmt->fetch(PDO::FETCH_ASSOC);
+    ");
+    $personStmt->execute([':id' => $schoolPersonID]);
+    $person = $personStmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$person) {
-        echo json_encode(['ok' => false, 'message' => 'Patient not found.']);
+        echo json_encode(['ok' => false, 'message' => 'Patient not found.'], JSON_UNESCAPED_UNICODE);
         exit;
     }
 } catch (Throwable $e) {
-    echo json_encode(['ok' => false, 'message' => 'Failed to load patient profile.', 'debug' => $e->getMessage()]);
+    echo json_encode(['ok' => false, 'message' => 'Failed to load patient profile.'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-/* ─────────────────────────────────────────────
-   KNOWN MEDICAL CONDITIONS  (user_diseases → diseases)
-───────────────────────────────────────────── */
-
+/* Known medical conditions (derived from clinic_transactions; read-only) */
+// SPEC NOTE: Only tables listed in the 3NF rules may be used.
+// This schema does not provide an allowed "diseases" mapping table for known medical conditions.
+// Derive a lightweight set from clinic_transactions.complaint.
 $diseases = [];
 try {
-    if (tableExists($pdo, 'user_diseases') && tableExists($pdo, 'diseases')) {
-        $dStmt = $pdo->prepare("
-            SELECT d.DiseaseName AS diseaseName, ud.Notes AS notes
-            FROM user_diseases ud
-            JOIN diseases d ON d.DiseaseID = ud.DiseaseID
-            WHERE ud.SchoolPersonID = :id
-            ORDER BY d.DiseaseName ASC
-        ");
-        $dStmt->execute([':id' => $schoolPersonID]);
-        $diseases = $dStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    $dStmt = $pdo->prepare("
+        SELECT
+            ct.Complaint AS diseaseName,
+            NULL AS notes
+        FROM clinic_transactions ct
+        WHERE ct.SchoolPersonID = :id
+          AND ct.Complaint IS NOT NULL
+          AND TRIM(ct.Complaint) <> ''
+        ORDER BY ct.ClinicTransactionID DESC
+        LIMIT 12
+    ");
+    $dStmt->execute([':id' => $schoolPersonID]);
+    $dRows = $dStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+    $seen = [];
+    foreach ($dRows as $r) {
+        $name = trim((string)($r['diseaseName'] ?? ''));
+        if ($name === '') continue;
+        $key = mb_strtolower($name);
+        if (isset($seen[$key])) continue;
+        $seen[$key] = true;
+        $diseases[] = [
+            'diseaseName' => $name,
+            'notes' => $r['notes'] ?? null,
+        ];
     }
 } catch (Throwable $e) {
     $diseases = [];
 }
 
-/* ─────────────────────────────────────────────
-   CLINIC TRANSACTIONS  (+ physical_examinations + staff)
-───────────────────────────────────────────── */
-
-$peCols      = columnsOf($pdo, 'physical_examinations');
-$wantedVitals = ['BloodPressure', 'Temperature', 'PulseRate', 'Weight', 'Height'];
-$safeVitals  = array_values(array_filter($wantedVitals, fn($col) => in_array($col, $peCols, true)));
-
-$peSelect = '';
-if (!empty($safeVitals)) {
-    $peSelect = ', ' . implode(', ', array_map(fn($c) => "pe.`{$c}`", $safeVitals));
-}
-
-$peJoin = tableExists($pdo, 'physical_examinations')
-    ? 'LEFT JOIN physical_examinations pe ON pe.ClinicTransactionID = ct.ClinicTransactionID'
-    : '';
-
-// Detect medical-professional staff table and usable columns
-$staffTable     = firstExistingTable($pdo, ['medical_professionals', 'staff_profiles', 'clinic_staff']);
-$medProfSelect  = '';
-$medProfJoin    = '';
-
-if ($staffTable !== null) {
-    $staffCols = columnsOf($pdo, $staffTable);
-    // Identify the PK/FK column that links to ct.MedProfID
-    $fkCol = null;
-    foreach (['UserID', 'MedProfID', 'StaffID', 'SchoolPersonID'] as $candidate) {
-        if (in_array($candidate, $staffCols, true)) { $fkCol = $candidate; break; }
-    }
-    if ($fkCol !== null && in_array('FirstName', $staffCols, true) && in_array('LastName', $staffCols, true)) {
-        $medProfSelect = ", CONCAT_WS(' ', mp.FirstName, mp.LastName) AS medProfName";
-        $medProfJoin   = "LEFT JOIN `{$staffTable}` mp ON mp.`{$fkCol}` = ct.MedProfID";
-    }
-}
-
-$rawTransactions = [];
-try {
-    $txSql = "
-        SELECT
-            ct.ClinicTransactionID,
-            ct.VisitDate,
-            ct.CreatedAt,
-            ct.ServiceType,
-            ct.ConsultationStatus,
-            ct.Complaint,
-            ct.Notes
-            {$medProfSelect}
-            {$peSelect}
-        FROM clinic_transactions ct
-        {$peJoin}
-        {$medProfJoin}
-        WHERE ct.SchoolPersonID = :id
-        ORDER BY ct.ClinicTransactionID DESC
-        LIMIT 50
-    ";
-    $txStmt = $pdo->prepare($txSql);
-    $txStmt->execute([':id' => $schoolPersonID]);
-    $rawTransactions = $txStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-} catch (Throwable $e) {
-    $rawTransactions = [];
-}
-
-// Medicine dispensing prepared statement (reused per transaction)
-$medStmt = null;
-if (
-    tableExists($pdo, 'medicine_dispensing') &&
-    tableExists($pdo, 'medicine_inventory')  &&
-    tableExists($pdo, 'medicines')
-) {
-    try {
-        $medStmt = $pdo->prepare("
-            SELECT
-                m.MedicineName   AS medicineName,
-                md.QuantityDispensed AS qty
-            FROM medicine_dispensing md
-            JOIN medicine_inventory mi ON mi.InventoryID = md.InventoryID
-            JOIN medicines m           ON m.MedicineID   = mi.MedicineID
-            WHERE md.ClinicTransactionID = :ctid
-            ORDER BY md.DispensedAt ASC
-        ");
-    } catch (Throwable $e) {
-        $medStmt = null;
-    }
-}
-
-// Attachment prepared statement (reused per transaction)
-$attachStmt = null;
-$hasAttachDocTypes = tableExists($pdo, 'attachment_document_types');
-if (tableExists($pdo, 'consultation_attachments')) {
-    // Build LEFT JOIN to attachment_document_types only if that table exists
-    $adtJoin   = $hasAttachDocTypes
-        ? "LEFT JOIN attachment_document_types adt ON adt.DocumentTypeID = ca.DocumentTypeID"
-        : '';
-    $adtSelect = $hasAttachDocTypes
-        ? "COALESCE(adt.Category, ca.AttachmentCategory, 'Medical Document') AS certificateType"
-        : "COALESCE(ca.AttachmentCategory, 'Medical Document') AS certificateType";
-
-    try {
-        $attachStmt = $pdo->prepare("
-            SELECT
-                ca.AttachmentID,
-                ca.FileName,
-                ca.FileType,
-                ca.FileSizeBytes,
-                ca.Notes,
-                ca.CreatedAt,
-                {$adtSelect}
-            FROM consultation_attachments ca
-            {$adtJoin}
-            WHERE ca.ClinicTransactionID = :ctid
-            ORDER BY ca.CreatedAt ASC
-        ");
-    } catch (Throwable $e) {
-        $attachStmt = null;
-    }
-}
-
-// Build transactions array
-$transactions = [];
-foreach ($rawTransactions as $tx) {
-    $ctid        = (int)($tx['ClinicTransactionID'] ?? 0);
-    $medicines   = [];
-    $attachments = [];
-
-    if ($medStmt && $ctid > 0) {
-        try {
-            $medStmt->execute([':ctid' => $ctid]);
-            $medicines = $medStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-        } catch (Throwable $e) { $medicines = []; }
-    }
-
-    if ($attachStmt && $ctid > 0) {
-        try {
-            $attachStmt->execute([':ctid' => $ctid]);
-            foreach (($attachStmt->fetchAll(PDO::FETCH_ASSOC) ?: []) as $a) {
-                $aid           = (int)($a['AttachmentID'] ?? 0);
-                $attachments[] = [
-                    'attachmentID'   => $aid,
-                    'fileName'       => $a['FileName']      ?? null,
-                    'fileType'       => $a['FileType']      ?? null,
-                    'fileSizeBytes'  => isset($a['FileSizeBytes']) ? (int)$a['FileSizeBytes'] : null,
-                    'certificateType'=> $a['certificateType'] ?? 'Medical Document',
-                    'notes'          => $a['Notes']         ?? null,
-                    'createdAt'      => $a['CreatedAt']     ?? null,
-                    'viewUrl'        => "../../ajax/records/serve_attachment.ajax.php?id={$aid}",
-                    'downloadUrl'    => "../../ajax/records/serve_attachment.ajax.php?id={$aid}&dl=1",
-                ];
-            }
-        } catch (Throwable $e) { $attachments = []; }
-    }
-
-    $record = [
-        'clinicTransactionID' => $ctid,
-        'visitDate'           => $tx['VisitDate']           ?? null,
-        'createdAt'           => $tx['CreatedAt']           ?? null,
-        'serviceType'         => $tx['ServiceType']         ?? 'General Consultation',
-        'consultationStatus'  => $tx['ConsultationStatus']  ?? '',
-        'complaint'           => $tx['Complaint']           ?? null,
-        'notes'               => $tx['Notes']               ?? null,
-        'medProfName'         => $tx['medProfName']         ?? null,
-        'medicines'           => $medicines,
-        'attachments'         => $attachments,
-    ];
-
-    // Map vitals using lcfirst — matches JS keys (e.g. bloodPressure, pulseRate…)
-    foreach ($safeVitals as $v) {
-        $record[lcfirst($v)] = $tx[$v] ?? null;
-    }
-
-    $transactions[] = $record;
-}
-
-/* ─────────────────────────────────────────────
-   EMERGENCIES
-───────────────────────────────────────────── */
-
+/* Emergencies (derived from clinic_transactions; read-only) */
 $emergencies = [];
 try {
-    if (tableExists($pdo, 'emergencies')) {
-        $eStmt = $pdo->prepare("
-            SELECT
-                IncidentDate,
-                IncidentTime,
-                IncidentLocation,
-                BP,
-                RR,
-                HR,
-                Temperature,
-                TreatmentGiven,
-                AmbulanceNo
-            FROM emergencies
-            WHERE SchoolPersonID = :id
-            ORDER BY IncidentDate DESC, EmergencyID DESC
-            LIMIT 20
-        ");
-        $eStmt->execute([':id' => $schoolPersonID]);
-        foreach (($eStmt->fetchAll(PDO::FETCH_ASSOC) ?: []) as $row) {
-            $emergencies[] = [
-                'incidentDate'     => $row['IncidentDate']     ?? null,
-                'incidentTime'     => $row['IncidentTime']     ?? null,
-                'incidentLocation' => $row['IncidentLocation'] ?? null,
-                'bp'               => $row['BP']               ?? null,
-                'hr'               => $row['HR']               ?? null,
-                'rr'               => $row['RR']               ?? null,
-                'temperature'      => $row['Temperature']      ?? null,
-                'treatmentGiven'   => $row['TreatmentGiven']   ?? null,
-                'ambulanceNo'      => $row['AmbulanceNo']      ?? null,
-            ];
-        }
+    $eStmt = $pdo->prepare("
+        SELECT
+            ct.ClinicTransactionID AS EmergencyID,
+            ct.VisitDate AS IncidentDate,
+            NULL AS IncidentTime,
+            NULL AS IncidentLocation,
+            pe.BloodPressure AS BP,
+            NULL AS RR,
+            pe.PulseRate AS HR,
+            pe.Temperature AS Temperature,
+            ct.Notes AS TreatmentGiven,
+            NULL AS AmbulanceNo,
+            NULL AS TimeDispatched,
+            NULL AS TimeArrived,
+            ct.CreatedAt AS CreatedAt
+        FROM clinic_transactions ct
+        LEFT JOIN physical_examinations pe ON pe.ClinicTransactionID = ct.ClinicTransactionID
+        WHERE ct.SchoolPersonID = :id
+          AND (
+            LOWER(ct.ServiceType) LIKE '%emergency%'
+            OR LOWER(ct.ServiceType) LIKE '%first aid%'
+            OR LOWER(ct.Complaint) LIKE '%emergency%'
+            OR LOWER(ct.Complaint) LIKE '%first aid%'
+          )
+        ORDER BY ct.VisitDate DESC, ct.ClinicTransactionID DESC
+        LIMIT 20
+    ");
+    $eStmt->execute([':id' => $schoolPersonID]);
+
+    foreach (($eStmt->fetchAll(PDO::FETCH_ASSOC) ?: []) as $row) {
+        $emergencies[] = [
+            'emergencyID' => (int)($row['EmergencyID'] ?? 0),
+            'incidentDate' => $row['IncidentDate'] ?? null,
+            'incidentTime' => $row['IncidentTime'] ?? null,
+            'incidentLocation' => $row['IncidentLocation'] ?? null,
+            'bp' => $row['BP'] ?? null,
+            'rr' => $row['RR'] ?? null,
+            'hr' => $row['HR'] ?? null,
+            'temperature' => $row['Temperature'] ?? null,
+            'treatmentGiven' => $row['TreatmentGiven'] ?? null,
+            'ambulanceNo' => $row['AmbulanceNo'] ?? null,
+            'timeDispatched' => $row['TimeDispatched'] ?? null,
+            'timeArrived' => $row['TimeArrived'] ?? null,
+            'createdAt' => $row['CreatedAt'] ?? null,
+        ];
     }
 } catch (Throwable $e) {
     $emergencies = [];
 }
 
-/* ─────────────────────────────────────────────
-   CERTIFICATES / ATTACHMENTS  (patient-level, across all transactions)
-   Includes issuedByName via medProf JOIN on clinic_transactions
-───────────────────────────────────────────── */
 
-$certificates = [];
-if (tableExists($pdo, 'consultation_attachments')) {
+/* Clinic history + physical exam */
+$transactions = [];
+$txRows = [];
 
-    $adtJoinCert   = $hasAttachDocTypes
-        ? "LEFT JOIN attachment_document_types adt ON adt.DocumentTypeID = ca.DocumentTypeID"
-        : '';
-    $adtSelectCert = $hasAttachDocTypes
-        ? "COALESCE(adt.Category, ca.AttachmentCategory, 'Medical Document') AS certificateType"
-        : "COALESCE(ca.AttachmentCategory, 'Medical Document') AS certificateType";
+try {
+    $txStmt = $pdo->prepare("
+        SELECT
+            ct.ClinicTransactionID,
+            ct.BookingID,
+            ct.VisitDate,
+            ct.CreatedAt,
+            ct.ServiceType,
+            ct.ConsultationStatus,
+            ct.Complaint,
+            ct.Notes,
+            ct.MedProfID,
+            COALESCE(
+                NULLIF(TRIM(CONCAT_WS(' ',
+                    msp.FirstName,
+                    CASE
+                        WHEN msp.MiddleName IS NOT NULL AND msp.MiddleName <> ''
+                            THEN CONCAT(LEFT(msp.MiddleName, 1), '.')
+                        ELSE NULL
+                    END,
+                    msp.LastName
+                )), ''),
+                CONCAT('Medical Professional #', ct.MedProfID)
+            ) AS medProfName,
 
-    // Re-use staff table detection for issuedByName
-    $issuedBySelect = '';
-    $issuedByJoin   = '';
-    if ($staffTable !== null && $medProfJoin !== '') {
-        $issuedBySelect = ", CONCAT_WS(' ', mp2.FirstName, mp2.LastName) AS issuedByName";
-        // Reuse same FK detection result (already determined above)
-        $staffCols2 = columnsOf($pdo, $staffTable);
-        $fkCol2     = null;
-        foreach (['UserID', 'MedProfID', 'StaffID', 'SchoolPersonID'] as $c) {
-            if (in_array($c, $staffCols2, true)) { $fkCol2 = $c; break; }
-        }
-        if ($fkCol2 !== null) {
-            $issuedByJoin = "LEFT JOIN `{$staffTable}` mp2 ON mp2.`{$fkCol2}` = ct.MedProfID";
-        }
-    }
+            pe.PhysicalExamID,
+            pe.ExamDate,
+            pe.Height,
+            pe.Weight,
+            pe.BloodPressure,
+            pe.PulseRate,
+            pe.Ears,
+            pe.EyesPupil,
+            pe.Heart,
+            pe.Nose,
+            pe.Thorax,
+            pe.Abdomen,
+            pe.Lungs,
+            pe.Skin,
+            pe.Extremities,
+            pe.Deformities,
+            pe.CardioClearance,
+            pe.Remarks
+        FROM clinic_transactions ct
+        LEFT JOIN medical_professionals mp
+            ON mp.MedProfID = ct.MedProfID
+        LEFT JOIN users mu
+            ON mu.UserID = mp.UserID
+        LEFT JOIN school_people msp
+            ON msp.SchoolPersonID = mu.SchoolPersonID
+        LEFT JOIN physical_examinations pe
+            ON pe.ClinicTransactionID = ct.ClinicTransactionID
+        WHERE ct.SchoolPersonID = :id
+        ORDER BY ct.VisitDate DESC, ct.ClinicTransactionID DESC
+        LIMIT 100
+    ");
+    $txStmt->execute([':id' => $schoolPersonID]);
+    $txRows = $txStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+} catch (Throwable $e) {
+    $txRows = [];
+}
 
+$transactionIds = array_values(array_filter(array_map(
+    static fn(array $row): int => (int)($row['ClinicTransactionID'] ?? 0),
+    $txRows
+)));
+
+$medicinesByTransaction = [];
+if (!empty($transactionIds)) {
     try {
-        $certStmt = $pdo->prepare("
+        [$placeholders, $params] = buildInClause($transactionIds, 'med');
+        $medSql = "
             SELECT
-                ca.AttachmentID,
-                ca.FileName,
-                ca.FileType,
-                ca.FileSizeBytes,
-                ca.Notes,
-                ca.CreatedAt,
-                {$adtSelectCert}
-                {$issuedBySelect}
-            FROM consultation_attachments ca
-            {$adtJoinCert}
-            JOIN clinic_transactions ct ON ct.ClinicTransactionID = ca.ClinicTransactionID
-            {$issuedByJoin}
-            WHERE ct.SchoolPersonID = :id
-            ORDER BY ca.CreatedAt DESC
-            LIMIT 50
-        ");
-        $certStmt->execute([':id' => $schoolPersonID]);
+                md.ClinicTransactionID,
+                md.DispensingID,
+                md.QuantityDispensed,
+                md.Instructions,
+                md.DispensedAt,
+                mi.InventoryID,
+                m.MedicineID,
+                m.MedicineName,
+                m.GenericName,
+                m.Dosage,
+                m.Unit
+            FROM medicine_dispensing md
+            JOIN medicine_inventory mi
+                ON mi.InventoryID = md.InventoryID
+            JOIN medicines m
+                ON m.MedicineID = mi.MedicineID
+            WHERE md.ClinicTransactionID IN (" . implode(', ', $placeholders) . ")
+            ORDER BY md.DispensedAt ASC, md.DispensingID ASC
+        ";
+        $medStmt = $pdo->prepare($medSql);
+        $medStmt->execute($params);
 
-        foreach (($certStmt->fetchAll(PDO::FETCH_ASSOC) ?: []) as $c) {
-            $aid            = (int)($c['AttachmentID'] ?? 0);
-            $certificates[] = [
-                'attachmentID'    => $aid,
-                'certificateType' => $c['certificateType']  ?? 'Medical Document',
-                'fileName'        => $c['FileName']         ?? null,
-                'fileType'        => $c['FileType']         ?? null,
-                'fileSizeBytes'   => isset($c['FileSizeBytes']) ? (int)$c['FileSizeBytes'] : null,
-                'createdAt'       => $c['CreatedAt']        ?? null,
-                'remarks'         => $c['Notes']            ?? null,
-                'issuedByName'    => $c['issuedByName']     ?? null,
-                'validUntil'      => null,
-                'viewUrl'         => "../../ajax/records/serve_attachment.ajax.php?id={$aid}",
-                'downloadUrl'     => "../../ajax/records/serve_attachment.ajax.php?id={$aid}&dl=1",
+        foreach (($medStmt->fetchAll(PDO::FETCH_ASSOC) ?: []) as $row) {
+            $ctid = (int)($row['ClinicTransactionID'] ?? 0);
+            $medicinesByTransaction[$ctid][] = [
+                'dispensingID' => (int)($row['DispensingID'] ?? 0),
+                'inventoryID' => isset($row['InventoryID']) ? (int)$row['InventoryID'] : null,
+                'medicineID' => isset($row['MedicineID']) ? (int)$row['MedicineID'] : null,
+                'medicineName' => $row['MedicineName'] ?? null,
+                'genericName' => $row['GenericName'] ?? null,
+                'dosage' => $row['Dosage'] ?? null,
+                'unit' => $row['Unit'] ?? null,
+                'quantityDispensed' => isset($row['QuantityDispensed']) ? (int)$row['QuantityDispensed'] : null,
+                'instructions' => $row['Instructions'] ?? null,
+                'dispensedAt' => $row['DispensedAt'] ?? null,
+                'viewUrl' => null,
+                'downloadUrl' => null,
             ];
         }
     } catch (Throwable $e) {
-        $certificates = [];
+        $medicinesByTransaction = [];
     }
 }
 
-/* ─────────────────────────────────────────────
-   RESPONSE
-───────────────────────────────────────────── */
+$attachmentsByTransaction = [];
+if (!empty($transactionIds)) {
+    try {
+        [$placeholders, $params] = buildInClause($transactionIds, 'att');
+        $attachSql = "
+            SELECT
+                ca.AttachmentID,
+                ca.ClinicTransactionID,
+                ca.FileName,
+                ca.StoredName,
+                ca.FilePath,
+                ca.FileType,
+                ca.FileSizeBytes,
+                ca.AttachmentCategory,
+                ca.DocumentTypeID,
+                adt.Category AS DocumentCategory,
+                adt.DocumentType,
+                ca.Notes,
+                ca.CreatedAt
+            FROM consultation_attachments ca
+            LEFT JOIN attachment_document_types adt
+                ON adt.DocumentTypeID = ca.DocumentTypeID
+            WHERE ca.ClinicTransactionID IN (" . implode(', ', $placeholders) . ")
+            ORDER BY ca.CreatedAt ASC, ca.AttachmentID ASC
+        ";
+        $attachStmt = $pdo->prepare($attachSql);
+        $attachStmt->execute($params);
+
+        foreach (($attachStmt->fetchAll(PDO::FETCH_ASSOC) ?: []) as $row) {
+            $ctid = (int)($row['ClinicTransactionID'] ?? 0);
+            $attachmentID = (int)($row['AttachmentID'] ?? 0);
+
+            $attachment = [
+                'attachmentID' => $attachmentID,
+                'clinicTransactionID' => $ctid,
+                'fileName' => $row['FileName'] ?? null,
+                'storedName' => $row['StoredName'] ?? null,
+                'filePath' => $row['FilePath'] ?? null,
+                'fileType' => $row['FileType'] ?? null,
+                'fileSizeBytes' => isset($row['FileSizeBytes']) ? (int)$row['FileSizeBytes'] : null,
+                'attachmentCategory' => $row['AttachmentCategory'] ?? null,
+                'documentTypeID' => isset($row['DocumentTypeID']) ? (int)$row['DocumentTypeID'] : null,
+                'documentCategory' => $row['DocumentCategory'] ?? null,
+                'documentType' => $row['DocumentType'] ?? null,
+                'notes' => $row['Notes'] ?? null,
+                'createdAt' => $row['CreatedAt'] ?? null,
+                'viewUrl' => attachmentServeUrl($attachmentID),
+                'downloadUrl' => attachmentServeUrl($attachmentID, true),
+                'certificateType' => attachmentLabel($row),
+            ];
+
+            $attachmentsByTransaction[$ctid][] = $attachment;
+        }
+    } catch (Throwable $e) {
+        $attachmentsByTransaction = [];
+    }
+}
+
+foreach ($txRows as $tx) {
+    $ctid = (int)($tx['ClinicTransactionID'] ?? 0);
+
+    $physicalExam = null;
+    $hasPhysicalExam = !empty($tx['PhysicalExamID'])
+        || !empty($tx['ExamDate'])
+        || !empty($tx['Height'])
+        || !empty($tx['Weight'])
+        || !empty($tx['BloodPressure'])
+        || !empty($tx['PulseRate'])
+        || !empty($tx['Ears'])
+        || !empty($tx['EyesPupil'])
+        || !empty($tx['Heart'])
+        || !empty($tx['Nose'])
+        || !empty($tx['Thorax'])
+        || !empty($tx['Abdomen'])
+        || !empty($tx['Lungs'])
+        || !empty($tx['Skin'])
+        || !empty($tx['Extremities'])
+        || !empty($tx['Deformities'])
+        || !empty($tx['CardioClearance'])
+        || !empty($tx['Remarks']);
+
+    if ($hasPhysicalExam) {
+        $physicalExam = [
+            'physicalExamID' => isset($tx['PhysicalExamID']) ? (int)$tx['PhysicalExamID'] : null,
+            'examDate' => $tx['ExamDate'] ?? null,
+            'height' => isset($tx['Height']) ? (float)$tx['Height'] : null,
+            'weight' => isset($tx['Weight']) ? (float)$tx['Weight'] : null,
+            'bloodPressure' => $tx['BloodPressure'] ?? null,
+            'pulseRate' => isset($tx['PulseRate']) ? (int)$tx['PulseRate'] : null,
+            'ears' => $tx['Ears'] ?? null,
+            'eyesPupil' => $tx['EyesPupil'] ?? null,
+            'heart' => $tx['Heart'] ?? null,
+            'nose' => $tx['Nose'] ?? null,
+            'thorax' => $tx['Thorax'] ?? null,
+            'abdomen' => $tx['Abdomen'] ?? null,
+            'lungs' => $tx['Lungs'] ?? null,
+            'skin' => $tx['Skin'] ?? null,
+            'extremities' => $tx['Extremities'] ?? null,
+            'deformities' => $tx['Deformities'] ?? null,
+            'cardioClearance' => $tx['CardioClearance'] ?? null,
+            'remarks' => $tx['Remarks'] ?? null,
+        ];
+    }
+
+    $transactions[] = [
+        'clinicTransactionID' => $ctid,
+        'bookingID' => isset($tx['BookingID']) ? (int)$tx['BookingID'] : null,
+        'visitDate' => $tx['VisitDate'] ?? null,
+        'createdAt' => $tx['CreatedAt'] ?? null,
+        'serviceType' => $tx['ServiceType'] ?? null,
+        'status' => $tx['ConsultationStatus'] ?? null,
+        'consultationStatus' => $tx['ConsultationStatus'] ?? null,
+        'complaint' => $tx['Complaint'] ?? null,
+        'notes' => $tx['Notes'] ?? null,
+        'medProfID' => isset($tx['MedProfID']) ? (int)$tx['MedProfID'] : null,
+        'medProfName' => $tx['medProfName'] ?? null,
+        'physicalExam' => $physicalExam,
+        'medicines' => $medicinesByTransaction[$ctid] ?? [],
+        'attachments' => $attachmentsByTransaction[$ctid] ?? [],
+    ];
+}
+
+$attachmentsFlat = [];
+foreach ($attachmentsByTransaction as $ctid => $attachments) {
+    $tx = null;
+    foreach ($transactions as $candidate) {
+        if ((int)$candidate['clinicTransactionID'] === (int)$ctid) {
+            $tx = $candidate;
+            break;
+        }
+    }
+
+    foreach ($attachments as $attachment) {
+        $attachmentsFlat[] = [
+            'attachmentID' => $attachment['attachmentID'],
+            'clinicTransactionID' => $attachment['clinicTransactionID'],
+            'certificateType' => $attachment['certificateType'],
+            'fileName' => $attachment['fileName'],
+            'storedName' => $attachment['storedName'],
+            'filePath' => $attachment['filePath'],
+            'fileType' => $attachment['fileType'],
+            'fileSizeBytes' => $attachment['fileSizeBytes'],
+            'attachmentCategory' => $attachment['attachmentCategory'],
+            'documentTypeID' => $attachment['documentTypeID'],
+            'documentCategory' => $attachment['documentCategory'],
+            'documentType' => $attachment['documentType'],
+            'notes' => $attachment['notes'],
+            'createdAt' => $attachment['createdAt'],
+            'visitDate' => $tx['visitDate'] ?? null,
+            'serviceType' => $tx['serviceType'] ?? null,
+            'consultationStatus' => $tx['consultationStatus'] ?? null,
+            'issuedByName' => $tx['medProfName'] ?? null,
+            'viewUrl' => $attachment['viewUrl'],
+            'downloadUrl' => $attachment['downloadUrl'],
+        ];
+    }
+}
+
+$personType = (string)($person['PersonType'] ?? '');
+$isStudent = $personType === 'Student';
+$isEmployee = $personType === 'Faculty' || $personType === 'Staff';
+
+$program = null;
+$department = null;
+$positionTitle = null;
+$academicYear = null;
+$semester = null;
+$enrollmentStatus = null;
+$employmentStatus = null;
+$status = null;
+
+if ($isStudent) {
+    $program = $person['ProgramName'] ?? null;
+    $department = $person['StudentDepartment'] ?? null;
+    $academicYear = $person['AcademicYear'] ?? null;
+    $semester = $person['Semester'] ?? null;
+    $enrollmentStatus = $person['EnrollmentStatus'] ?? null;
+    $status = normalizeStudentStatus($person['EnrollmentStatus'] ?? null);
+} elseif ($isEmployee) {
+    $program = $person['PositionTitle'] ?? null;
+    $department = $person['EmployeeDepartment'] ?? null;
+    $positionTitle = $person['PositionTitle'] ?? null;
+    $employmentStatus = $person['EmploymentStatus'] ?? null;
+    $status = normalizeEmploymentStatus($person['EmploymentStatus'] ?? null);
+}
 
 echo json_encode([
-    'ok'      => true,
+    'ok' => true,
     'patient' => [
-        'schoolPersonID'   => (int)$person['SchoolPersonID'],
-        'schoolID'         => $person['SchoolID']         ?? null,
-        'firstName'        => $person['FirstName']        ?? null,
-        'middleName'       => $person['MiddleName']       ?? null,
-        'lastName'         => $person['LastName']         ?? null,
-        'sex'              => $person['Sex']              ?? null,
-        'birthday'         => null,          // not stored in school_people
-        'email'            => $person['Email']            ?? null,
-        'contactNumber'    => null,          // not stored in school_people
-        'personType'       => $person['PersonType']       ?? null,
-        'program'          => $person['program']          ?? null,
-        'department'       => $person['department']       ?? null,
-        'yearSection'      => $person['Semester']         ?? null,
-        'enrollmentStatus' => $person['EnrollmentStatus'] ?? null,
-        'academicYear'     => $person['AcademicYear']     ?? null,
+        'schoolPersonID' => (int)($person['SchoolPersonID'] ?? 0),
+        'schoolID' => $person['SchoolID'] ?? null,
+        'firstName' => $person['FirstName'] ?? null,
+        'middleName' => $person['MiddleName'] ?? null,
+        'lastName' => $person['LastName'] ?? null,
+        'fullName' => buildFullName($person),
+        'sex' => $person['Sex'] ?? null,
+        'birthday' => $person['Birthday'] ?? null,
+        'email' => $person['Email'] ?? null,
+        'contactNumber' => $person['ContactNumber'] ?? null,
+        'personType' => $personType,
+        'program' => $program,
+        'department' => $department,
+        'positionTitle' => $positionTitle,
+        'yearSection' => $isStudent ? formatYearSection($academicYear, $semester) : '',
+        'academicYear' => $academicYear,
+        'semester' => $semester,
+        'enrollmentStatus' => $enrollmentStatus,
+        'employmentStatus' => $employmentStatus,
+        'status' => $status,
     ],
-    'diseases'     => $diseases,
+    'diseases' => $diseases,
     'transactions' => $transactions,
-    'emergencies'  => $emergencies,
-    'certificates' => $certificates,
+    'emergencies' => $emergencies,
+    'certificates' => $attachmentsFlat,
+    'stats' => [
+        'totalVisits' => count($transactions),
+        'emergencies' => count($emergencies),
+        'certificates' => count($attachmentsFlat),
+        'lastVisit' => $transactions[0]['visitDate'] ?? null,
+    ],
 ], JSON_UNESCAPED_UNICODE);

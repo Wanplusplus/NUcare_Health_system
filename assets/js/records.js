@@ -130,8 +130,8 @@
         }
 
         tbody.innerHTML = page.map(r => `
-            <tr onclick="openRecord(${r.userID})" data-userid="${r.userID}" tabindex="0"
-                onkeydown="if(event.key==='Enter')openRecord(${r.userID})">
+            <tr onclick="openRecord(${r.schoolPersonID})" data-userid="${r.schoolPersonID}" tabindex="0"
+                onkeydown="if(event.key==='Enter')openRecord(${r.schoolPersonID})">
                 <td><span class="td-id">${escHtml(r.schoolID)}</span></td>
                 <td>
                     <div class="td-name">${escHtml(r.fullName)}</div>
@@ -147,7 +147,7 @@
                 <td>${r.lastVisit ? formatDate(r.lastVisit) : '<span style="color:var(--gray-300)">—</span>'}</td>
                 <td>
                     <button class="btn-view-record"
-                            onclick="event.stopPropagation();openRecord(${r.userID})"
+                            onclick="event.stopPropagation();openRecord(${r.schoolPersonID})"
                             aria-label="View record for ${escHtml(r.fullName)}">
                         <i class="fa-solid fa-eye"></i> View
                     </button>
@@ -259,6 +259,7 @@
 
     function bindModalClose() {
         document.getElementById('modalCloseBtn')?.addEventListener('click', closeModal);
+        document.getElementById('txDetailCloseBtn')?.addEventListener('click', closeTransactionModal);
 
         document.getElementById('modalPrintBtn')?.addEventListener('click', function () {
             const name = document.getElementById('modalPatientName')?.textContent || 'Record';
@@ -271,8 +272,18 @@
             if (e.target === this) closeModal();
         });
 
+        document.getElementById('transactionDetailModal')?.addEventListener('click', function (e) {
+            if (e.target === this) closeTransactionModal();
+        });
+
         document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape' && activeModal !== null) closeModal();
+            if (e.key === 'Escape') {
+                if (document.getElementById('transactionDetailModal')?.classList.contains('open')) {
+                    closeTransactionModal();
+                    return;
+                }
+                if (activeModal !== null) closeModal();
+            }
         });
 
         document.querySelectorAll('.modal-tab').forEach(btn => {
@@ -337,7 +348,7 @@
         const p = data.patient || {};
 
         /* ── Modal header ── */
-        const fullName = [p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ') || '—';
+        const fullName = p.fullName || [p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ') || '—';
         setEl('modalPatientName',    fullName);
         setEl('modalPatientID',      p.schoolID   || '—');
         setEl('modalPatientType',    p.personType || '—');
@@ -359,11 +370,11 @@
         setEl('infoBirthday',    p.birthday      || '—');
         setEl('infoEmail',       p.email         || '—');
         setEl('infoContact',     p.contactNumber || '—');
-        setEl('infoPersonType',  p.personType    || '—');
-        setEl('infoProgram',     p.program || p.department || '—');
+        setEl('infoPersonTypes', p.personType    || '—');
+        setEl('infoProgram',     p.program || p.positionTitle || p.department || '—');
         setEl('infoDepartment',  p.department    || '—');
         setEl('infoSection',     p.yearSection   || '—');
-        setEl('infoStatus',      p.enrollmentStatus || '—');
+        setEl('infoStatus',      p.status || p.enrollmentStatus || p.employmentStatus || '—');
         setEl('infoAcadYear',    p.academicYear  || '—');
 
         /* Known conditions */
@@ -423,7 +434,7 @@
             const medChips = (tx.medicines || []).map(m =>
                 `<span class="med-chip">
                     <i class="fa-solid fa-pills"></i>
-                    ${escHtml(m.medicineName)} ×${escHtml(String(m.qty ?? ''))}
+                    ${escHtml(m.medicineName || m.MedicineName || 'Medicine')} ×${escHtml(String(m.quantityDispensed ?? m.qty ?? ''))}
                  </span>`
             ).join('');
 
@@ -437,11 +448,40 @@
                 tx.medProfName   && detailField('Attended By',    tx.medProfName),
             ].filter(Boolean).join('');
 
+            const physicalExam = tx.physicalExam
+                ? `<div class="timeline-notes">
+                       <div class="tl-label">Physical Exam</div>
+                       <div class="timeline-detail-row">
+                           ${tx.physicalExam.examDate ? detailField('Exam Date', formatDate(tx.physicalExam.examDate)) : ''}
+                           ${tx.physicalExam.height ? detailField('Height', tx.physicalExam.height + ' cm') : ''}
+                           ${tx.physicalExam.weight ? detailField('Weight', tx.physicalExam.weight + ' kg') : ''}
+                           ${tx.physicalExam.bloodPressure ? detailField('Blood Pressure', tx.physicalExam.bloodPressure) : ''}
+                           ${tx.physicalExam.pulseRate ? detailField('Pulse Rate', tx.physicalExam.pulseRate + ' bpm') : ''}
+                           ${tx.physicalExam.ears ? detailField('Ears', tx.physicalExam.ears) : ''}
+                           ${tx.physicalExam.eyesPupil ? detailField('Eyes / Pupil', tx.physicalExam.eyesPupil) : ''}
+                           ${tx.physicalExam.heart ? detailField('Heart', tx.physicalExam.heart) : ''}
+                           ${tx.physicalExam.nose ? detailField('Nose', tx.physicalExam.nose) : ''}
+                           ${tx.physicalExam.thorax ? detailField('Thorax', tx.physicalExam.thorax) : ''}
+                           ${tx.physicalExam.abdomen ? detailField('Abdomen', tx.physicalExam.abdomen) : ''}
+                           ${tx.physicalExam.lungs ? detailField('Lungs', tx.physicalExam.lungs) : ''}
+                           ${tx.physicalExam.skin ? detailField('Skin', tx.physicalExam.skin) : ''}
+                           ${tx.physicalExam.extremities ? detailField('Extremities', tx.physicalExam.extremities) : ''}
+                           ${tx.physicalExam.deformities ? detailField('Deformities', tx.physicalExam.deformities) : ''}
+                           ${tx.physicalExam.cardioClearance ? detailField('Cardio Clearance', tx.physicalExam.cardioClearance) : ''}
+                       </div>
+                       ${tx.physicalExam.remarks ? `<div class="timeline-notes"><div class="tl-label">Exam Remarks</div><div class="tl-notes-body">${escHtml(tx.physicalExam.remarks)}</div></div>` : ''}
+                   </div>`
+                : '';
+
             /* Per-transaction attachments */
-            const attachRows = (tx.attachments || []).map(a => `
+            const attachRows = (tx.attachments || []).map(a => {
+                const attachmentLabel = a.documentType || a.certificateType || a.attachmentCategory || a.fileName || 'Attachment';
+                const attachmentCategory = a.documentCategory || a.attachmentCategory || a.documentType || 'Other';
+                return `
                 <div class="tl-attachment">
                     <i class="fa-solid ${resolveFileIcon(a.fileType)}"></i>
-                    <span class="tl-attach-name">${escHtml(a.fileName || 'Attachment')}</span>
+                    <span class="tl-attach-name">${escHtml(attachmentLabel)}</span>
+                    <span class="tl-attach-size">${escHtml(attachmentCategory)}${a.createdAt ? ` · ${formatDate(a.createdAt)}` : ''}</span>
                     ${a.fileSizeBytes ? `<span class="tl-attach-size">${formatFileSize(a.fileSizeBytes)}</span>` : ''}
                     ${a.viewUrl
                         ? `<a href="${escAttr(a.viewUrl)}" target="_blank" rel="noopener" class="tl-attach-link">
@@ -453,10 +493,11 @@
                                <i class="fa-solid fa-download"></i> Download
                            </a>`
                         : ''}
-                </div>`).join('');
+                </div>`;
+            }).join('');
 
             return `
-            <div class="timeline-item" data-type="${type}">
+            <div class="timeline-item" data-type="${type}" role="button" tabindex="0" onclick="openTransactionDetail(${tx.clinicTransactionID})" onkeydown="if(event.key==='Enter'||event.key===' ')openTransactionDetail(${tx.clinicTransactionID})">
                 <div class="timeline-dot ${type}">
                     <i class="fa-solid ${typeIcon(tx.serviceType)}"></i>
                 </div>
@@ -474,8 +515,8 @@
                                     ? `<div class="timeline-complaint">${escHtml(tx.complaint)}</div>`
                                     : ''}
                             </div>
-                            <span class="consult-status-badge ${(tx.consultationStatus || '').toLowerCase().replace(/\s+/g, '-')}">
-                                ${escHtml(tx.consultationStatus || '—')}
+                            <span class="consult-status-badge ${String(tx.status || tx.consultationStatus || '').toLowerCase().replace(/\s+/g, '-')}">
+                                ${escHtml(tx.status || tx.consultationStatus || '—')}
                             </span>
                         </div>
 
@@ -489,6 +530,8 @@
                                    <div class="tl-notes-body">${escHtml(tx.notes)}</div>
                                </div>`
                             : ''}
+
+                        ${physicalExam}
 
                         ${medChips
                             ? `<div class="medicines-dispensed">
@@ -576,7 +619,9 @@
         container.innerHTML = certs.map(c => {
             const fileIcon = resolveFileIcon(c.fileType);
             const fileSize = c.fileSizeBytes ? formatFileSize(c.fileSizeBytes) : '';
-            const cat      = resolveCertCategory(c.certificateType);
+            const attachmentType = c.documentType || c.certificateType || c.attachmentCategory || 'Medical Document';
+            const attachmentCategory = c.documentCategory || c.attachmentCategory || 'Other';
+            const cat = resolveCertCategory(attachmentCategory || attachmentType);
 
             return `
             <div class="cert-card" data-cat="${cat}">
@@ -584,17 +629,14 @@
                     <i class="fa-solid ${fileIcon}"></i>
                 </div>
                 <div class="cert-info">
-                    <div class="cert-type">${escHtml(c.certificateType || 'Medical Document')}</div>
-                    ${c.fileName
-                        ? `<div class="cert-filename">
-                               ${escHtml(c.fileName)}${fileSize ? ` <span class="cert-filesize">· ${fileSize}</span>` : ''}
-                           </div>`
-                        : ''}
+                    <div class="cert-type">${escHtml(attachmentType)}</div>
+                    <div class="cert-filename">
+                        ${escHtml(attachmentCategory)}${c.createdAt ? ` <span class="cert-filesize">· ${formatDate(c.createdAt)}</span>` : ''}${fileSize ? ` <span class="cert-filesize">· ${fileSize}</span>` : ''}
+                    </div>
                     <div class="cert-meta">
-                        <span><i class="fa-regular fa-calendar"></i> ${formatDate(c.createdAt)}</span>
+                        ${c.fileName ? `<span><i class="fa-regular fa-file"></i> ${escHtml(c.fileName)}</span>` : ''}
                         ${c.issuedByName ? `<span><i class="fa-solid fa-user-doctor"></i> ${escHtml(c.issuedByName)}</span>` : ''}
-                        ${c.remarks     ? `<span><i class="fa-solid fa-comment-medical"></i> ${escHtml(c.remarks)}</span>`     : ''}
-                        ${c.validUntil  ? `<span class="cert-valid"><i class="fa-regular fa-clock"></i> Valid until ${formatDate(c.validUntil)}</span>` : ''}
+                        ${c.notes ? `<span><i class="fa-solid fa-comment-medical"></i> ${escHtml(c.notes)}</span>` : ''}
                     </div>
                 </div>
                 <div class="cert-actions">
@@ -638,7 +680,7 @@
         if (tabInfoEl && _tabInfoStaticHTML)  tabInfoEl.innerHTML = _tabInfoStaticHTML;
 
         ['infoSchoolID','infoFullName','infoSex','infoBirthday','infoEmail','infoContact',
-         'infoPersonType','infoProgram','infoDepartment','infoSection','infoStatus','infoAcadYear',
+         'infoPersonTypes','infoProgram','infoDepartment','infoSection','infoStatus','infoAcadYear',
          'summaryVisits','summaryEmergencies','summaryCerts','summaryLastVisit'
         ].forEach(id => setEl(id, '—'));
 
@@ -697,6 +739,7 @@
         const s = String(label || '').toLowerCase();
         if (s.includes('certificate')) return 'certificate';
         if (s.includes('clearance'))   return 'clearance';
+        if (s.includes('lab') || s.includes('x-ray') || s.includes('imaging') || s.includes('prescription') || s.includes('dental')) return 'other';
         return 'other';
     }
 
@@ -718,6 +761,147 @@
                 `<td><div class="skeleton" style="height:14px;width:${[60,80,50,70,50,40,60,40][i]}%;border-radius:4px;"></div></td>`
             ).join('')}</tr>`
         ).join('');
+    }
+
+    function openTransactionDetail(transactionID) {
+        const modal = document.getElementById('transactionDetailModal');
+        const body = document.getElementById('txDetailModalBody');
+        const title = document.getElementById('txDetailModalTitle');
+        const sub = document.getElementById('txDetailModalSub');
+
+        if (!modal || !body) return;
+
+        modal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+
+        if (title) title.textContent = 'Loading transaction…';
+        if (sub) sub.textContent = 'Read-only consultation record';
+        body.innerHTML = '<div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Loading transaction details…</p></div>';
+
+        fetch(`../../ajax/consultation/get_transaction.ajax.php?clinic_transaction_id=${encodeURIComponent(transactionID)}`)
+            .then(r => r.json())
+            .then(resp => {
+                if (!resp.ok || !resp.transaction) throw new Error(resp.message || 'Not found');
+                renderTransactionDetail(resp);
+            })
+            .catch(err => {
+                if (title) title.textContent = 'Transaction Details';
+                if (sub) sub.textContent = 'Read-only consultation record';
+                body.innerHTML = `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Failed to load transaction.</p><span>${escHtml(err.message)}</span></div>`;
+            });
+    }
+
+    function closeTransactionModal() {
+        const modal = document.getElementById('transactionDetailModal');
+        if (modal) modal.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    function renderTransactionDetail(resp) {
+        const body = document.getElementById('txDetailModalBody');
+        const title = document.getElementById('txDetailModalTitle');
+        const sub = document.getElementById('txDetailModalSub');
+        if (!body || !title || !sub) return;
+
+        const tx = resp.transaction || {};
+        title.textContent = `Transaction #${tx.ClinicTransactionID || '—'}`;
+        sub.textContent = `${tx.VisitDate || '—'} · ${tx.ServiceType || 'Consultation'} · ${tx.ConsultationStatus || '—'}`;
+
+        const patient = tx.patient || {};
+        const physicalExam = tx.physicalExam || {};
+        const meds = resp.medicines || [];
+        const attachments = resp.attachments || [];
+
+        body.innerHTML = `
+            <div class="info-block info-block--full" style="margin-bottom:14px;">
+                <div class="info-section-title"><i class="fa-solid fa-lock"></i> Read-Only Transaction</div>
+                <div class="info-fields">
+                    ${detailField('Transaction #', `#${tx.ClinicTransactionID || '—'}`)}
+                    ${detailField('Visit Date', tx.VisitDate || '—')}
+                    ${detailField('Service Type', tx.ServiceType || '—')}
+                    ${detailField('Status', tx.ConsultationStatus || '—')}
+                    ${detailField('Patient', patient.FullName || '—')}
+                </div>
+                ${tx.Complaint ? `<div class="timeline-notes"><div class="tl-label">Complaint</div><div class="tl-notes-body">${escHtml(tx.Complaint)}</div></div>` : ''}
+                ${tx.Notes ? `<div class="timeline-notes"><div class="tl-label">Clinical Notes</div><div class="tl-notes-body">${escHtml(tx.Notes)}</div></div>` : ''}
+            </div>
+
+            ${physicalExam && (physicalExam.examDate || physicalExam.bloodPressure || physicalExam.height || physicalExam.weight || physicalExam.pulseRate || physicalExam.remarks) ? `
+                <div class="info-block info-block--full" style="margin-bottom:14px;">
+                    <div class="info-section-title"><i class="fa-solid fa-clipboard-list"></i> Physical Exam</div>
+                    <div class="info-fields">
+                        ${physicalExam.examDate ? detailField('Exam Date', formatDate(physicalExam.examDate)) : ''}
+                        ${physicalExam.height ? detailField('Height', physicalExam.height + ' cm') : ''}
+                        ${physicalExam.weight ? detailField('Weight', physicalExam.weight + ' kg') : ''}
+                        ${physicalExam.bloodPressure ? detailField('Blood Pressure', physicalExam.bloodPressure) : ''}
+                        ${physicalExam.pulseRate ? detailField('Pulse Rate', physicalExam.pulseRate + ' bpm') : ''}
+                        ${physicalExam.ears ? detailField('Ears', physicalExam.ears) : ''}
+                        ${physicalExam.eyesPupil ? detailField('Eyes / Pupil', physicalExam.eyesPupil) : ''}
+                        ${physicalExam.heart ? detailField('Heart', physicalExam.heart) : ''}
+                        ${physicalExam.nose ? detailField('Nose', physicalExam.nose) : ''}
+                        ${physicalExam.thorax ? detailField('Thorax', physicalExam.thorax) : ''}
+                        ${physicalExam.abdomen ? detailField('Abdomen', physicalExam.abdomen) : ''}
+                        ${physicalExam.lungs ? detailField('Lungs', physicalExam.lungs) : ''}
+                        ${physicalExam.skin ? detailField('Skin', physicalExam.skin) : ''}
+                        ${physicalExam.extremities ? detailField('Extremities', physicalExam.extremities) : ''}
+                        ${physicalExam.deformities ? detailField('Deformities', physicalExam.deformities) : ''}
+                        ${physicalExam.cardioClearance ? detailField('Cardio Clearance', physicalExam.cardioClearance) : ''}
+                    </div>
+                    ${physicalExam.remarks ? `<div class="timeline-notes"><div class="tl-label">Exam Remarks</div><div class="tl-notes-body">${escHtml(physicalExam.remarks)}</div></div>` : ''}
+                </div>
+            ` : ''}
+
+            ${meds.length ? `
+                <div class="info-block info-block--full" style="margin-bottom:14px;">
+                    <div class="info-section-title"><i class="fa-solid fa-pills"></i> Medicines Dispensed</div>
+                    <div class="cert-list">
+                        ${meds.map(m => `
+                            <div class="cert-card">
+                                <div class="cert-icon image-icon"><i class="fa-solid fa-pills"></i></div>
+                                <div class="cert-info">
+                                    <div class="cert-type">${escHtml(m.medicineName || m.MedicineName || 'Medicine')}</div>
+                                    <div class="cert-filename">${escHtml(m.genericName || m.GenericName || '')}${m.dosage || m.Dosage ? ` · ${escHtml(m.dosage || m.Dosage)}` : ''}</div>
+                                    <div class="cert-meta">
+                                        <span><i class="fa-solid fa-prescription-bottle-medical"></i> Qty: ${escHtml(String(m.quantityDispensed ?? m.QuantityDispensed ?? '—'))}</span>
+                                        ${m.instructions || m.Instructions ? `<span><i class="fa-solid fa-comment-medical"></i> ${escHtml(m.instructions || m.Instructions)}</span>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}
+
+            ${attachments.length ? `
+                <div class="info-block info-block--full">
+                    <div class="info-section-title"><i class="fa-solid fa-paperclip"></i> Attachments / PDFs</div>
+                    <div class="cert-list">
+                        ${attachments.map(a => {
+                            const attachmentType = a.documentType || a.certificateType || a.attachmentCategory || a.fileName || 'Attachment';
+                            const attachmentCategory = a.documentCategory || a.attachmentCategory || 'Other';
+                            const certCat = resolveCertCategory(attachmentCategory || attachmentType);
+                            return `
+                            <div class="cert-card">
+                                <div class="cert-icon ${certCat}">
+                                    <i class="fa-solid ${resolveFileIcon(a.fileType)}"></i>
+                                </div>
+                                <div class="cert-info">
+                                    <div class="cert-type">${escHtml(attachmentType)}</div>
+                                    <div class="cert-filename">${escHtml(attachmentCategory)}${a.createdAt ? ` <span class="cert-filesize">· ${formatDate(a.createdAt)}</span>` : ''}</div>
+                                    <div class="cert-meta">
+                                        ${a.fileName ? `<span><i class="fa-regular fa-file"></i> ${escHtml(a.fileName)}</span>` : ''}
+                                    </div>
+                                </div>
+                                <div class="cert-actions">
+                                    ${a.viewUrl ? `<a href="${escAttr(a.viewUrl)}" target="_blank" rel="noopener" class="btn-cert-action view"><i class="fa-solid fa-eye"></i> View</a>` : ''}
+                                    ${a.downloadUrl ? `<a href="${escAttr(a.downloadUrl)}" target="_blank" rel="noopener" class="btn-cert-action download"><i class="fa-solid fa-download"></i> Download</a>` : ''}
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            ` : `<div class="no-history"><i class="fa-solid fa-file-medical"></i><p>No medical certificates issued.</p><span>No attachments or certificates have been uploaded for this transaction.</span></div>`}
+        `;
     }
 
     /* ── Formatting ─────────────────────────────────────── */

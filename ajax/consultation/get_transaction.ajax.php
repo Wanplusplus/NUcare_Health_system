@@ -14,6 +14,11 @@ if ($ctid <= 0) {
     exit;
 }
 
+function attachmentServeUrl(int $attachmentID, bool $download = false): string
+{
+    return '../../ajax/consultation/serve_attachment.ajax.php?id=' . $attachmentID . ($download ? '&dl=1' : '');
+}
+
 /* ══════════════════════════════════════════════════════════════
    DETECT actual columns in physical_examinations
 ══════════════════════════════════════════════════════════════ */
@@ -114,25 +119,74 @@ try {
     $medicines = $medStmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Throwable $e) {}
 
+/* normalize medicines keys for frontend consistency */
+$medicines = array_map(static function (array $row): array {
+    return [
+        'dispensingID' => isset($row['DispensingID']) ? (int)$row['DispensingID'] : null,
+        'quantityDispensed' => isset($row['QuantityDispensed']) ? (int)$row['QuantityDispensed'] : null,
+        'instructions' => $row['Instructions'] ?? null,
+        'dispensedAt' => $row['DispensedAt'] ?? null,
+        'medicineName' => $row['MedicineName'] ?? null,
+        'genericName' => $row['GenericName'] ?? null,
+        'dosage' => $row['Dosage'] ?? null,
+        'unit' => $row['Unit'] ?? null,
+    ];
+}, $medicines);
+
 /* ══════════════════════════════════════════════════════════════
    QUERY 3 — Attachments
 ══════════════════════════════════════════════════════════════ */
 $attachments = [];
 try {
     $attachStmt = $pdo->prepare("
-        SELECT ca.AttachmentID, ca.FileName, ca.FilePath, ca.FileType, ca.FileSizeBytes,
-               ca.DocumentTypeID,
-               adt.Category        AS AttachmentCategory,
-               adt.DocumentType    AS DocumentTypeName,
-               ca.Notes, ca.CreatedAt
+        SELECT
+            ca.AttachmentID,
+            ca.ClinicTransactionID,
+            ca.FileName,
+            ca.StoredName,
+            ca.FilePath,
+            ca.FileType,
+            ca.FileSizeBytes,
+            ca.AttachmentCategory,
+            ca.DocumentTypeID,
+            adt.Category AS DocumentCategory,
+            adt.DocumentType,
+            ca.Notes,
+            ca.CreatedAt
         FROM consultation_attachments ca
-        LEFT JOIN attachment_document_types adt ON adt.DocumentTypeID = ca.DocumentTypeID
+        LEFT JOIN attachment_document_types adt
+            ON adt.DocumentTypeID = ca.DocumentTypeID
         WHERE ca.ClinicTransactionID = :ctid
-        ORDER BY ca.CreatedAt ASC
+        ORDER BY ca.CreatedAt ASC, ca.AttachmentID ASC
     ");
     $attachStmt->execute([':ctid' => $ctid]);
     $attachments = $attachStmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Throwable $e) {}
+
+$attachments = array_map(static function (array $row): array {
+    $attachmentID = isset($row['AttachmentID']) ? (int)$row['AttachmentID'] : 0;
+    $attachmentType = trim((string)($row['DocumentType'] ?? ''));
+    $attachmentCategory = trim((string)($row['DocumentCategory'] ?? ''));
+    $fallbackCategory = trim((string)($row['AttachmentCategory'] ?? ''));
+
+    return [
+        'attachmentID' => $attachmentID,
+        'clinicTransactionID' => isset($row['ClinicTransactionID']) ? (int)$row['ClinicTransactionID'] : null,
+        'fileName' => $row['FileName'] ?? null,
+        'storedName' => $row['StoredName'] ?? null,
+        'filePath' => $row['FilePath'] ?? null,
+        'fileType' => $row['FileType'] ?? null,
+        'fileSizeBytes' => isset($row['FileSizeBytes']) ? (int)$row['FileSizeBytes'] : null,
+        'attachmentCategory' => $fallbackCategory !== '' ? $fallbackCategory : null,
+        'documentTypeID' => isset($row['DocumentTypeID']) ? (int)$row['DocumentTypeID'] : null,
+        'documentCategory' => $attachmentCategory !== '' ? $attachmentCategory : null,
+        'documentType' => $attachmentType !== '' ? $attachmentType : null,
+        'notes' => $row['Notes'] ?? null,
+        'createdAt' => $row['CreatedAt'] ?? null,
+        'viewUrl' => $attachmentID > 0 ? attachmentServeUrl($attachmentID) : null,
+        'downloadUrl' => $attachmentID > 0 ? attachmentServeUrl($attachmentID, true) : null,
+    ];
+}, $attachments);
 
 /* ══════════════════════════════════════════════════════════════
    QUERY 4 — Dental transaction (only when ServiceType = Dental)

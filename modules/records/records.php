@@ -360,6 +360,31 @@ $activeSidebarItem = 'records';
             </div>
         </div>
 
+        <div id="transactionDetailModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="txDetailModalTitle">
+            <div class="modal-box">
+                <div class="modal-header">
+                    <div class="modal-header-left">
+                        <div class="modal-avatar" id="txDetailAvatarIcon">
+                            <i class="fa-solid fa-notes-medical"></i>
+                        </div>
+                        <div>
+                            <div class="modal-patient-name" id="txDetailModalTitle">Transaction Details</div>
+                            <div class="modal-patient-sub" id="txDetailModalSub">Read-only consultation record</div>
+                        </div>
+                    </div>
+                    <div class="modal-header-actions">
+                        <button class="modal-close" id="txDetailCloseBtn" title="Close" aria-label="Close transaction details">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="modal-body">
+                    <div id="txDetailModalBody"></div>
+                </div>
+            </div>
+        </div>
+
         <div id="recordsToast" class="records-toast" role="status" aria-live="polite"></div>
 
     </main>
