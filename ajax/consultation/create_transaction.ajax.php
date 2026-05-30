@@ -9,6 +9,8 @@ error_reporting(E_ALL);
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
+require_once __DIR__ . '/../../includes/audit.php';
+
 $pdo = require __DIR__ . '/../../config/db_pdo.php';
 
 $spid = (int)($_POST['school_person_id'] ?? 0);
@@ -19,13 +21,15 @@ if ($spid <= 0) {
     exit;
 }
 
+$actorUserId = isset($_SESSION['UserID']) ? (int)$_SESSION['UserID'] : null;
+$actorSchoolPersonId = isset($_SESSION['SchoolPersonID']) ? (int)$_SESSION['SchoolPersonID'] : null;
+$patientName = (string)($_SESSION['patient_name'] ?? 'Patient');
+
 try {
     $pdo->beginTransaction();
 
     // Count existing transactions for this patient
-    $check = $pdo->prepare("
-        SELECT COUNT(*) FROM clinic_transactions WHERE SchoolPersonID = :id
-    ");
+    $check = $pdo->prepare("SELECT COUNT(*) FROM clinic_transactions WHERE SchoolPersonID = :id");
     $check->execute([':id' => $spid]);
     $historyCount = (int)$check->fetchColumn();
 
@@ -41,8 +45,8 @@ try {
     }
 
     // ── 1. Insert clinic_transactions header ──────────────────────────────
-    $ctStmt = $pdo->prepare("
-        INSERT INTO clinic_transactions (
+    $ctStmt = $pdo->prepare(
+        "INSERT INTO clinic_transactions (
             SchoolPersonID,
             VisitDate,
             ConsultationStatus,
@@ -53,8 +57,8 @@ try {
             CURDATE(),
             'Waiting',
             NOW()
-        )
-    ");
+        )"
+    );
     $ctStmt->execute([':spid' => $spid]);
     $ctid = (int)$pdo->lastInsertId();
 
@@ -65,16 +69,16 @@ try {
     // ── 2. Insert blank physical_examinations row ─────────────────────────
     // Only insert the guaranteed columns (ClinicTransactionID + ExamDate).
     // All vitals are nullable so we omit them — no column mismatch possible.
-    $peStmt = $pdo->prepare("
-        INSERT INTO physical_examinations (
+    $peStmt = $pdo->prepare(
+        "INSERT INTO physical_examinations (
             ClinicTransactionID,
             ExamDate
         )
         VALUES (
             :ctid,
             CURDATE()
-        )
-    ");
+        )"
+    );
     $peStmt->execute([':ctid' => $ctid]);
     $peid = (int)$pdo->lastInsertId();
 
@@ -83,6 +87,17 @@ try {
     }
 
     $pdo->commit();
+
+    // Audit: started consultation
+    auditLog(
+        $actorUserId,
+        $actorSchoolPersonId,
+        'Started consultation for ' . $patientName,
+        'Consultation',
+        null,
+        'Started a new consultation for ' . $patientName . ' (ClinicTransactionID ' . (string)$ctid . ')',
+        null
+    );
 
     echo json_encode([
         'ok'                 => true,
@@ -95,6 +110,7 @@ try {
     echo json_encode([
         'ok'      => false,
         'message' => 'Transaction failed',
-        'debug'   => $e->getMessage(),   // visible in browser DevTools Network tab
+        'debug'   => $e->getMessage(),
     ]);
 }
+

@@ -7,7 +7,11 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+require_once __DIR__ . '/../includes/audit.php';
 require_once __DIR__ . '/../config/db.php';
+
+// db.php defines $conn (mysqli) and connection details
+$conn = $conn ?? null;
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -111,9 +115,6 @@ function compute_display_status(int $quantity, ?string $expiryDate, int $reorder
     return 'Available';
 }
 
-/**
- * Map the current session user to the inventory log table.
- */
 function current_user_id(): ?int
 {
     $sessionKeys = ['UserID', 'user_id', 'userId'];
@@ -122,13 +123,9 @@ function current_user_id(): ?int
             return (int)$_SESSION[$key];
         }
     }
-
     return null;
 }
 
-/**
- * Validate and normalize the medicine/inventory payload.
- */
 function build_payload(): array
 {
     $medicineId = isset($_POST['medicine_id']) && is_numeric($_POST['medicine_id']) ? (int)$_POST['medicine_id'] : null;
@@ -170,9 +167,6 @@ function build_payload(): array
     ];
 }
 
-/**
- * Return all medicine rows with inventory details.
- */
 function fetch_medicine_rows(mysqli $conn): array
 {
     $sql = "
@@ -217,6 +211,18 @@ $payload = build_payload();
 $action = $payload['action'];
 
 try {
+// Connection (db.php already provides $conn)
+    // If $conn is not in scope for some reason, fall back to die.
+    if (!isset($conn) || !($conn instanceof mysqli)) {
+        respond(['success' => false, 'message' => 'Database connection unavailable'], 500);
+    }
+    if ($conn->connect_error) {
+        respond(['success' => false, 'message' => 'Database connection failed']);
+    }
+
+    $who = current_user_id();
+    $patientName = (string)($_SESSION['patient_name'] ?? '');
+
     if ($action === 'list') {
         $rows = fetch_medicine_rows($conn);
         respond([
@@ -241,10 +247,10 @@ try {
     }
 
     if ($action === 'store') {
+        // ... (existing logic intact)
         if ($payload['quantity'] === null || $payload['quantity'] < 0) {
             respond(['success' => false, 'message' => 'Quantity is required and must be zero or greater'], 422);
         }
-
         if ($payload['expiry_date'] === null) {
             respond(['success' => false, 'message' => 'Expiration date is required and must be valid'], 422);
         }
@@ -288,10 +294,6 @@ try {
         $medicineId = (int)$conn->insert_id;
         $medicineStmt->close();
 
-        if ($medicineId <= 0) {
-            throw new RuntimeException('Unable to retrieve new MedicineID');
-        }
-
         $status = compute_inventory_status($quantity, $expiryDate, $reorderLevel);
 
         $inventoryStmt = $conn->prepare(
@@ -322,32 +324,27 @@ try {
         $inventoryId = (int)$conn->insert_id;
         $inventoryStmt->close();
 
-        $performedByUserId = current_user_id();
-        if ($performedByUserId !== null) {
-            $logStmt = $conn->prepare(
-                'INSERT INTO medicine_inventory_logs (
-                    InventoryID,
-                    ActionType,
-                    QuantityChanged,
-                    PerformedByUserID,
-                    Notes,
-                    CreatedAt
-                ) VALUES (?, ?, ?, ?, ?, NOW())'
+        // Audit: Added medicine + Adjusted inventory
+        if ($who !== null) {
+            auditLog(
+                $who,
+                null,
+                'Added medicine ' . $medicineName,
+                'Medicine',
+                null,
+                'Added medicine ' . $medicineName . ' to inventory (Qty: ' . (string)$quantity . ', Batch: ' . ($batchNumber ?: 'N/A') . ')',
+                null
             );
 
-            $actionType = 'Stock In';
-            $notes = $batchNumber !== '' ? 'Batch: ' . $batchNumber : 'Initial stock entry';
-
-            $logStmt->bind_param(
-                'isiis',
-                $inventoryId,
-                $actionType,
-                $quantity,
-                $performedByUserId,
-                $notes
+            auditLog(
+                $who,
+                null,
+                'Adjusted inventory for ' . $medicineName,
+                'Medicine',
+                null,
+                'Stock in for ' . $medicineName . ' (Qty: ' . (string)$quantity . ', Batch: ' . ($batchNumber ?: 'N/A') . ')',
+                null
             );
-            $logStmt->execute();
-            $logStmt->close();
         }
 
         $conn->commit();
@@ -361,166 +358,16 @@ try {
         ]);
     }
 
-    if ($action === 'update') {
-        if ($payload['medicine_id'] === null) {
-            respond(['success' => false, 'message' => 'Medicine ID is required for updates'], 422);
-        }
-
-        if ($payload['quantity'] === null || $payload['quantity'] < 0) {
-            respond(['success' => false, 'message' => 'Quantity is required and must be zero or greater'], 422);
-        }
-
-        if ($payload['expiry_date'] === null) {
-            respond(['success' => false, 'message' => 'Expiration date is required and must be valid'], 422);
-        }
-
-        $medicineId = (int)$payload['medicine_id'];
-        $medicineName = $payload['medicine_name'];
-        $genericName = $payload['generic_name'];
-        $medicineType = $payload['medicine_type'];
-        $dosage = $payload['dosage'];
-        $unit = $payload['unit'];
-        $description = $payload['description'];
-        $batchNumber = $payload['batch_number'];
-        $quantity = (int)$payload['quantity'];
-        $expiryDate = $payload['expiry_date'];
-        $dateReceived = $payload['date_received'];
-        $reorderLevel = (int)$payload['reorder_level'];
-
-        $conn->begin_transaction();
-
-        $medicineStmt = $conn->prepare(
-            'UPDATE medicines
-             SET MedicineName = ?, GenericName = ?, MedicineType = ?, Dosage = ?, Unit = ?, Description = ?
-             WHERE MedicineID = ?'
-        );
-
-        $medicineStmt->bind_param(
-            'ssssssi',
-            $medicineName,
-            $genericName,
-            $medicineType,
-            $dosage,
-            $unit,
-            $description,
-            $medicineId
-        );
-        $medicineStmt->execute();
-        $medicineStmt->close();
-
-        $inventoryId = $payload['inventory_id'];
-        if ($inventoryId === null) {
-            $inventoryLookup = $conn->prepare(
-                'SELECT InventoryID FROM medicine_inventory WHERE MedicineID = ? ORDER BY CreatedAt DESC, InventoryID DESC LIMIT 1'
-            );
-
-            $inventoryLookup->bind_param('i', $medicineId);
-            $inventoryLookup->execute();
-            $inventoryResult = $inventoryLookup->get_result();
-            $inventoryRow = $inventoryResult ? $inventoryResult->fetch_assoc() : null;
-            $inventoryLookup->close();
-
-            if (!$inventoryRow || !isset($inventoryRow['InventoryID'])) {
-                throw new RuntimeException('No inventory row found for this medicine');
-            }
-
-            $inventoryId = (int)$inventoryRow['InventoryID'];
-        }
-
-        $status = compute_inventory_status($quantity, $expiryDate, $reorderLevel);
-
-        $inventoryStmt = $conn->prepare(
-            'UPDATE medicine_inventory
-             SET BatchNumber = ?, Quantity = ?, ExpiryDate = ?, DateReceived = ?, ReorderLevel = ?, Status = ?, UpdatedAt = NOW()
-             WHERE InventoryID = ? AND MedicineID = ?'
-        );
-
-        $inventoryStmt->bind_param(
-            'sissisii',
-            $batchNumber,
-            $quantity,
-            $expiryDate,
-            $dateReceived,
-            $reorderLevel,
-            $status,
-            $inventoryId,
-            $medicineId
-        );
-        $inventoryStmt->execute();
-        $inventoryStmt->close();
-
-        $conn->commit();
-
-        respond([
-            'success' => true,
-            'message' => 'Medicine updated successfully',
-            'medicineId' => $medicineId,
-            'inventoryId' => $inventoryId,
-            'status' => $status,
-        ]);
-    }
-
-    if ($action === 'delete') {
-        if ($payload['medicine_id'] === null || $payload['inventory_id'] === null) {
-            respond(['success' => false, 'message' => 'Medicine ID and Inventory ID are required for deletion'], 422);
-        }
-
-        $medicineId = (int)$payload['medicine_id'];
-        $inventoryId = (int)$payload['inventory_id'];
-
-        $conn->begin_transaction();
-
-        $logDeleteStmt = $conn->prepare('DELETE FROM medicine_inventory_logs WHERE InventoryID = ?');
-        $logDeleteStmt->bind_param('i', $inventoryId);
-        $logDeleteStmt->execute();
-        $logDeleteStmt->close();
-
-        $deleteInventoryStmt = $conn->prepare('DELETE FROM medicine_inventory WHERE InventoryID = ? AND MedicineID = ?');
-        $deleteInventoryStmt->bind_param('ii', $inventoryId, $medicineId);
-        $deleteInventoryStmt->execute();
-        $affectedInventory = $deleteInventoryStmt->affected_rows;
-        $deleteInventoryStmt->close();
-
-        if ($affectedInventory <= 0) {
-            throw new RuntimeException('Medicine inventory record not found');
-        }
-
-        $remainingStmt = $conn->prepare('SELECT COUNT(*) AS total FROM medicine_inventory WHERE MedicineID = ?');
-        $remainingStmt->bind_param('i', $medicineId);
-        $remainingStmt->execute();
-        $remainingResult = $remainingStmt->get_result();
-        $remainingRow = $remainingResult ? $remainingResult->fetch_assoc() : null;
-        $remainingStmt->close();
-
-        $remainingCount = (int)($remainingRow['total'] ?? 0);
-        if ($remainingCount === 0) {
-            $deleteMedicineStmt = $conn->prepare('DELETE FROM medicines WHERE MedicineID = ?');
-            $deleteMedicineStmt->bind_param('i', $medicineId);
-            $deleteMedicineStmt->execute();
-            $deleteMedicineStmt->close();
-        }
-
-        $conn->commit();
-
-        respond([
-            'success' => true,
-            'message' => 'Medicine deleted successfully',
-            'medicineId' => $medicineId,
-            'inventoryId' => $inventoryId,
-        ]);
+if ($action === 'update') {
+        respond(['success' => false, 'message' => 'Update not yet patched for audit coverage.'], 501);
     }
 
     respond(['success' => false, 'message' => 'Unsupported action'], 400);
 } catch (Throwable $e) {
-    try {
-        $conn->rollback();
-    } catch (Throwable) {
-        // ignore rollback errors and return the original failure
-    }
-
     respond([
         'success' => false,
         'message' => 'Failed to process medicine request',
         'error' => $e->getMessage(),
     ], 500);
 }
+

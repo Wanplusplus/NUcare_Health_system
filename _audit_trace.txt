@@ -1744,3 +1744,27 @@
 [2026-05-30T17:35:00+00:00] auditLog PREP INSERT UserID=9 Action=Logged into the system ModuleName=User Management
 [2026-05-30T17:35:00+00:00] auditLog EXEC INSERT
 [2026-05-30T17:35:00+00:00] auditLog INSERT OK rowCount=1
+[2026-05-30T17:51:52+00:00] auditLog CALLED actionType=logout entityType=auth entityId=
+[2026-05-30T17:51:52+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-30T17:51:52+00:00] auditLog PREP INSERT UserID=9 Action=Logged out of the system ModuleName=User Management
+[2026-05-30T17:51:52+00:00] auditLog EXEC INSERT
+[2026-05-30T17:51:52+00:00] auditLog INSERT OK rowCount=1
+[2026-05-30T17:52:04+00:00] auditLog CALLED actionType=login_debug_school_match entityType=auth entityId=2024-116609
+[2026-05-30T17:52:04+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-05-30T17:52:04+00:00] auditLog CALLED actionType=login_hash_debug entityType=auth entityId=2024-116609
+[2026-05-30T17:52:04+00:00] auditLog CALLED actionType=login_debug_rbac_loaded entityType=auth entityId=2024-116609
+[2026-05-30T17:52:04+00:00] auditLog CALLED actionType=login entityType=auth entityId=2024-116609
+[2026-05-30T17:52:04+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-30T17:52:04+00:00] auditLog PREP INSERT UserID=5 Action=Logged into the system ModuleName=User Management
+[2026-05-30T17:52:04+00:00] auditLog EXEC INSERT
+[2026-05-30T17:52:04+00:00] auditLog INSERT OK rowCount=1
+[2026-05-30T17:53:17+00:00] auditLog CALLED actionType=Added medicine Amoxicilin entityType=Medicine entityId=
+[2026-05-30T17:53:17+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-30T17:53:17+00:00] auditLog PREP INSERT UserID=5 Action=Added medicine Amoxicilin ModuleName=Medicine
+[2026-05-30T17:53:17+00:00] auditLog EXEC INSERT
+[2026-05-30T17:53:17+00:00] auditLog INSERT OK rowCount=1
+[2026-05-30T17:53:17+00:00] auditLog CALLED actionType=Adjusted inventory for Amoxicilin entityType=Medicine entityId=
+[2026-05-30T17:53:17+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-05-30T17:53:17+00:00] auditLog PREP INSERT UserID=5 Action=Adjusted inventory for Amoxicilin ModuleName=Medicine
+[2026-05-30T17:53:17+00:00] auditLog EXEC INSERT
+[2026-05-30T17:53:17+00:00] auditLog INSERT OK rowCount=1

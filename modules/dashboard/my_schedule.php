@@ -89,6 +89,8 @@ if ($schoolPersonId > 0) {
     }
 }
 
+$studentName = $_SESSION['patient_name'] ?? 'User';
+
 // Cancel booking
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_booking_id'])) {
     $bookingId = (int)$_POST['cancel_booking_id'];

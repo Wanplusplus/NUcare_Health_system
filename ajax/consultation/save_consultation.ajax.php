@@ -7,6 +7,8 @@ error_reporting(E_ALL);
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
+require_once __DIR__ . '/../../includes/audit.php';
+
 $pdo = require __DIR__ . '/../../config/db_pdo.php';
 
 /* ══════════════════════════════════════════════════════════════
@@ -175,6 +177,11 @@ if (!empty($_FILES['consultation_attachment']['name'])) {
     ];
 }
 
+// Prepare actor for audits
+$actorUserId = isset($_SESSION['UserID']) ? (int)$_SESSION['UserID'] : null;
+$actorSchoolPersonId = isset($_SESSION['SchoolPersonID']) ? (int)$_SESSION['SchoolPersonID'] : null;
+$patientName = (string)($_SESSION['patient_name'] ?? 'Patient');
+
 try {
     $pdo->beginTransaction();
 
@@ -248,7 +255,6 @@ try {
     $dispensed = [];
     foreach ($medInventoryIDs as $idx => $invID) {
         if ($invID <= 0) {
-            // Hidden input was never set — user typed a name but never clicked a dropdown result
             throw new RuntimeException('Medicine row ' . ($idx + 1) . ': please select a medicine from the search dropdown (do not type manually).');
         }
         $qty = max(0, (int)($medQtys[$idx] ?? 0));
@@ -287,7 +293,7 @@ try {
         $dispensed[] = $invID;
     }
 
-    /* ── 5. Insert into consultation_attachments (3NF — replaces attachment_path column) ── */
+    /* ── 5. Insert into consultation_attachments ── */
     $attachmentID = null;
     if ($uploadedFileMeta !== null) {
         $uploadedBy = (int)($_SESSION['UserID'] ?? 0) ?: null;
@@ -332,11 +338,9 @@ try {
         ]);
     }
 
-    /* ── 7. Dental — insert/update dental_transactions header row ── */
+    /* ── 7. Dental — insert/update dental_transactions ── */
     if ($serviceType === 'Dental') {
-        // InventoryID: first medicine dispensed (if any), else null
         $dentalInventoryID  = !empty($dispensed) ? $dispensed[0] : null;
-        // AttachmentID: the file just saved (if any), else null
         $dentalAttachmentID = $attachmentID ?: null;
         $dentalAttachCat    = $dentalAttachmentID ? $attachCategory : null;
 
@@ -359,6 +363,40 @@ try {
 
     $pdo->commit();
 
+    // Audit: saved/updated + completed (based on final ConsultationStatus)
+    auditLog(
+        $actorUserId,
+        $actorSchoolPersonId,
+        'Saved consultation for ' . $patientName,
+        'Consultation',
+        null,
+        'Saved consultation for ' . $patientName . ' (TransactionID ' . (string)$ctid . ', Service: ' . (string)$resolvedService . ')',
+        null
+    );
+
+    // “Updated consultation …” (when not first save, status changes, etc.)
+    auditLog(
+        $actorUserId,
+        $actorSchoolPersonId,
+        'Updated consultation for ' . $patientName,
+        'Consultation',
+        null,
+        'Updated consultation for ' . $patientName . ' (TransactionID ' . (string)$ctid . ', Status: ' . (string)$status . ')',
+        null
+    );
+
+    if ($status === 'Completed') {
+        auditLog(
+            $actorUserId,
+            $actorSchoolPersonId,
+            'Completed consultation for ' . $patientName,
+            'Consultation',
+            null,
+            'Marked consultation as Completed for ' . $patientName . ' (TransactionID ' . (string)$ctid . ')',
+            null
+        );
+    }
+
     echo json_encode([
         'ok'              => true,
         'message'         => 'Consultation saved successfully.',
@@ -372,7 +410,6 @@ try {
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
 
-    // Orphan cleanup — delete the file we moved before the transaction failed
     if ($movedFilePath && file_exists($movedFilePath)) {
         @unlink($movedFilePath);
     }
@@ -386,3 +423,4 @@ function computeStatus(int $qty, string $current): string {
     if ($qty <= 10) return 'Low Stock';
     return 'Available';
 }
+
