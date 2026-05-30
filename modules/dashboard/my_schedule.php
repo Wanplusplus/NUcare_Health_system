@@ -38,6 +38,12 @@ if (!isset($_SESSION['UserID'])) {
 
 require_once __DIR__ . '/../../includes/module_guard.php';
 requireModule('Schedule', 'access');
+require_once __DIR__ . '/../../includes/audit.php';
+
+function getAuditIp(): ?string
+{
+    return $_SERVER['HTTP_X_FORWARDED_FOR'] ?? ($_SERVER['REMOTE_ADDR'] ?? null);
+}
 
 $activeSidebarItem = 'schedule';
 
@@ -92,8 +98,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_booking_id']))
         $b = $check->fetch(PDO::FETCH_ASSOC);
 
         if ($b && (int)$b['SchoolPersonID'] === $schoolPersonId && strtolower((string)$b['BookingStatus']) === 'pending') {
-            $upd = $pdo->prepare("UPDATE bookings SET BookingStatus = 'Cancelled' WHERE BookingID = ?");
+$upd = $pdo->prepare("UPDATE bookings SET BookingStatus = 'Cancelled' WHERE BookingID = ?");
             $upd->execute([$bookingId]);
+
+            $actorUserId = isset($_SESSION['UserID']) ? (int)$_SESSION['UserID'] : null;
+            $actorSchoolPersonId = isset($_SESSION['SchoolPersonID']) ? (int)$_SESSION['SchoolPersonID'] : null;
+            auditLog(
+                $actorUserId,
+                $actorSchoolPersonId,
+                'Cancelled appointment for ' . ($studentName ?: 'Patient'),
+                'Schedule',
+                null,
+                'Cancelled pending appointment for ' . ($studentName ?: 'Patient'),
+                getAuditIp()
+            );
         }
 
         header('Location: my_schedule.php?cancelled=1');
@@ -151,12 +169,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['book_appointment'])) 
                      ReasonForVisit, BookingStatus)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')"
             );
-            $ins->execute([
+$ins->execute([
                 $schoolPersonId, $bMedProf,
                 $bAvailId ?: null, $bType,
                 $bService, $bDate, $bStart,
                 $bEnd ?: null, $bReason ?: null
             ]);
+
+            $actorUserId = isset($_SESSION['UserID']) ? (int)$_SESSION['UserID'] : null;
+            $actorSchoolPersonId = isset($_SESSION['SchoolPersonID']) ? (int)$_SESSION['SchoolPersonID'] : null;
+            auditLog(
+                $actorUserId,
+                $actorSchoolPersonId,
+                'Booked appointment for ' . ($studentName ?: 'Patient'),
+                'Schedule',
+                null,
+                'Booked appointment for ' . ($studentName ?: 'Patient')
+                    . ' (' . $bService . ' • ' . $bDate . ' ' . $bStart . ')',
+                getAuditIp()
+            );
             // If an availability slot was picked, mark it Unavailable
             if ($bAvailId) {
                 $pdo->prepare("UPDATE medical_professional_availability SET AvailabilityStatus='Unavailable' WHERE AvailabilityID=?")

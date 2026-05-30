@@ -36,31 +36,107 @@ function auditLog(
 
         $userId = $actorUserId;
 
-        // Backward-compatible normalization for legacy/vague action codes.
-        // Only rewrite when actionType matches a known short/raw label.
+        // Normalize legacy/vague action codes into human-readable audit messages.
         $rawAction = strtolower(trim($actionType));
+
+        // If we can reliably convert a stored "raw action" code into a readable phrase, do it here.
+        // If the action is purely technical/debug, we suppress it.
+        $suppressed = [
+            // authentication debug/noise
+            'login_debug_rbac_loaded',
+            'login_debug_school_match',
+            'login_hash_debug',
+            // authentication failures (do not clutter admin feed)
+            'failed_login',
+            'failed_signup',
+            // schedule technical/noise (we will map them too, but suppress anything unknown here)
+            'save_slot',
+            'respond_booking',
+            // user/rbac technical codes (we will map the specific ones below; suppress generic ones)
+            'create_user',
+            'update_user',
+        ];
+
+        if (in_array($rawAction, $suppressed, true)) {
+            return;
+        }
+
+        // Human readable action mapping.
+        // NOTE: actionType passed by callers is the *raw code*. ModuleName is derived from $entityType.
         $actionMap = [
-            'create' => 'Created record',
-            'add' => 'Added record',
-            'edit' => 'Updated record',
-            'update' => 'Updated record',
-            'delete' => 'Deleted record',
-            'remove' => 'Deleted record',
-            'failed_login' => 'Failed login attempt',
-            'failed_signup' => 'Failed signup attempt',
-            'login' => 'User logged in',
-            'logout' => 'User logged out',
+            // auth/login/logout (no dedicated Authentication module in UI)
+            'login' => 'Logged into the system',
+            'logout' => 'Logged out of the system',
             'password_reset' => 'Requested password reset',
-            'role_assignment' => 'Updated RBAC permissions',
-            'role_removal' => 'Updated RBAC permissions',
-            'account_activation' => 'Activated account',
-            'account_deactivation' => 'Deactivated account',
+
+            // admin/user management
+            'signup' => 'Created user account',
+            'account_activation' => 'Created/activated user account',
+            'account_deactivation' => 'Deactivated user account',
+
+            'role_assignment' => 'Assigned role',
+            'role_removal' => 'Removed role',
+
+            // RBAC management
+            'rbac_role_assignment' => 'Updated RBAC permissions',
+            'role_assignment_permissions' => 'Updated RBAC permissions',
+
+            // enrollment (not in required list; keep readable but generic)
             'enrollment_change' => 'Updated enrollment status',
+
+            // schedule (callers may pass these raw codes in Action)
+            'booking_created' => 'Booked appointment',
+            'booking_approved' => 'Approved appointment',
+            'booking_cancelled' => 'Cancelled appointment',
+            'booking_completed' => 'Completed appointment',
+
+            'availability_set' => 'Set availability',
+            'availability_updated' => 'Updated availability',
+            'availability_deleted' => 'Deleted availability',
+
+            // consultation/records/medicine generic (fallback)
+            'consultation_started' => 'Started consultation',
+            'consultation_updated' => 'Updated consultation',
+            'consultation_completed' => 'Completed consultation',
+
+            'records_opened' => 'Opened records',
+            'records_viewed' => 'Viewed patient record',
+            'records_updated' => 'Updated patient record',
+
+            'medicine_inventory_added' => 'Added medicine inventory',
+            'medicine_inventory_updated' => 'Updated medicine inventory',
+            'medicine_dispensed' => 'Dispensed medicine',
+            'medicine_received' => 'Received medicine',
         ];
 
         $action = $actionMap[$rawAction] ?? $actionType;
 
-        $moduleName = $entityType;
+        // Only allow module names from the allowed audit module list.
+        // $entityType is used as ModuleName by existing callers.
+        $allowedModules = [
+            'Consultation',
+            'Records',
+            'Reports',
+            'Medicine',
+            'Schedule',
+            'Admin Panel',
+            'RBAC Management',
+            'User Management',
+            'Audit Logs',
+        ];
+
+        // Remap legacy "auth" module to "User Management".
+        if (is_string($entityType) && strtolower(trim($entityType)) === 'auth') {
+            $moduleName = 'User Management';
+        } else {
+            $moduleName = (string)$entityType;
+        }
+
+        if (!in_array($moduleName, $allowedModules, true) || $moduleName === '') {
+            // Keep it safe for the admin dropdown/filter: use a generic module.
+            $moduleName = 'Admin Panel';
+        }
+
         $tableAffected = $details;
         // RecordID column is INT. Some legacy callers pass non-numeric data in $entityId.
         // This caused SQLSTATE 1265 data truncated.
