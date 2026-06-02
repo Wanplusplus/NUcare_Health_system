@@ -455,3 +455,295 @@
   }
 }
 
+/* =====================================================
+   RBAC ROLE CARDS
+   ===================================================== */
+
+.rbac-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.rbac-role-card {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--admin-shadow);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.rbac-role-card:hover {
+  box-shadow: var(--admin-shadow-md);
+  transform: translateY(-2px);
+}
+
+.rbac-card-header {
+  background: rgba(26, 26, 110, 0.04);
+  border-bottom: 1px solid var(--admin-border);
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rbac-card-title {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--admin-text);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rbac-card-body {
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.rbac-card-description {
+  font-size: 14px;
+  color: var(--admin-muted);
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+
+.rbac-card-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--admin-border);
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.rbac-stat {
+  flex: 1;
+  text-align: center;
+}
+
+.rbac-stat-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--admin-muted);
+  margin-bottom: 4px;
+}
+
+.rbac-stat-value {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--admin-red);
+}
+
+.rbac-protected-badge {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  margin-top: auto;
+  margin-bottom: 12px;
+}
+
+.rbac-role-card .btn-action-edit {
+  margin-top: auto;
+  width: 100%;
+  justify-content: center;
+}
+
+/* =====================================================
+   RBAC MODAL
+   ===================================================== */
+
+.rbac-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.rbac-modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+.rbac-modal-content {
+  position: relative;
+  z-index: 2001;
+  background: var(--admin-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 700px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rbac-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px;
+  border-bottom: 1px solid var(--admin-border);
+  background: rgba(26, 26, 110, 0.04);
+}
+
+.rbac-modal-title {
+  margin: 0;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--admin-text);
+}
+
+.rbac-modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: var(--admin-muted);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+.rbac-modal-close:hover {
+  color: var(--admin-text);
+}
+
+.rbac-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.rbac-modal-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 20px 24px;
+  border-top: 1px solid var(--admin-border);
+  background: rgba(26, 26, 110, 0.02);
+}
+
+.rbac-modal-footer .btn {
+  margin: 0;
+}
+
+/* =====================================================
+   RBAC MODULE SECTIONS & PERMISSIONS
+   ===================================================== */
+
+.rbac-module-section {
+  margin-bottom: 24px;
+}
+
+.rbac-module-section:last-child {
+  margin-bottom: 0;
+}
+
+.rbac-module-title {
+  margin: 0 0 12px 0;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--admin-text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rbac-permissions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.rbac-permission-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  background: #fcfdff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  font-size: 13px;
+  color: var(--admin-text);
+}
+
+.rbac-permission-checkbox:hover {
+  border-color: rgba(139, 0, 0, 0.3);
+  background: var(--admin-bg);
+}
+
+.rbac-permission-checkbox input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: var(--admin-red);
+  width: 16px;
+  height: 16px;
+}
+
+.rbac-permission-checkbox input[type="checkbox"]:checked + span {
+  color: var(--admin-red);
+  font-weight: 600;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .rbac-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rbac-modal-content {
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .rbac-permissions-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+}
+
+
