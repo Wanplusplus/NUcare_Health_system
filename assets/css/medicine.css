@@ -122,6 +122,34 @@
     box-shadow: 0 3px 10px rgba(245,197,24,.4);
 }
 
+.all-stock-btn {
+    border: none;
+    background: var(--navy);
+    color: var(--white);
+    border-radius: var(--pill-r);
+    padding: 7px 13px;
+    font-family: 'Poppins', sans-serif;
+    font-size: .75rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    white-space: nowrap;
+    transition: background .15s, color .15s, transform .1s, box-shadow .15s;
+}
+
+.all-stock-btn:hover {
+    background: var(--navy-light);
+    transform: translateY(-1px);
+}
+
+.all-stock-btn.active {
+    background: var(--accent);
+    color: var(--navy);
+    box-shadow: 0 3px 10px rgba(245,197,24,.4);
+}
+
 /* ---------- Title Row ---------- */
 .med-title-row {
     display: flex;

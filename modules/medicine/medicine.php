@@ -23,7 +23,7 @@ $activeSidebarItem = 'medicine';
     <link rel="stylesheet" href="../../assets/css/app.css?v=1">
 
     <!-- Medicine Styles -->
-    <link rel="stylesheet" href="../../assets/css/medicine.css?v=1">
+    <link rel="stylesheet" href="../../assets/css/medicine.css?v=2">
 
     <!-- Font Awesome -->
     <link rel="stylesheet"
@@ -82,6 +82,11 @@ $activeSidebarItem = 'medicine';
                     <button class="month-tab" data-month="11">NOV</button>
                     <button class="month-tab" data-month="12">DEC</button>
                 </div>
+
+                <button class="all-stock-btn" id="btnAllStocks" type="button">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                    All Stocks
+                </button>
 
             </div>
 
@@ -501,7 +506,7 @@ $activeSidebarItem = 'medicine';
 
 <!-- Main App JS -->
 <script src="../../assets/js/app.js"></script>
-<script src="../../assets/js/medicine.js"></script>
+<script src="../../assets/js/medicine.js?v=4"></script>
 
 </body>
 </html>

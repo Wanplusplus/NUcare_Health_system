@@ -1461,6 +1461,60 @@ input.error, select.error, textarea.error {
 .btn-yes { background:var(--navy); color:#fff; }
 .btn-no  { background:var(--white); color:var(--navy); border-color:var(--gray-200); }
 
+.modal-card--requirements {
+    max-width: 520px;
+}
+
+.modal-card--requirements .modal-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-card--requirements .modal-title i {
+    color: var(--danger);
+}
+
+.requirements-list {
+    list-style: none;
+    padding: 0;
+    margin: 14px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.requirements-list li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    border: 1.5px solid #fecaca;
+    border-radius: var(--r-md);
+    background: #fff7f7;
+    color: #7f1d1d;
+    font-family: 'Nunito', sans-serif;
+    font-size: .86rem;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.requirements-list li::before {
+    content: '!';
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: var(--danger);
+    color: #fff;
+    font-size: .72rem;
+    font-weight: 900;
+    margin-top: 1px;
+}
+
 /* ═══════════════════════════════════════
    TOAST NOTIFICATION
 ═══════════════════════════════════════ */

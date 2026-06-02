@@ -286,10 +286,11 @@
             }
         });
 
-        document.querySelectorAll('.modal-tab').forEach(btn => {
-            btn.addEventListener('click', function () {
-                switchTab(this.dataset.tab);
-            });
+        document.querySelector('.modal-tabs')?.addEventListener('click', function (e) {
+            const tab = e.target.closest('.modal-tab');
+            if (!tab || !this.contains(tab)) return;
+            e.preventDefault();
+            switchTab(tab.dataset.tab);
         });
     }
 
@@ -689,7 +690,7 @@
 
         const skeletonLine = (w) => `<div class="skeleton" style="height:14px;width:${w}%;border-radius:5px;margin-bottom:10px;"></div>`;
         const skel = `<div style="padding:20px 0;">${[80,60,90,50,70].map(skeletonLine).join('')}</div>`;
-        ['tabHistory', 'tabEmergency', 'tabCerts'].forEach(id => {
+        ['clinicTimeline', 'emergencyList', 'certList'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.innerHTML = skel;
         });

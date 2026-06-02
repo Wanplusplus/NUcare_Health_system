@@ -58,6 +58,7 @@ function currency_num(int|float|string|null $value): string
 $statusFilter = clean_input($_GET['status'] ?? '');
 $yearFilter = clean_input($_GET['year'] ?? '');
 $monthFilter = clean_input($_GET['month'] ?? '');
+$printAllStocks = clean_input($_GET['all'] ?? '') === '1';
 
 $where = [];
 $params = [];
@@ -72,14 +73,14 @@ if ($statusFilter !== '') {
     }
 }
 
-if (is_valid_year($yearFilter)) {
-    $where[] = 'YEAR(i.CreatedAt) = ?';
+if (!$printAllStocks && is_valid_year($yearFilter)) {
+    $where[] = 'YEAR(i.ExpiryDate) = ?';
     $params[] = (int)$yearFilter;
     $types .= 'i';
 }
 
-if (is_valid_month($monthFilter)) {
-    $where[] = 'MONTH(i.CreatedAt) = ?';
+if (!$printAllStocks && is_valid_month($monthFilter)) {
+    $where[] = 'MONTH(i.ExpiryDate) = ?';
     $params[] = (int)$monthFilter;
     $types .= 'i';
 }
@@ -156,8 +157,8 @@ foreach ($rows as $row) {
     }
 }
 
-$reportMonth = is_valid_month($monthFilter) ? (int)$monthFilter : null;
-$reportYear = is_valid_year($yearFilter) ? (int)$yearFilter : null;
+$reportMonth = (!$printAllStocks && is_valid_month($monthFilter)) ? (int)$monthFilter : null;
+$reportYear = (!$printAllStocks && is_valid_year($yearFilter)) ? (int)$yearFilter : null;
 $monthName = $reportMonth ? DateTimeImmutable::createFromFormat('!m', (string)$reportMonth)?->format('F') : null;
 
 $options = new Options();
@@ -173,7 +174,9 @@ $filterLabels = [];
 if ($statusFilter !== '') {
     $filterLabels[] = 'Status: ' . htmlspecialchars($statusFilter, ENT_QUOTES, 'UTF-8');
 }
-if ($monthName && $reportYear) {
+if ($printAllStocks) {
+    $filterLabels[] = 'Scope: All medicine stocks';
+} elseif ($monthName && $reportYear) {
     $filterLabels[] = 'Period: ' . htmlspecialchars($monthName . ' ' . (string)$reportYear, ENT_QUOTES, 'UTF-8');
 } elseif ($reportYear) {
     $filterLabels[] = 'Year: ' . htmlspecialchars((string)$reportYear, ENT_QUOTES, 'UTF-8');

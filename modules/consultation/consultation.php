@@ -29,7 +29,7 @@ $activeSidebarItem = 'consultation';
     <title>NUCARE | Consultation</title>
     <link rel="icon" href="/NUcare_Health_system/assets/image/nucarelogo.png">
     <link rel="stylesheet" href="../../assets/css/app.css?v=1">
-    <link rel="stylesheet" href="../../assets/css/consultation.css?v=3">
+    <link rel="stylesheet" href="../../assets/css/consultation.css?v=4">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
@@ -226,6 +226,29 @@ $activeSidebarItem = 'consultation';
                     <button onclick="closeAttachmentPreview()" style="background:rgba(255,255,255,.15);border:none;border-radius:8px;color:#fff;width:36px;height:36px;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <img id="attachPreviewImg" src="" alt="Attachment preview" style="max-width:min(92vw,820px);max-height:80vh;border-radius:10px;object-fit:contain;box-shadow:0 8px 40px rgba(0,0,0,.5);">
+            </div>
+
+            <!-- Requirements / error trap modal -->
+            <div id="consultRequirementsModal" class="modal" style="display:none;">
+                <div class="modal-overlay" onclick="closeConsultRequirementsModal()"></div>
+                <div class="modal-card modal-card--requirements">
+                    <div class="modal-head">
+                        <div class="modal-title">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            Consultation Requirements
+                        </div>
+                        <button type="button" class="modal-close" onclick="closeConsultRequirementsModal()" aria-label="Close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p id="consultRequirementsIntro">Complete these requirements before saving this consultation.</p>
+                        <ul class="requirements-list" id="consultRequirementsList"></ul>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-modal btn-yes" onclick="closeConsultRequirementsModal()">
+                            Okay
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Form lock overlay -->
@@ -1047,6 +1070,6 @@ $activeSidebarItem = 'consultation';
 </div>
 
 <script src="../../assets/js/app.js"></script>
-<script src="../../assets/js/consultation.js?v=3"></script>
+<script src="../../assets/js/consultation.js?v=5"></script>
 </body>
 </html>

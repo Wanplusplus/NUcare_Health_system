@@ -9,7 +9,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$pdo = require __DIR__ . '/../../config/db_pdo.php';
+$pdo = require __DIR__ . '/../config/db_pdo.php';
 
 $schoolPersonID = (int)($_GET['school_person_id'] ?? $_GET['schoolpersonid'] ?? $_GET['id'] ?? 0);
 
@@ -340,8 +340,7 @@ try {
             pe.Skin,
             pe.Extremities,
             pe.Deformities,
-            pe.CardioClearance,
-            pe.Remarks
+            pe.CardioClearance
         FROM clinic_transactions ct
         LEFT JOIN medical_professionals mp
             ON mp.MedProfID = ct.MedProfID
@@ -494,8 +493,7 @@ foreach ($txRows as $tx) {
         || !empty($tx['Skin'])
         || !empty($tx['Extremities'])
         || !empty($tx['Deformities'])
-        || !empty($tx['CardioClearance'])
-        || !empty($tx['Remarks']);
+        || !empty($tx['CardioClearance']);
 
     if ($hasPhysicalExam) {
         $physicalExam = [
@@ -516,7 +514,7 @@ foreach ($txRows as $tx) {
             'extremities' => $tx['Extremities'] ?? null,
             'deformities' => $tx['Deformities'] ?? null,
             'cardioClearance' => $tx['CardioClearance'] ?? null,
-            'remarks' => $tx['Remarks'] ?? null,
+            'remarks' => null,
         ];
     }
 
