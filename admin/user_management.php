@@ -74,6 +74,12 @@ function rolesForUser(PDO $pdo, int $userId): array
     return array_map(static fn($row) => (string)$row['RoleName'], $stmt->fetchAll());
 }
 
+function isSuperAdmin(PDO $pdo, int $userId): bool
+{
+    $roles = rolesForUser($pdo, $userId);
+    return in_array('Super Admin', $roles, true);
+}
+
 function ensureMedicalProfessional(PDO $pdo, int $userId, string $profession, ?string $unit = null): void
 {
     $unit = $unit ?? 'General';
@@ -159,6 +165,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
 
     if ($targetUserId <= 0) {
         $errors[] = 'Invalid target user.';
+    } elseif (isSuperAdmin($pdo, $targetUserId)) {
+        // Prevent any modifications to Super Admin accounts
+        $errors[] = 'Cannot modify Super Admin accounts. This account is protected.';
     } else {
         // Fetch roles for mapping.
         $roleToProfessionMap = [
@@ -369,7 +378,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
 // -----------------------------
 $search = sanitizeLike((string)($_GET['search'] ?? ''));
 $roleFilter = (string)($_GET['role'] ?? '');
-$personTypeFilter = (string)($_GET['person_type'] ?? '');
 $statusFilter = (string)($_GET['status'] ?? '');
 
 // Pagination (simple)
@@ -381,18 +389,16 @@ $sqlWhere = [];
 $params = [];
 
 if ($search !== '') {
-    $sqlWhere[] = "(sp.SchoolID LIKE ? OR sp.FirstName LIKE ? OR sp.LastName LIKE ? OR sp.Email LIKE ?)";
+    $sqlWhere[] = "(sp.SchoolID LIKE ? OR sp.FirstName LIKE ? OR sp.LastName LIKE ? OR sp.Email LIKE ? OR CONCAT(sp.FirstName, ' ', COALESCE(sp.MiddleName, ''), ' ', sp.LastName) LIKE ?)";
     $like = '%' . $search . '%';
+    $params[] = $like;
     $params[] = $like;
     $params[] = $like;
     $params[] = $like;
     $params[] = $like;
 }
 
-if ($personTypeFilter !== '') {
-    $sqlWhere[] = "sp.PersonType = ?";
-    $params[] = $personTypeFilter;
-}
+
 
 // Account status filter: uses existing tables as described
 if ($statusFilter !== '') {
@@ -462,9 +468,10 @@ try {
             sp.SchoolID,
             sp.Email,
             sp.FirstName,
+            sp.MiddleName,
             sp.LastName,
-            sp.PersonType,
             u.IsActive
+
         FROM users u
         INNER JOIN school_people sp ON sp.SchoolPersonID = u.SchoolPersonID
         LEFT JOIN student_enrollments se ON se.SchoolPersonID = sp.SchoolPersonID
@@ -483,7 +490,7 @@ try {
 $allRoles = fetchAll($pdo, "SELECT RoleName FROM roles ORDER BY RoleName ASC");
 $roleNames = array_map(static fn($r) => (string)$r['RoleName'], $allRoles);
 
-$personTypes = ['Student', 'Faculty', 'Staff'];
+
 $statusOptions = ['Active', 'Disabled', 'Enrolled', 'Dropped', 'Graduated', 'Employed', 'Resigned', 'Inactive'];
 
 // -----------------------------
@@ -497,6 +504,7 @@ $statusOptions = ['Active', 'Disabled', 'Enrolled', 'Dropped', 'Graduated', 'Emp
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NUCARE | User Management</title>
     <link rel="stylesheet" href="../assets/css/app.css">
+    <link rel="stylesheet" href="../assets/css/admin_dashboard_overrides.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 </head>
 <body>
@@ -534,15 +542,16 @@ $statusOptions = ['Active', 'Disabled', 'Enrolled', 'Dropped', 'Graduated', 'Emp
             <div class="alert alert-success" role="alert" style="margin-top: 12px;"><?= htmlspecialchars($success) ?></div>
         <?php endif; ?>
 
-        <form method="get" class="row g-2 align-items-end user-filter-form" style="margin-top: 12px;">
-            <div class="col-md-4">
-                <label class="form-label mb-1">Search</label>
-                <input type="text" name="search" class="form-control" style="border-radius: 14px;" placeholder="School ID, First name, Last name, Email" value="<?= htmlspecialchars($search) ?>">
+        <div class="admin-filterbar user-filterbar-enterprise" style="margin-top: 12px;">
+
+            <div class="admin-filter">
+                <label>Search</label>
+                <input type="text" id="userSearchInput" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="School ID, First name, Last name, Email">
             </div>
 
-            <div class="col-md-3">
-                <label class="form-label mb-1">Role</label>
-                <select name="role" class="form-select" style="border-radius: 14px;">
+            <div class="admin-filter" style="min-width: 260px;">
+                <label>Role</label>
+                <select id="userRoleSelect" name="role">
                     <option value="">All Roles</option>
                     <?php foreach ($roleNames as $r): ?>
                         <option value="<?= htmlspecialchars($r) ?>" <?= $roleFilter === $r ? 'selected' : '' ?>><?= htmlspecialchars($r) ?></option>
@@ -550,19 +559,9 @@ $statusOptions = ['Active', 'Disabled', 'Enrolled', 'Dropped', 'Graduated', 'Emp
                 </select>
             </div>
 
-            <div class="col-md-3">
-                <label class="form-label mb-1">PersonType</label>
-                <select name="person_type" class="form-select" style="border-radius: 14px;">
-                    <option value="">All Types</option>
-                    <?php foreach ($personTypes as $pt): ?>
-                        <option value="<?= htmlspecialchars($pt) ?>" <?= $personTypeFilter === $pt ? 'selected' : '' ?>><?= htmlspecialchars($pt) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="col-md-2">
-                <label class="form-label mb-1">Status</label>
-                <select name="status" class="form-select" style="border-radius: 14px;">
+            <div class="admin-filter" style="min-width: 220px;">
+                <label>Status</label>
+                <select id="userStatusSelect" name="status">
                     <option value="">Any</option>
                     <?php foreach ($statusOptions as $st): ?>
                         <option value="<?= htmlspecialchars($st) ?>" <?= $statusFilter === $st ? 'selected' : '' ?>><?= htmlspecialchars($st) ?></option>
@@ -570,11 +569,10 @@ $statusOptions = ['Active', 'Disabled', 'Enrolled', 'Dropped', 'Graduated', 'Emp
                 </select>
             </div>
 
-            <div class="col-md-12 d-flex gap-2">
-                <button type="submit" class="btn" style="background: #6f7cff; color: #fff; border-radius: 14px; padding: 6px 14px;">Apply</button>
-                <a href="user_management.php" class="btn" style="border-radius: 14px; border: 1px solid #d0d5ff; color:#445; padding: 6px 14px;">Reset</a>
+            <div style="display:flex; gap:12px; align-items:center;">
+                <a href="user_management.php" class="btn admin-btn-ghost">Reset</a>
             </div>
-        </form>
+        </div>
 
         <section class="panel-card mt-3">
             <div class="panel-card-header d-flex align-items-center justify-content-between">
@@ -582,13 +580,14 @@ $statusOptions = ['Active', 'Disabled', 'Enrolled', 'Dropped', 'Graduated', 'Emp
                 <div class="text-muted">Total: <?= (int)$totalCount ?></div>
             </div>
             <div class="panel-card-body table-responsive">
-                <table class="table table-striped table-hover align-middle">
+                <table class="table table-striped table-hover align-middle admin-table">
                     <thead>
+
                     <tr>
                         <th>Full Name</th>
                         <th>School ID</th>
                         <th>Email</th>
-                        <th>PersonType</th>
+
                         <th>Current Roles</th>
                         <th>Account Status</th>
                         <th style="min-width: 280px;">Actions</th>
@@ -603,35 +602,39 @@ $statusOptions = ['Active', 'Disabled', 'Enrolled', 'Dropped', 'Graduated', 'Emp
                         $roles = rolesForUser($pdo, $uid);
                         $rolesText = $roles ? implode(', ', $roles) : '—';
                         $isActive = (int)$u['IsActive'] === 1;
+                        $isSuperAdmin = isSuperAdmin($pdo, $uid);
                     ?>
                         <tr>
-                            <td><?= htmlspecialchars($u['FirstName'] . ' ' . $u['LastName']) ?></td>
+                            <td><?= htmlspecialchars((string)($u['FirstName'] ?? '') . (isset($u['MiddleName']) && $u['MiddleName'] !== null && $u['MiddleName'] !== '' ? ' ' . (string)$u['MiddleName'] : '') . ' ' . (string)($u['LastName'] ?? '')) ?></td>
                             <td><?= htmlspecialchars((string)$u['SchoolID']) ?></td>
                             <td><?= htmlspecialchars((string)$u['Email']) ?></td>
-                            <td><?= htmlspecialchars((string)$u['PersonType']) ?></td>
                             <td><?= htmlspecialchars($rolesText) ?></td>
+
                             <td>
                                 <?php if ($isActive): ?>
-                                    <span class="badge text-bg-success">Active</span>
+                                    <span class="admin-badge admin-badge-success">Active</span>
+
                                 <?php else: ?>
-                                    <span class="badge text-bg-secondary">Disabled</span>
+                                    <span class="admin-badge admin-badge-muted">Disabled</span>
+
+                                <?php endif; ?>
+                                <?php if ($isSuperAdmin): ?>
+                                    <span class="admin-badge" style="background: #dbeafe; color: #1e40af; border-color: #bfdbfe; margin-left: 8px;">Protected Account</span>
                                 <?php endif; ?>
                             </td>
                             <td>
                                 <div class="d-flex flex-wrap gap-2">
-                                    <button class="btn btn-sm btn-primary" type="button" style="color:#fff !important; background:#0d6efd !important;" onclick="openRolesModal(<?= $uid ?>, <?= htmlspecialchars(json_encode($roles)) ?>)">Edit Roles</button>
-                                    <form method="post" style="display:inline-block;" onsubmit="return confirm('<?= $isActive ? 'Deactivate' : 'Activate' ?> this account?');">
-                                        <input type="hidden" name="action_type" value="set_active">
-                                        <input type="hidden" name="target_user_id" value="<?= $uid ?>">
-                                        <input type="hidden" name="is_active" value="<?= $isActive ? 0 : 1 ?>">
-                                        <button class="btn btn-sm btn-outline-secondary" type="submit" style="color:#fff !important; background:#6c757d !important; border-color:#6c757d !important;"><?= $isActive ? 'Deactivate' : 'Activate' ?></button>
-                                    </form>
-                                    <form method="post" style="display:inline-block;">
-                                        <input type="hidden" name="action_type" value="reset_password">
-                                        <input type="hidden" name="target_user_id" value="<?= $uid ?>">
-                                        <button class="btn btn-sm btn-outline-warning" type="submit" onclick="return confirm('Request password reset?')" style="color:#fff !important; background:#ffc107 !important; border-color:#ffc107 !important;">Reset Password</button>
-                                    </form>
-                                    <a class="btn btn-sm btn-outline-info" href="audit_logs.php?user_id=<?= $uid ?>" style="color:#fff !important; background:#0dcaf0 !important; border-color:#0dcaf0 !important;">View Audit Logs</a>
+                                    <?php if (!$isSuperAdmin): ?>
+                                        <button class="btn-action btn-action-edit" type="button" onclick="openRolesModal(<?= $uid ?>, <?= htmlspecialchars(json_encode($roles)) ?>)">Edit Roles</button>
+
+                                        <form method="post" style="display:inline-block;" onsubmit="return confirm('<?= $isActive ? 'Deactivate' : 'Activate' ?> this account?');">
+                                            <input type="hidden" name="action_type" value="set_active">
+                                            <input type="hidden" name="target_user_id" value="<?= $uid ?>">
+                                            <input type="hidden" name="is_active" value="<?= $isActive ? 0 : 1 ?>">
+                                            <button class="btn-action <?= $isActive ? 'btn-action-deactivate' : 'btn-action-activate' ?>" type="submit"><?= $isActive ? 'Deactivate' : 'Activate' ?></button>
+                                        </form>
+                                    <?php endif; ?>
+                                    <a class="btn-action btn-action-audit" href="audit_logs.php?school_id=<?= htmlspecialchars((string)$u['SchoolID']) ?>">Audit Logs</a>
                                 </div>
                             </td>
                         </tr>
@@ -793,6 +796,49 @@ $statusOptions = ['Active', 'Disabled', 'Enrolled', 'Dropped', 'Graduated', 'Emp
 
         form.submit();
     }
+
+    // Dynamic filtering for search and dropdowns
+    let filterTimeout;
+
+    function applyFilters() {
+        const search = document.getElementById('userSearchInput').value.trim();
+        const role = document.getElementById('userRoleSelect').value;
+        const status = document.getElementById('userStatusSelect').value;
+
+        // Build URL with filters
+        const url = new URL(window.location.href);
+        url.searchParams.set('page', '1'); // Reset to page 1 on filter change
+
+        if (search !== '') {
+            url.searchParams.set('search', search);
+        } else {
+            url.searchParams.delete('search');
+        }
+
+        if (role !== '') {
+            url.searchParams.set('role', role);
+        } else {
+            url.searchParams.delete('role');
+        }
+
+        if (status !== '') {
+            url.searchParams.set('status', status);
+        } else {
+            url.searchParams.delete('status');
+        }
+
+        window.location.href = url.toString();
+    }
+
+    function debounceFilter() {
+        clearTimeout(filterTimeout);
+        filterTimeout = setTimeout(applyFilters, 300);
+    }
+
+    // Wire up filter inputs to auto-apply on change
+    document.getElementById('userSearchInput')?.addEventListener('input', debounceFilter);
+    document.getElementById('userRoleSelect')?.addEventListener('change', applyFilters);
+    document.getElementById('userStatusSelect')?.addEventListener('change', applyFilters);
 </script>
 </body>
 </html>

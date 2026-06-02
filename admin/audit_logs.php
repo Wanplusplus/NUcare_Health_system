@@ -22,6 +22,7 @@ $qModule = trim((string)($_GET['module'] ?? ''));
 $qRange = trim((string)($_GET['range'] ?? ''));
 $qCustomFrom = trim((string)($_GET['from'] ?? ''));
 $qCustomTo = trim((string)($_GET['to'] ?? ''));
+$schoolId = (string)($_GET['school_id'] ?? '');
 
 // Never show technical/debug/internal actions.
 $neverShowActions = [
@@ -48,6 +49,12 @@ if ($qModule !== '') {
     $where[] = 'al.ModuleName = ?';
     $params[] = $qModule;
 }
+
+if ($schoolId !== '') {
+    $where[] = 'sp.SchoolID = ?';
+    $params[] = $schoolId;
+}
+
 
 if ($qRange === 'today') {
     $where[] = 'DATE(al.ActionTimestamp) = CURDATE()';
@@ -116,6 +123,7 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NUCARE | Audit Logs</title>
     <link rel="stylesheet" href="../assets/css/app.css">
+    <link rel="stylesheet" href="../assets/css/admin_dashboard_overrides.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 </head>
 <body>
@@ -146,9 +154,10 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
 
             <div class="panel-card-body">
-                <form method="get" class="row g-2 align-items-end" style="margin-bottom: 14px;">
-                    <div class="col-md-5">
-                        <label class="form-label mb-1">Search</label>
+                    <div class="admin-filterbar audit-filterbar-enterprise" style="margin-bottom: 14px;">
+
+                    <div class="admin-filter" style="min-width: 280px;">
+                        <label>Search</label>
                         <input
                             type="text"
                             name="search"
@@ -159,8 +168,8 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         >
                     </div>
 
-                    <div class="col-md-3">
-                        <label class="form-label mb-1">Module</label>
+                    <div class="admin-filter" style="min-width: 260px;">
+                        <label>Module</label>
                         <select name="module" class="form-select audit-filter" data-filter-key="module">
                             <option value="">All Modules</option>
                             <?php foreach ($modules as $m): ?>
@@ -172,8 +181,8 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         </select>
                     </div>
 
-                    <div class="col-md-4">
-                        <label class="form-label mb-1">Date Range</label>
+                    <div class="admin-filter" style="min-width: 220px;">
+                        <label>Date Range</label>
                         <select name="range" class="form-select audit-filter" data-filter-key="range">
                             <option value="" <?= $qRange === '' ? 'selected' : '' ?>>All Time</option>
                             <option value="today" <?= $qRange === 'today' ? 'selected' : '' ?>>Today</option>
@@ -184,29 +193,30 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </div>
 
                     <?php if ($qRange === 'custom'): ?>
-                        <div class="col-md-3 audit-filter-custom">
-                            <label class="form-label mb-1">From</label>
+                        <div class="admin-filter audit-filter-custom" style="min-width: 180px;">
+                            <label>From</label>
                             <input type="date" name="from" class="form-control audit-filter" data-filter-key="from" value="<?= htmlspecialchars($qCustomFrom) ?>">
                         </div>
-                        <div class="col-md-3 audit-filter-custom">
-                            <label class="form-label mb-1">To</label>
+                        <div class="admin-filter audit-filter-custom" style="min-width: 180px;">
+                            <label>To</label>
                             <input type="date" name="to" class="form-control audit-filter" data-filter-key="to" value="<?= htmlspecialchars($qCustomTo) ?>">
                         </div>
                     <?php else: ?>
-                        <div class="col-md-3 audit-filter-custom" style="display:none;">
-                            <label class="form-label mb-1">From</label>
+                        <div class="admin-filter audit-filter-custom" style="min-width: 180px; display:none;">
+                            <label>From</label>
                             <input type="date" name="from" class="form-control audit-filter" data-filter-key="from" value="<?= htmlspecialchars($qCustomFrom) ?>">
                         </div>
-                        <div class="col-md-3 audit-filter-custom" style="display:none;">
-                            <label class="form-label mb-1">To</label>
+                        <div class="admin-filter audit-filter-custom" style="min-width: 180px; display:none;">
+                            <label>To</label>
                             <input type="date" name="to" class="form-control audit-filter" data-filter-key="to" value="<?= htmlspecialchars($qCustomTo) ?>">
                         </div>
                     <?php endif; ?>
 
-                    <div class="col-md-12 d-flex gap-2">
-                        <a href="audit_logs.php" class="btn" style="border-radius:14px; border:1px solid #d0d5ff; color:#445; padding:6px 14px;">Reset</a>
+                    <div style="display:flex; gap:12px; align-items:center;">
+                        <a href="audit_logs.php" class="btn admin-btn-ghost">Reset</a>
                     </div>
-                </form>
+                </div>
+
 
                 <script>
                     (function(){
@@ -251,7 +261,8 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </script>
 
                 <div class="table-responsive">
-                    <table class="table table-striped table-hover align-middle">
+                    <table class="table table-striped table-hover align-middle admin-table">
+
                         <thead>
                         <tr>
                             <th>UserID</th>
@@ -275,7 +286,10 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <tr>
                                     <td><?= htmlspecialchars((string)$r['UserID']) ?></td>
                                     <td><?= htmlspecialchars((string)$r['SchoolID']) ?></td>
-                                    <td><?= htmlspecialchars($fullName) ?></td>
+                            <td><?= htmlspecialchars($fullName) ?></td>
+
+
+
                                     <td><?= htmlspecialchars((string)$r['Action']) ?></td>
                                     <td><?= htmlspecialchars((string)$r['Module']) ?></td>
                                     <td><?= htmlspecialchars(date('Y-m-d H:i:s', strtotime((string)$r['ActionTimestamp']))) ?></td>

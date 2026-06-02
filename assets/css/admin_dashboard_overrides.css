@@ -1,0 +1,455 @@
+/* Admin dashboard UI-only overrides for user_management.php and audit_logs.php */
+
+:root{
+  --admin-red:#8b0000;
+  --admin-red-hover:#6b0000;
+  --admin-red-light:rgba(139,0,0,0.08);
+  --admin-surface:#ffffff;
+  --admin-bg:#f6f8fb;
+  --admin-border:#e1e8f0;
+  --admin-text:#1a1a3e;
+  --admin-muted:#5a6282;
+  --admin-shadow: 0 2px 8px rgba(26,26,110,.08);
+  --admin-shadow-md: 0 4px 16px rgba(26,26,110,.12);
+  --radius: 18px;
+  --radius-lg: 24px;
+  --focus: 0 0 0 4px rgba(139,0,0,0.16);
+  --btn-height: 44px;
+  --btn-padding: 0 16px;
+  --btn-radius: 12px;
+  --btn-font-size: 14px;
+  --btn-font-weight: 600;
+}
+
+/* Cards */
+.admin-entity-card{
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--admin-shadow);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.admin-entity-card:hover{
+  box-shadow: var(--admin-shadow-md);
+}
+
+.admin-entity-card .admin-card-header{
+  background: rgba(26,26,110,0.04);
+  border-bottom: 1px solid var(--admin-border);
+  color: var(--admin-text);
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-entity-card .admin-card-header h3{
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  margin: 0;
+  font-weight: 700;
+  color: var(--admin-text);
+}
+
+.admin-entity-card .admin-card-body{
+  padding: 20px 22px;
+}
+
+/* Filter bar */
+.admin-filterbar{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius);
+  box-shadow: var(--admin-shadow);
+}
+
+.admin-filter{
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  flex: 1;
+}
+
+.admin-filter label{
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--admin-muted);
+  margin: 0 0 6px;
+}
+
+.admin-filter input,
+.admin-filter select,
+.admin-filter .form-control,
+.admin-filter .form-select{
+  width: 100%;
+  height: var(--btn-height);
+  border-radius: var(--btn-radius);
+  border: 1px solid var(--admin-border);
+  background: #fcfdff;
+  padding: 0 14px;
+  color: var(--admin-text);
+  font-size: var(--btn-font-size);
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.admin-filter input::placeholder,
+.admin-filter .form-control::placeholder{
+  color: var(--admin-muted);
+  opacity: 0.7;
+}
+
+.admin-filter input:focus,
+.admin-filter select:focus,
+.admin-filter .form-control:focus,
+.admin-filter .form-select:focus{
+  outline: none;
+  border-color: rgba(139,0,0,0.35);
+  box-shadow: var(--focus);
+}
+
+/* Buttons - unified sizing and styling */
+.admin-filter .btn,
+.admin-filterbar .btn{
+  height: var(--btn-height);
+  padding: var(--btn-padding);
+  border-radius: var(--btn-radius);
+  font-size: var(--btn-font-size);
+  font-weight: var(--btn-font-weight);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* Action buttons - consistent sizing across all action types */
+.btn-action{
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  line-height: 1;
+  text-decoration: none !important;
+  margin: 0;
+  background: transparent !important;
+  color: inherit !important;
+}
+
+/* Edit Roles - Professional Blue */
+.btn-action-edit{
+  background: #1e40af !important;
+  color: #fff !important;
+  box-shadow: 0 2px 4px rgba(30,64,175,0.12);
+}
+
+.btn-action-edit:hover{
+  background: #1d4ed8 !important;
+  box-shadow: 0 4px 8px rgba(30,64,175,0.2);
+  transform: translateY(-1px);
+}
+
+.btn-action-edit:active{
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(30,64,175,0.12);
+}
+
+.btn-action-edit:focus{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(30,64,175,0.15), 0 2px 4px rgba(30,64,175,0.12);
+}
+
+/* Audit Logs - Professional Gray */
+.btn-action-audit{
+  background: #374151 !important;
+  color: #fff !important;
+  box-shadow: 0 2px 4px rgba(55,65,81,0.12);
+}
+
+.btn-action-audit:hover{
+  background: #4b5563 !important;
+  box-shadow: 0 4px 8px rgba(55,65,81,0.2);
+  transform: translateY(-1px);
+}
+
+.btn-action-audit:active{
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(55,65,81,0.12);
+}
+
+.btn-action-audit:focus{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(55,65,81,0.15), 0 2px 4px rgba(55,65,81,0.12);
+}
+
+/* Deactivate - Destructive Red */
+.btn-action-deactivate{
+  background: #b91c1c !important;
+  color: #fff !important;
+  box-shadow: 0 2px 4px rgba(185,28,28,0.12);
+}
+
+.btn-action-deactivate:hover{
+  background: #991b1b !important;
+  box-shadow: 0 4px 8px rgba(185,28,28,0.2);
+  transform: translateY(-1px);
+}
+
+.btn-action-deactivate:active{
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(185,28,28,0.12);
+}
+
+.btn-action-deactivate:focus{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(185,28,28,0.15), 0 2px 4px rgba(185,28,28,0.12);
+}
+
+/* Activate - Success Green */
+.btn-action-activate{
+  background: #15803d !important;
+  color: #fff !important;
+  box-shadow: 0 2px 4px rgba(21,128,61,0.12);
+}
+
+.btn-action-activate:hover{
+  background: #166534 !important;
+  box-shadow: 0 4px 8px rgba(21,128,61,0.2);
+  transform: translateY(-1px);
+}
+
+.btn-action-activate:active{
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(21,128,61,0.12);
+}
+
+.btn-action-activate:focus{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(21,128,61,0.15), 0 2px 4px rgba(21,128,61,0.12);
+}
+
+.admin-btn-primary{
+  background: var(--admin-red) !important;
+  border-color: var(--admin-red) !important;
+  color: #fff !important;
+  box-shadow: 0 2px 6px rgba(139,0,0,0.15);
+}
+
+.admin-btn-primary:hover{
+  background: var(--admin-red-hover) !important;
+  border-color: var(--admin-red-hover) !important;
+  box-shadow: 0 4px 12px rgba(139,0,0,0.25);
+  transform: translateY(-1px);
+}
+
+.admin-btn-primary:active{
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(139,0,0,0.15);
+}
+
+.admin-btn-primary:focus{
+  outline: none;
+  box-shadow: var(--focus), 0 2px 6px rgba(139,0,0,0.15);
+}
+
+.admin-btn-ghost{
+  background: transparent !important;
+  border: 1px solid var(--admin-border) !important;
+  color: var(--admin-text) !important;
+}
+
+.admin-btn-ghost:hover{
+  background: var(--admin-bg) !important;
+  border-color: rgba(26,26,110,0.2) !important;
+}
+
+.admin-btn-ghost:active{
+  background: rgba(26,26,110,0.05) !important;
+}
+
+.admin-btn-ghost:focus{
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+/* Ensure filter bar items are vertically centered */
+.admin-filterbar > *{
+  align-self: center;
+}
+
+.admin-filterbar .admin-filter{
+  align-self: flex-end;
+}
+
+/* Button container in filter bar */
+.admin-filterbar > div[style*="display:flex"]{
+  align-self: flex-end;
+}
+
+.admin-filterbar .btn,
+.admin-filterbar .btn-action{
+  height: var(--btn-height);
+  margin: 0;
+  padding: var(--btn-padding);
+}
+
+
+
+/* Tables */
+.admin-table{
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.admin-table thead th{
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgba(26,26,110,0.04);
+  border-bottom: 1px solid var(--admin-border);
+  color: var(--admin-muted);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 12px 14px;
+  text-align: left;
+  font-weight: 700;
+}
+
+.admin-table tbody td{
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(225,232,240,0.6);
+  color: var(--admin-text);
+  vertical-align: middle;
+  font-size: 14px;
+}
+
+.admin-table tbody tr{
+  transition: background 0.15s ease;
+}
+
+.admin-table tbody tr:hover{
+  background: rgba(139,0,0,0.02);
+}
+
+/* Pills / badges */
+.admin-badge{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.admin-badge-success{
+  background: #ecfdf3;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.admin-badge-muted{
+  background: #f1f3f7;
+  color: #4b5563;
+  border-color: #e5e7eb;
+}
+
+.admin-role-pill{
+  background: var(--admin-red-light);
+  color: var(--admin-red);
+  border: 1px solid rgba(139,0,0,0.15);
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.admin-module-chip{
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--admin-red-light);
+  border: 1px solid rgba(139,0,0,0.15);
+  color: var(--admin-red);
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Empty state */
+.admin-empty{
+  padding: 26px 16px;
+  text-align: center;
+  color: var(--admin-muted);
+}
+
+.admin-empty .empty-title{
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 700;
+  color: var(--admin-text);
+  margin-bottom: 6px;
+}
+
+/* Panel card overrides for admin pages */
+.panel-card{
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow);
+}
+
+.panel-card-header{
+  background: rgba(26,26,110,0.04);
+  border-bottom: 1px solid var(--admin-border);
+  padding: 18px 22px;
+}
+
+.panel-card-header h3{
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--admin-text);
+}
+
+.panel-card-body{
+  padding: 20px 22px;
+}
+
+/* Small responsive tweaks */
+@media (max-width: 960px){
+  .admin-filter{ 
+    min-width: 100% !important;
+    flex: 1 1 100%;
+  }
+  
+  .admin-filterbar{
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
