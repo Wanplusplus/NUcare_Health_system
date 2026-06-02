@@ -9,7 +9,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$pdo = require __DIR__ . '/../../config/db_pdo.php';
+$pdo = require __DIR__ . '/../config/db_pdo.php';
 
 function personFullName(array $row): string
 {

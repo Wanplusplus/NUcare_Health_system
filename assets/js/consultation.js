@@ -17,6 +17,15 @@
         if (acList) { acList.innerHTML = ''; acList.classList.remove('open'); }
     }
 
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     /* ── Populate patient banner ──────────────────────── */
     function populateBanner(p) {
         const fullName = p.FullName
@@ -230,6 +239,13 @@
         // Show/hide attachment required badge for Medical Certificate
         const attachBadge = document.getElementById('attachmentRequiredBadge');
         if (attachBadge) attachBadge.style.display = (val === 'Medical Certificate') ? '' : 'none';
+
+        const attachmentCategory = document.getElementById('attachmentCategory');
+        if (val === 'Medical Certificate' && attachmentCategory) {
+            attachmentCategory.value = 'Medical Certificate';
+            const mcFields = document.getElementById('mcExtraFields');
+            if (mcFields) mcFields.style.display = '';
+        }
 
         // Update page-header service badge
         const badge = document.getElementById('serviceTypeBadge');
@@ -756,73 +772,128 @@
      * Called by the Save button (which lives OUTSIDE the form to avoid
      * the pointer-events:none lockout from .consult-form-area.disabled).
      */
+    function showRequirementsModal(items, intro = 'Complete these requirements before saving this consultation.') {
+        const modal = document.getElementById('consultRequirementsModal');
+        const list = document.getElementById('consultRequirementsList');
+        const introEl = document.getElementById('consultRequirementsIntro');
+
+        if (!modal || !list) {
+            showToast(items.join(' '), 'error');
+            return;
+        }
+
+        if (introEl) introEl.textContent = intro;
+        list.innerHTML = items.map(item => `<li>${escapeHtml(String(item))}</li>`).join('');
+        modal.style.display = 'block';
+        document.body.classList.add('modal-open');
+    }
+
+    window.closeConsultRequirementsModal = function () {
+        const modal = document.getElementById('consultRequirementsModal');
+        if (modal) modal.style.display = 'none';
+        document.body.classList.remove('modal-open');
+    };
+
+    function collectSaveRequirements() {
+        const requirements = [];
+        const consultationID = document.getElementById('consultationID')?.value;
+        const serviceType = document.getElementById('consultService')?.value || '';
+        const complaint = document.getElementById('consultConcern')?.value.trim() || '';
+
+        if (!getCurrentSpid()) {
+            requirements.push('Search and load a patient first.');
+        }
+
+        if (!consultationID) {
+            requirements.push('Start an active consultation transaction by searching/selecting a patient.');
+        }
+
+        if (!serviceType) {
+            requirements.push('Select a Service Type.');
+        }
+
+        if (serviceType === 'Other') {
+            const otherService = document.getElementById('consultServiceOther')?.value.trim() || '';
+            if (!otherService) requirements.push('Specify the Other service type.');
+        }
+
+        if (!['Medical Certificate', 'Physical Examination', 'Dental'].includes(serviceType) && !complaint) {
+            requirements.push('Enter the Chief Complaint / Concern.');
+        }
+
+        if (serviceType === 'Medical Certificate') {
+            const fileInput = document.getElementById('consultAttachmentFile');
+            const category = document.getElementById('attachmentCategory')?.value || '';
+            if (!fileInput || !fileInput.files?.length) {
+                requirements.push('Attach a JPG, PNG, or PDF document for the Medical Certificate.');
+            }
+            if (category !== 'Medical Certificate') {
+                requirements.push('Set Document Category to Medical Certificate so the certificate record will be stored.');
+            }
+        }
+
+        if (serviceType === 'Physical Examination') {
+            const examDate = document.getElementById('examDate')?.value;
+            const clearance = document.getElementById('examCardioClearance')?.value;
+            if (!examDate) requirements.push('Enter the Physical Examination date.');
+            if (!clearance) requirements.push('Select the Medical Clearance result: Fit, Unfit, or Pending.');
+        }
+
+        const vitalsSection = document.getElementById('section-vitals');
+        const vitalsVisible = vitalsSection && !vitalsSection.classList.contains('hidden');
+        if (vitalsVisible) {
+            const vErr = validateVitals();
+            if (vErr) requirements.push(vErr);
+        }
+
+        document.querySelectorAll('.med-entry').forEach((row, idx) => {
+            const name = row.querySelector('.med-name-group input[type="text"]')?.value.trim() || '';
+            const inv = row.querySelector('input[name="med_inventory_id[]"]')?.value || '';
+            const qty = Number(row.querySelector('input[name="med_qty[]"]')?.value || 0);
+
+            if (name && !inv) {
+                requirements.push(`Medicine row ${idx + 1}: select a medicine from the dropdown, not typed text only.`);
+            }
+            if (name && qty <= 0) {
+                requirements.push(`Medicine row ${idx + 1}: enter a quantity greater than 0.`);
+            }
+        });
+
+        return requirements;
+    }
+
     window.submitConsultForm = function () {
         if (!form) { showToast('Form not found.', 'error'); return; }
 
-        const consultationID = document.getElementById('consultationID')?.value;
-            if (!consultationID) {
-                showToast('No active transaction. Please search a patient first.', 'error');
-                return;
-            }
+        const requirements = collectSaveRequirements();
+        if (requirements.length) {
+            showRequirementsModal(requirements);
+            return;
+        }
 
-            const serviceType = document.getElementById('consultService')?.value;
-            const complaint   = document.getElementById('consultConcern')?.value.trim();
+        const serviceType = document.getElementById('consultService')?.value;
 
-            const cErr = document.getElementById('consultConcernErr');
-            const sErr = document.getElementById('consultServiceErr');
-            if (cErr) cErr.textContent = '';
-            if (sErr) sErr.textContent = '';
+        const cErr = document.getElementById('consultConcernErr');
+        const sErr = document.getElementById('consultServiceErr');
+        if (cErr) cErr.textContent = '';
+        if (sErr) sErr.textContent = '';
 
-            /* Service type required */
-            if (!serviceType) {
-                if (sErr) sErr.textContent = 'Service type is required.';
-                return;
-            }
+        const btn = document.getElementById('btnSaveConsult');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; }
 
-            /* Chief complaint required except Medical Certificate */
-            if (serviceType !== 'Medical Certificate' && serviceType !== 'Physical Examination' && !complaint) {
-                if (cErr) cErr.textContent = 'Chief complaint is required.';
-                return;
-            }
 
-            /* Validate Medical Certificate needs an attachment */
-            if (serviceType === 'Medical Certificate') {
-                const fileInput = document.getElementById('consultAttachmentFile');
-                if (!fileInput || !fileInput.files?.length) {
-                    showToast('A document must be attached for Medical Certificate.', 'error');
-                    return;
-                }
-            }
+        const formData = new FormData(form);
 
-            /* Validate Physical Exam required fields */
-            if (serviceType === 'Physical Examination') {
-                const vErr = validatePhysExam();
-                if (vErr) { showToast(vErr, 'error'); return; }
-            }
+        /* Append PE fields if Physical Exam is active */
+        if (serviceType === 'Physical Examination') {
+            appendPhysExamData(formData);
+        }
 
-            /* Validate numeric vitals when vitals section visible */
-            const vitalsSection = document.getElementById('section-vitals');
-            const vitalsVisible = vitalsSection && !vitalsSection.classList.contains('hidden');
-            if (vitalsVisible) {
-                const vErr = validateVitals();
-                if (vErr) { showToast(vErr, 'error'); return; }
-            }
-
-            const btn = document.getElementById('btnSaveConsult');
-            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…'; }
-
-            const formData = new FormData(form);
-
-            /* Append PE fields if Physical Exam is active */
-            if (serviceType === 'Physical Examination') {
-                appendPhysExamData(formData);
-            }
-
-            /* Mark which sections are active so server can skip irrelevant ones */
-            formData.set('active_service_type', serviceType);
+        /* Mark which sections are active so server can skip irrelevant ones */
+        formData.set('active_service_type', serviceType);
 
  
-            fetch('../../ajax/consultation/save_consultation.ajax.php', {
+        fetch('../../ajax/consultation/save_consultation.ajax.php', {
                 method: 'POST',
                 body: formData
             })
@@ -849,12 +920,14 @@
                     } else {
                         // Show the real server-side error so staff can act on it
                         const errMsg = resp.message || 'Save failed. Check your connection and try again.';
+                        showRequirementsModal([errMsg], 'The consultation could not be saved. Please resolve this requirement.');
                         showToast(errMsg, 'error');
                         console.error('Save failed:', resp);
                     }
                 })
                 .catch(err => {
                     console.error('Save error:', err);
+                    showRequirementsModal(['Server error while saving. Check the connection and try again.'], 'The consultation could not be saved.');
                     showToast('Server error while saving.', 'error');
                 })
                 .finally(() => {

@@ -174,21 +174,21 @@ $activeSidebarItem = 'records';
                 </div>
 
                 <div class="modal-tabs" role="tablist">
-                    <button class="modal-tab active" data-tab="tabInfo" role="tab" aria-selected="true">
+                    <button type="button" class="modal-tab active" data-tab="tabInfo" role="tab" aria-selected="true">
                         <i class="fa-solid fa-circle-info"></i>
                         Patient Info
                     </button>
-                    <button class="modal-tab" data-tab="tabHistory" role="tab" aria-selected="false">
+                    <button type="button" class="modal-tab" data-tab="tabHistory" role="tab" aria-selected="false">
                         <i class="fa-solid fa-notes-medical"></i>
                         Clinic History
                         <span class="tab-count-badge" id="tabHistoryCount"></span>
                     </button>
-                    <button class="modal-tab" data-tab="tabEmergency" role="tab" aria-selected="false">
+                    <button type="button" class="modal-tab" data-tab="tabEmergency" role="tab" aria-selected="false">
                         <i class="fa-solid fa-kit-medical"></i>
                         Emergencies
                         <span class="tab-count-badge tab-count-red" id="tabEmergencyCount"></span>
                     </button>
-                    <button class="modal-tab" data-tab="tabCerts" role="tab" aria-selected="false">
+                    <button type="button" class="modal-tab" data-tab="tabCerts" role="tab" aria-selected="false">
                         <i class="fa-solid fa-file-shield"></i>
                         Certificates
                         <span class="tab-count-badge tab-count-green" id="tabCertsCount"></span>
@@ -391,6 +391,6 @@ $activeSidebarItem = 'records';
 </div>
 
 <script src="../../assets/js/app.js"></script>
-<script src="../../assets/js/records.js?v=3"></script>
+<script src="../../assets/js/records.js?v=5"></script>
 </body>
 </html>

@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnYearPrev = document.getElementById('btnYearPrev');
   const btnYearNext = document.getElementById('btnYearNext');
   const monthTabs = document.querySelectorAll('.month-tab');
+  const btnAllStocks = document.getElementById('btnAllStocks');
   const summaryPeriodLabel = document.getElementById('summaryPeriodLabel');
   const medTableBody = document.getElementById('medTableBody');
   const medEmpty = document.getElementById('medEmpty');
@@ -49,11 +50,50 @@ document.addEventListener('DOMContentLoaded', () => {
   let medicines = [];
   let filteredMedicines = [];
   let isLoading = false;
+  let showAllStocks = false;
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December',
   ];
+
+  const parseLocalDate = (value) => {
+    if (!value) return null;
+
+    const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      const year = Number(match[1]);
+      const month = Number(match[2]);
+      const day = Number(match[3]);
+      return {
+        date: new Date(year, month - 1, day),
+        year,
+        month,
+        day,
+      };
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+
+    return {
+      date,
+      year: date.getFullYear(),
+      month: date.getMonth() + 1,
+      day: date.getDate(),
+    };
+  };
+
+  const formatDisplayDate = (value) => {
+    const parsed = parseLocalDate(value);
+    if (!parsed) return '—';
+
+    return parsed.date.toLocaleDateString('en-PH', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
 
   const toast = (msg, type = 'success') => {
     if (!toastWrap) return;
@@ -130,13 +170,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const statusFrom = (quantity, exp) => {
     if (!exp) return quantity <= 0 ? 'Out Of Stock' : 'Available';
 
-    const expDateObj = new Date(exp);
-    if (Number.isNaN(expDateObj.getTime())) {
+    const parsedExpiry = parseLocalDate(exp);
+    if (!parsedExpiry) {
       return quantity <= 0 ? 'Out Of Stock' : 'Available';
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const expDateObj = parsedExpiry.date;
     expDateObj.setHours(0, 0, 0, 0);
 
     const days = Math.ceil((expDateObj - today) / 86400000);
@@ -195,8 +236,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const updatePeriodUI = () => {
     if (yearLabel) yearLabel.textContent = currentYear;
-    monthTabs.forEach((t) => t.classList.toggle('active', parseInt(t.dataset.month, 10) === currentMonth));
-    if (summaryPeriodLabel) summaryPeriodLabel.textContent = `${monthNames[currentMonth - 1]} ${currentYear}`;
+    monthTabs.forEach((t) => {
+      t.classList.toggle('active', !showAllStocks && parseInt(t.dataset.month, 10) === currentMonth);
+    });
+    if (btnAllStocks) btnAllStocks.classList.toggle('active', showAllStocks);
+    if (summaryPeriodLabel) {
+      summaryPeriodLabel.textContent = showAllStocks
+        ? 'All medicine stocks'
+        : `${monthNames[currentMonth - 1]} ${currentYear}`;
+    }
   };
 
   const normalizeStatusFilter = (value) => {
@@ -241,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${m.total_cost ?? '—'}</td>
         <td>${m.quantity ?? 0}</td>
         <td>${m.quantity ?? 0}</td>
-        <td>${m.expiry_date || '—'}</td>
+        <td>${formatDisplayDate(m.expiry_date)}</td>
         <td>${pillFor(displayStatus)}</td>
         <td>
           <div class="acts">
@@ -313,16 +361,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
     filteredMedicines = medicines.filter((m) => {
       const displayStatus = getDisplayStatus(m);
+      const expiry = parseLocalDate(m.expiry_date);
+      const periodMatch = showAllStocks || (expiry
+        && expiry.year === currentYear
+        && expiry.month === currentMonth);
+
       const textMatch = (m.medicine_name || '').toLowerCase().includes(search)
         || (m.generic_name || '').toLowerCase().includes(search)
         || (m.medicine_type || '').toLowerCase().includes(search)
         || (m.batch_number || '').toLowerCase().includes(search);
 
       const statusMatch = !st || displayStatus === st;
-      return textMatch && statusMatch;
+      return periodMatch && textMatch && statusMatch;
     });
 
     renderTable(filteredMedicines);
+  };
+
+  const selectedPeriodHasRows = () => medicines.some((m) => {
+    if (showAllStocks) return true;
+    const expiry = parseLocalDate(m.expiry_date);
+    return expiry && expiry.year === currentYear && expiry.month === currentMonth;
+  });
+
+  const moveToFirstAvailablePeriod = () => {
+    if (!medicines.length || selectedPeriodHasRows()) return;
+
+    const periods = medicines
+      .map((m) => parseLocalDate(m.expiry_date))
+      .filter(Boolean)
+      .sort((a, b) => a.date - b.date);
+
+    if (!periods.length) return;
+
+    currentYear = periods[0].year;
+    currentMonth = periods[0].month;
+    updatePeriodUI();
   };
 
   const switchTab = (tabId) => {
@@ -459,6 +533,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       medicines = Array.isArray(json.data) ? json.data : [];
+      moveToFirstAvailablePeriod();
       applyFilters();
     } catch (err) {
       console.error(err);
@@ -491,8 +566,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const status = normalizeStatusFilter(statusFilter?.value || '');
     if (status) params.set('status', status);
 
-    params.set('year', String(currentYear));
-    params.set('month', String(currentMonth));
+    if (showAllStocks) {
+      params.set('all', '1');
+    } else {
+      params.set('year', String(currentYear));
+      params.set('month', String(currentMonth));
+    }
 
     const query = params.toString();
     window.location.href = query
@@ -521,19 +600,31 @@ document.addEventListener('DOMContentLoaded', () => {
   btnTabPrev?.addEventListener('click', () => switchTab('master'));
 
   btnYearPrev?.addEventListener('click', () => {
+    showAllStocks = false;
     currentYear -= 1;
     updatePeriodUI();
+    applyFilters();
   });
 
   btnYearNext?.addEventListener('click', () => {
+    showAllStocks = false;
     currentYear += 1;
     updatePeriodUI();
+    applyFilters();
   });
 
   monthTabs.forEach((tab) => tab.addEventListener('click', () => {
+    showAllStocks = false;
     currentMonth = parseInt(tab.dataset.month, 10);
     updatePeriodUI();
+    applyFilters();
   }));
+
+  btnAllStocks?.addEventListener('click', () => {
+    showAllStocks = !showAllStocks;
+    updatePeriodUI();
+    applyFilters();
+  });
 
   searchInput?.addEventListener('input', applyFilters);
   statusFilter?.addEventListener('change', applyFilters);
