@@ -12,6 +12,9 @@
  *   debug                – DB + session diagnostics (remove in production)
  */
 
+require_once __DIR__ . '/../includes/audit.php';
+
+
 ob_start();
 
 header('Content-Type: application/json; charset=utf-8');
@@ -460,6 +463,23 @@ function saveSlot(PDO $pdo, array $p): void
             $availId = (int) $pdo->lastInsertId();
         }
 
+        // Audit log: set/update availability (human readable mapping happens in includes/audit.php)
+        // Module must be "Schedule".
+        try {
+            $slotAction = ($status === 'Unavailable') ? 'Set availability' : 'Set availability';
+            auditLog(
+                isset($_SESSION['UserID']) ? (int)$_SESSION['UserID'] : null,
+                isset($_SESSION['SchoolPersonID']) ? (int)$_SESSION['SchoolPersonID'] : null,
+                'availability_updated',
+                'Schedule',
+                null,
+                'Set availability for ' . $slotDate,
+                null
+            );
+        } catch (Throwable $auditE) {
+            // non-fatal
+        }
+
         echo json_encode([
             'status'          => 'ok',
             'message'         => $message,
@@ -654,13 +674,29 @@ function respondBooking(PDO $pdo, array $p): void
         }
 
         /* ── ACCEPT ── */
-        if ($response === 'accept') {
+    if ($response === 'accept') {
             $upd = $pdo->prepare("
                 UPDATE bookings
                 SET    BookingStatus = 'Approved'
                 WHERE  BookingID     = :id
             ");
             $upd->execute([':id' => $bookingId]);
+
+            // Audit log: approved appointment booking
+            try {
+                auditLog(
+                    isset($_SESSION['UserID']) ? (int)$_SESSION['UserID'] : null,
+                    isset($_SESSION['SchoolPersonID']) ? (int)$_SESSION['SchoolPersonID'] : null,
+                    'booking_approved',
+                    'Schedule',
+                    (int)$bookingId,
+                    'Approved appointment booking #' . $bookingId,
+                    null
+                );
+            } catch (Throwable $auditE) {
+                // non-fatal
+            }
+
 
             echo json_encode([
                 'status'     => 'ok',
@@ -670,6 +706,7 @@ function respondBooking(PDO $pdo, array $p): void
             ]);
             return;
         }
+
 
         /* ── DECLINE ── */
         /* BookingStatus ENUM only allows: Pending, Approved, Completed, Cancelled.

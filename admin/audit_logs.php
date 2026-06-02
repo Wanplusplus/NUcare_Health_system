@@ -13,7 +13,102 @@ requireModule('Admin Panel', 'access');
 
 $activeSidebarItem = 'audit_logs';
 $active = 'audit_logs';
+
+require_once __DIR__ . '/../includes/audit.php';
+$pdo = require __DIR__ . '/../config/db_pdo.php';
+
+$qSearch = trim((string)($_GET['search'] ?? ''));
+$qModule = trim((string)($_GET['module'] ?? ''));
+$qRange = trim((string)($_GET['range'] ?? ''));
+$qCustomFrom = trim((string)($_GET['from'] ?? ''));
+$qCustomTo = trim((string)($_GET['to'] ?? ''));
+
+// Never show technical/debug/internal actions.
+$neverShowActions = [
+    'login_debug_rbac_loaded',
+    'login_debug_school_match',
+    'failed_login',
+    'failed_signup',
+    'login_hash_debug',
+];
+
+$where = [];
+$params = [];
+
+if ($qSearch !== '') {
+    $like = '%' . $qSearch . '%';
+    $where[] = '(sp.SchoolID LIKE ? OR sp.FirstName LIKE ? OR sp.LastName LIKE ? OR CONCAT(sp.FirstName, " ", COALESCE(NULLIF(sp.MiddleName, ""), ""), CASE WHEN sp.MiddleName IS NULL OR sp.MiddleName = "" THEN "" ELSE " " END, sp.LastName) LIKE ?)';
+    $params[] = $like;
+    $params[] = $like;
+    $params[] = $like;
+    $params[] = $like;
+}
+
+if ($qModule !== '') {
+    $where[] = 'al.ModuleName = ?';
+    $params[] = $qModule;
+}
+
+if ($qRange === 'today') {
+    $where[] = 'DATE(al.ActionTimestamp) = CURDATE()';
+} elseif ($qRange === 'this_week') {
+    $where[] = 'al.ActionTimestamp >= (CURDATE() - INTERVAL WEEKDAY(CURDATE()) DAY)'
+        . ' AND al.ActionTimestamp < (CURDATE() - INTERVAL WEEKDAY(CURDATE()) DAY + INTERVAL 7 DAY)';
+} elseif ($qRange === 'this_month') {
+    $where[] = 'al.ActionTimestamp >= (DATE_FORMAT(CURDATE(), "%Y-%m-01"))'
+        . ' AND al.ActionTimestamp < (DATE_FORMAT(CURDATE(), "%Y-%m-01") + INTERVAL 1 MONTH)';
+} elseif ($qRange === 'custom' && $qCustomFrom !== '' && $qCustomTo !== '') {
+    $where[] = 'al.ActionTimestamp BETWEEN ? AND ?';
+    $params[] = $qCustomFrom . ' 00:00:00';
+    $params[] = $qCustomTo . ' 23:59:59';
+}
+
+// Exclude debug actions at display time.
+if (!empty($neverShowActions)) {
+    $placeholders = implode(',', array_fill(0, count($neverShowActions), '?'));
+    $where[] = 'al.Action NOT IN (' . $placeholders . ')';
+    foreach ($neverShowActions as $a) {
+        $params[] = $a;
+    }
+}
+
+$whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+
+// Modules dropdown from modules table.
+$modules = [];
+try {
+    $mStmt = $pdo->query("SELECT ModuleName FROM modules ORDER BY ModuleName ASC");
+    $modules = $mStmt->fetchAll(PDO::FETCH_COLUMN);
+} catch (Throwable $e) {
+    $modules = [];
+}
+
+$sql = "
+    SELECT
+        al.UserID AS UserID,
+        sp.SchoolID AS SchoolID,
+        CONCAT(
+            sp.FirstName,
+            ' ',
+            COALESCE(NULLIF(sp.MiddleName, ''), ''),
+            CASE WHEN sp.MiddleName IS NULL OR sp.MiddleName = '' THEN '' ELSE ' ' END,
+            sp.LastName
+        ) AS FullName,
+        al.Action AS Action,
+        al.ModuleName AS Module,
+        al.ActionTimestamp AS ActionTimestamp
+    FROM audit_logs al
+    INNER JOIN users u ON al.UserID = u.UserID
+    INNER JOIN school_people sp ON u.SchoolPersonID = sp.SchoolPersonID
+    {$whereSql}
+    ORDER BY al.ActionTimestamp DESC, al.AuditLogID DESC
+";
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
+$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,66 +127,7 @@ $active = 'audit_logs';
     }
     ?>
 
-    <?php
-    $pdo = require __DIR__ . '/../config/db_pdo.php';
-
-    $where = [];
-    $params = [];
-
-    // Optional filters
-    $qUserId = isset($_GET['user_id']) && is_numeric($_GET['user_id']) ? (int)$_GET['user_id'] : null;
-    $qModule = isset($_GET['module']) ? trim((string)$_GET['module']) : '';
-
-    if ($qUserId !== null) {
-        $where[] = 'al.UserID = ?';
-        $params[] = $qUserId;
-    }
-
-    if ($qModule !== '') {
-        $where[] = 'al.ModuleName = ?';
-        $params[] = $qModule;
-    }
-
-    $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
-
-    $sql = "
-        SELECT
-            al.UserID AS UserID,
-            sp.SchoolID AS SchoolID,
-            CONCAT(
-                sp.FirstName,
-                ' ',
-                COALESCE(NULLIF(sp.MiddleName, ''), ''),
-                CASE WHEN sp.MiddleName IS NULL OR sp.MiddleName = '' THEN '' ELSE ' ' END,
-                sp.LastName
-            ) AS FullName,
-            al.Action AS Action,
-            al.ModuleName AS Module,
-            al.ActionTimestamp AS ActionTimestamp
-        FROM audit_logs al
-        INNER JOIN users u ON al.UserID = u.UserID
-        INNER JOIN school_people sp ON u.SchoolPersonID = sp.SchoolPersonID
-        {$whereSql}
-        ORDER BY al.ActionTimestamp DESC, al.AuditLogID DESC
-    ";
-
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // Gather modules for dropdown (cheap)
-    $modules = [];
-    try {
-        $mStmt = $pdo->query("SELECT DISTINCT ModuleName FROM audit_logs WHERE ModuleName IS NOT NULL ORDER BY ModuleName ASC");
-        $modules = $mStmt->fetchAll(PDO::FETCH_COLUMN);
-    } catch (Throwable $e) {
-        $modules = [];
-    }
-
-    ?>
-
     <main class="main-content">
-
         <header class="page-header">
             <div>
                 <p class="breadcrumb">Home / Audit Logs</p>
@@ -105,40 +141,114 @@ $active = 'audit_logs';
 
         <section class="panel-card">
             <div class="panel-card-header d-flex align-items-center justify-content-between">
-
                 <h3 class="m-0">Activity Logs</h3>
-                <div class="text-muted">Total: <?= isset($rows) ? (int)count($rows) : 0 ?></div>
+                <div class="text-muted">Total: <?= (int)count($rows) ?></div>
             </div>
 
-        <div class="panel-card-body">
+            <div class="panel-card-body">
                 <form method="get" class="row g-2 align-items-end" style="margin-bottom: 14px;">
-
-                    <div class="col-md-4">
-                        <label class="form-label mb-1">UserID (optional)</label>
+                    <div class="col-md-5">
+                        <label class="form-label mb-1">Search</label>
                         <input
                             type="text"
-                            name="user_id"
-                            class="form-control"
-                            placeholder="e.g. 5"
-                            value="<?= isset($qUserId) ? htmlspecialchars((string)$qUserId) : '' ?>"
+                            name="search"
+                            class="form-control audit-filter"
+                            data-filter-key="search"
+                            placeholder="Search School ID or Name"
+                            value="<?= htmlspecialchars($qSearch) ?>"
                         >
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label mb-1">Module (optional)</label>
-                        <select name="module" class="form-select">
+
+                    <div class="col-md-3">
+                        <label class="form-label mb-1">Module</label>
+                        <select name="module" class="form-select audit-filter" data-filter-key="module">
                             <option value="">All Modules</option>
                             <?php foreach ($modules as $m): ?>
+                                <?php if ($m === 'Audit Logs') continue; ?>
                                 <option value="<?= htmlspecialchars((string)$m) ?>" <?= $qModule === $m ? 'selected' : '' ?>>
                                     <?= htmlspecialchars((string)$m) ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="col-md-4 d-flex gap-2">
-                        <button type="submit" class="btn" style="background:#6f7cff; color:#fff; border-radius:14px; padding:6px 14px;">Apply</button>
+
+                    <div class="col-md-4">
+                        <label class="form-label mb-1">Date Range</label>
+                        <select name="range" class="form-select audit-filter" data-filter-key="range">
+                            <option value="" <?= $qRange === '' ? 'selected' : '' ?>>All Time</option>
+                            <option value="today" <?= $qRange === 'today' ? 'selected' : '' ?>>Today</option>
+                            <option value="this_week" <?= $qRange === 'this_week' ? 'selected' : '' ?>>This Week</option>
+                            <option value="this_month" <?= $qRange === 'this_month' ? 'selected' : '' ?>>This Month</option>
+                            <option value="custom" <?= $qRange === 'custom' ? 'selected' : '' ?>>Custom Range</option>
+                        </select>
+                    </div>
+
+                    <?php if ($qRange === 'custom'): ?>
+                        <div class="col-md-3 audit-filter-custom">
+                            <label class="form-label mb-1">From</label>
+                            <input type="date" name="from" class="form-control audit-filter" data-filter-key="from" value="<?= htmlspecialchars($qCustomFrom) ?>">
+                        </div>
+                        <div class="col-md-3 audit-filter-custom">
+                            <label class="form-label mb-1">To</label>
+                            <input type="date" name="to" class="form-control audit-filter" data-filter-key="to" value="<?= htmlspecialchars($qCustomTo) ?>">
+                        </div>
+                    <?php else: ?>
+                        <div class="col-md-3 audit-filter-custom" style="display:none;">
+                            <label class="form-label mb-1">From</label>
+                            <input type="date" name="from" class="form-control audit-filter" data-filter-key="from" value="<?= htmlspecialchars($qCustomFrom) ?>">
+                        </div>
+                        <div class="col-md-3 audit-filter-custom" style="display:none;">
+                            <label class="form-label mb-1">To</label>
+                            <input type="date" name="to" class="form-control audit-filter" data-filter-key="to" value="<?= htmlspecialchars($qCustomTo) ?>">
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="col-md-12 d-flex gap-2">
                         <a href="audit_logs.php" class="btn" style="border-radius:14px; border:1px solid #d0d5ff; color:#445; padding:6px 14px;">Reset</a>
                     </div>
                 </form>
+
+                <script>
+                    (function(){
+                        const form = document.currentScript && document.currentScript.parentElement;
+                        const getFilters = () => {
+                            const params = new URLSearchParams(window.location.search);
+                            // Collect only our known filter keys from inputs/selects.
+                            document.querySelectorAll('.audit-filter[data-filter-key]').forEach(el => {
+                                const key = el.getAttribute('data-filter-key');
+                                const val = (el.value || '').trim();
+                                if (val === '') params.delete(key);
+                                else params.set(key, val);
+                            });
+                            return params;
+                        };
+
+                        const refresh = () => {
+                            const params = getFilters();
+                            const qs = params.toString();
+                            window.location.href = 'audit_logs.php' + (qs ? ('?' + qs) : '');
+                        };
+
+                        const wire = () => {
+                            document.querySelectorAll('.audit-filter[data-filter-key]').forEach(el => {
+                                const evt = (el.tagName.toLowerCase() === 'input' && el.type === 'text') ? 'input' : 'change';
+                                el.addEventListener(evt, () => {
+                                    // Toggle custom from/to visibility based on range selection
+                                    const range = document.querySelector('select.audit-filter[data-filter-key="range"]');
+                                    if (range) {
+                                        const isCustom = range.value === 'custom';
+                                        document.querySelectorAll('.audit-filter-custom').forEach(box => {
+                                            box.style.display = isCustom ? '' : 'none';
+                                        });
+                                    }
+                                    refresh();
+                                });
+                            });
+                        };
+
+                        wire();
+                    })();
+                </script>
 
                 <div class="table-responsive">
                     <table class="table table-striped table-hover align-middle">
@@ -160,9 +270,7 @@ $active = 'audit_logs';
                         <?php else: ?>
                             <?php foreach ($rows as $r): ?>
                                 <?php
-                                $fullName = (string)$r['FullName'];
-                                // Trim extra spaces caused by missing MiddleName
-                                $fullName = trim(preg_replace('/\s+/', ' ', $fullName));
+                                $fullName = trim(preg_replace('/\s+/', ' ', (string)$r['FullName']));
                                 ?>
                                 <tr>
                                     <td><?= htmlspecialchars((string)$r['UserID']) ?></td>
@@ -170,7 +278,7 @@ $active = 'audit_logs';
                                     <td><?= htmlspecialchars($fullName) ?></td>
                                     <td><?= htmlspecialchars((string)$r['Action']) ?></td>
                                     <td><?= htmlspecialchars((string)$r['Module']) ?></td>
-                                    <td><?= htmlspecialchars((string)$r['ActionTimestamp']) ?></td>
+                                    <td><?= htmlspecialchars(date('Y-m-d H:i:s', strtotime((string)$r['ActionTimestamp']))) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>

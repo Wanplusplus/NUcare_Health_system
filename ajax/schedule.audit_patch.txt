@@ -1,0 +1,5 @@
+PATCH PLAN (not executed):
+- Add require includes/audit.php
+- In saveSlot(): after Slot created/updated, log audit action for AvailabilityStatus as set/updated
+- In respondBooking(): when accept/decline executed, log audit action approved/cancelled
+Note: final implementation will modify ajax/schedule.ajax.php.
