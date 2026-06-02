@@ -366,15 +366,44 @@
                     cellClass += ' cell-blocked';
                     if (isPast && !isWeekend) cellClass += ' cell-past';
                     inner = `<div class="cell-dot dot-blocked"></div>${isPast && !isWeekend ? '<div class="cell-chip chip-past" title="Past date">Past</div>' : ''}`;
-                } else if (slot.booking) {
-                    const status = (slot.booking.status || '').toLowerCase();
-                    if (status === 'pending') {
-                        cellClass += ' cell-booked cell-pending-booking';
-                        inner = `<div class="cell-dot dot-booked"></div><div class="cell-chip chip-pending" title="Pending Booking">Pending</div>`;
-                    } else {
-                        cellClass += ' cell-booked';
-                        inner = `<div class="cell-dot dot-booked"></div><div class="cell-chip chip-general" title="Booked">Booked</div>`;
-                    }
+                // FIND THIS SECTION AND REPLACE:
+} else if (slot.booking) {
+    const status = (slot.booking.status || '').toLowerCase();
+    const patient = slot.booking.patient || 'Unknown';
+    const type = slot.booking.type || '';
+    const purpose = slot.booking.purpose || '';
+    
+    const tooltip = `${patient}${type ? ' - ' + type : ''}${purpose ? ' - ' + purpose : ''}`;
+    
+    if (status === 'approved') {
+        // APPROVED - green, show patient name
+        cellClass += ' cell-booked cell-approved-booking';
+        inner = `<div class="cell-dot dot-booked"></div>
+                 <div class="cell-chip chip-approved" title="${tooltip}">
+            ${patient.split(' ')[0]}
+        </div>`;
+    } else if (status === 'pending') {
+        // PENDING - orange, show "Pending"
+        cellClass += ' cell-booked cell-pending-booking';
+        inner = `<div class="cell-dot dot-booked"></div>
+                <div class="cell-chip chip-pending" title="${tooltip}">
+            Pending
+        </div>`;
+    } else if (status === 'completed') {
+        // COMPLETED - blue, show "Done"
+        cellClass += ' cell-booked cell-completed-booking';
+        inner = `<div class="cell-dot dot-booked"></div>
+                <div class="cell-chip chip-completed" title="${tooltip}">
+            Done
+        </div>`;
+    } else {
+        // Other status - default booked
+        cellClass += ' cell-booked';
+        inner = `<div class="cell-dot dot-booked"></div>
+                <div class="cell-chip chip-general" title="${tooltip}">
+            ${patient.split(' ')[0]}
+        </div>`;
+    }
                 } else if (slot.disabled) {
                     cellClass += ' cell-blocked';
                     inner = `<div class="cell-dot dot-blocked"></div>`;
@@ -617,5 +646,219 @@
         const btn = document.getElementById('bookSubmitBtn');
         if (btn) btn.disabled = true;
     }
+/* ════════════════════════════════════════════
+   RESCHEDULE RESPONSE (Patient)
+   ════════════════════════════════════════════ */
+const rescheduleAjax = '../../ajax/schedule.ajax.php';
+let activeRescheduleId = null;
 
+function renderLists() {
+    const data = window.__myScheduleData || { upcoming: [], pending: [] };
+
+    const total     = data.upcoming.length + data.pending.length;
+    const upcoming  = data.upcoming.filter(a => ['approved','completed'].includes((a.BookingStatus||'').toLowerCase())).length;
+    const pending   = data.pending.length;
+    const cancelled = data.upcoming.filter(a => (a.BookingStatus||'').toLowerCase() === 'cancelled').length;
+
+    if (dom.statTotal)     dom.statTotal.textContent     = total;
+    if (dom.statUpcoming)  dom.statUpcoming.textContent  = upcoming;
+    if (dom.statPending)   dom.statPending.textContent   = pending;
+    if (dom.statCancelled) dom.statCancelled.textContent = cancelled;
+
+    if (dom.upcomingList) {
+        if (!data.upcoming.length) {
+            dom.upcomingList.innerHTML = emptyState('No appointments yet.', 'Book your first appointment below.');
+        } else {
+            dom.upcomingList.innerHTML = data.upcoming.map(a => renderCard(a, false)).join('');
+        }
+    }
+
+    if (dom.pendingList) {
+        if (!data.pending.length) {
+            dom.pendingList.innerHTML = emptyState('No pending requests.', 'Your pending bookings will appear here.');
+        } else {
+            dom.pendingList.innerHTML = data.pending.map(a => renderCard(a, true)).join('');
+        }
+    }
+
+    // Cancel buttons
+    document.querySelectorAll('.js-cancel-btn').forEach(btn => {
+        btn.addEventListener('click', openCancelModal);
+    });
+    
+    // Reschedule response buttons
+    document.querySelectorAll('.js-reschedule-accept-btn').forEach(btn => {
+        btn.addEventListener('click', () => respondReschedule(btn.dataset.id, 'accept'));
+    });
+    document.querySelectorAll('.js-reschedule-decline-btn').forEach(btn => {
+        btn.addEventListener('click', () => respondReschedule(btn.dataset.id, 'decline'));
+    });
+}
+
+// Updated renderCard with reschedule info
+function renderCard(a, isPending) {
+    const dt = formatDate(a.AppointmentDate);
+    const sc = statusClass(a.BookingStatus);
+    const prefix = ['Doctor', 'Dentist'].includes(a.Profession || '') ? 'Dr. ' : '';
+    const rawName = (a.raw_name || '').trim()
+        || ((a.FirstName || '') + ' ' + (a.LastName || '')).trim();
+    const profName = (rawName ? prefix + rawName : null)
+        || a.Profession
+        || 'Medical Professional';
+
+    // Check for reschedule proposal
+    const hasReschedule = a.RescheduleStatus === 'Proposed' && a.RescheduleProposedDate;
+    let rescheduleHTML = '';
+    if (hasReschedule) {
+        const newDt = formatDate(a.RescheduleProposedDate);
+        const newTime = formatTime(a.RescheduleProposedStart);
+        rescheduleHTML = `
+        <div class="reschedule-proposal-banner">
+            <div class="rp-banner-header">
+                <i class="fa-solid fa-clock"></i>
+                <span>New Time Proposed</span>
+            </div>
+            <div class="rp-banner-details">
+                <div class="rp-new-date">
+                    <i class="fa-solid fa-calendar"></i>
+                    ${esc(newDt.full)} at ${esc(newTime)}
+                </div>
+            </div>
+            <div class="rp-banner-actions">
+                <button type="button" class="btn-success btn-sm js-reschedule-accept-btn" data-id="${a.BookingID}">
+                    <i class="fa-solid fa-check"></i> Accept
+                </button>
+                <button type="button" class="btn-danger btn-sm js-reschedule-decline-btn" data-id="${a.BookingID}">
+                    <i class="fa-solid fa-xmark"></i> Decline
+                </button>
+            </div>
+        </div>`;
+    }
+
+    return `
+    <div class="appt-card status-${sc}" data-booking-id="${a.BookingID}">
+        <div class="appt-date-block">
+            <div class="appt-date-day">${esc(dt.day)}</div>
+            <div class="appt-date-mon">${esc(dt.mon)}</div>
+        </div>
+        <div class="appt-info">
+            <div class="appt-doctor">
+                <i class="fa-solid fa-user-doctor" style="color:var(--gold);font-size:.8rem;margin-right:4px;"></i>
+                ${esc(profName)}
+            </div>
+            <div class="appt-time">
+                <i class="fa-solid fa-clock"></i>
+                ${esc(formatTime(a.AppointmentStart))}${a.AppointmentEnd ? ' – ' + esc(formatTime(a.AppointmentEnd)) : ''}
+            </div>
+            ${a.ServiceType ? `<span class="service-tag"><i class="fa-solid fa-stethoscope"></i> ${esc(a.ServiceType)}</span>` : ''}
+        </div>
+        <div class="appt-right">
+            <span class="status-badge ${sc}">
+                <i class="fa-solid ${statusIcon(a.BookingStatus)}"></i>
+                ${esc(a.BookingStatus || 'Pending')}
+            </span>
+            ${isPending && !hasReschedule ? `
+            <button class="btn-danger js-cancel-btn"
+                data-id="${a.BookingID}"
+                data-date="${esc(dt.full)}"
+                data-time="${esc(formatTime(a.AppointmentStart))}"
+                data-prof="${esc(profName)}"
+                data-svc="${esc(a.ServiceType || '')}">
+                <i class="fa-solid fa-xmark"></i> Cancel
+            </button>` : ''}
+        </div>
+        ${rescheduleHTML}
+    </div>`;
+}
+
+async function respondReschedule(bookingId, response) {
+    if (!bookingId) return;
+    
+    activeRescheduleId = bookingId;
+    
+    const btnClass = response === 'accept' ? '.js-reschedule-accept-btn' : '.js-reschedule-decline-btn';
+    const btns = document.querySelectorAll(btnClass + '[data-id="' + bookingId + '"]');
+    const originalTexts = [];
+    
+    btns.forEach(btn => {
+        originalTexts.push(btn.innerHTML);
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    });
+
+    try {
+        const res = await fetch(rescheduleAjax, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'patient_respond_reschedule',
+                booking_id: parseInt(bookingId),
+                response: response
+            })
+        });
+        
+        const data = await res.json();
+        
+        if (data.status === 'ok') {
+            // Reload the page to get updated data
+            showToast(
+                response === 'accept' 
+                    ? 'Reschedule accepted! Your appointment has been confirmed.' 
+                    : 'Reschedule declined.',
+                response === 'accept' ? 'success' : 'info'
+            );
+            
+            // Reload after short delay
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            showToast(data.message || 'Error processing response', 'error');
+            btns.forEach((btn, i) => {
+                btn.disabled = false;
+                btn.innerHTML = originalTexts[i];
+            });
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('Network error', 'error');
+        btns.forEach((btn, i) => {
+            btn.disabled = false;
+            btn.innerHTML = originalTexts[i];
+        });
+    }
+}
+
+// Handle reschedule responses from patient
+document.querySelectorAll('.js-reschedule-accept-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const bookingId = this.dataset.id;
+        if (confirm('Accept the new time? Your appointment will be rescheduled.')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.innerHTML = `
+                <input type="hidden" name="booking_id" value="${bookingId}">
+                <input type="hidden" name="respond_reschedule" value="accept">
+            `;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+});
+
+document.querySelectorAll('.js-reschedule-decline-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const bookingId = this.dataset.id;
+        if (confirm('Decline the new time? Your original appointment remains.')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.innerHTML = `
+                <input type="hidden" name="booking_id" value="${bookingId}">
+                <input type="hidden" name="respond_reschedule" value="decline">
+            `;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+});
 })();

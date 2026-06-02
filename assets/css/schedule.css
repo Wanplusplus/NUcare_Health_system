@@ -1265,8 +1265,121 @@
     border-color: var(--danger);
 }
 
-/* ── SQL migration reminder note (dev helper, not displayed in UI) ──
-   Run this in your DB to store decline reason:
-   ALTER TABLE bookings ADD COLUMN DeclineReason TEXT NULL AFTER BookingStatus;
-   ALTER TABLE bookings ADD COLUMN UpdatedAt TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP;
-── */
+/* ══════════════════════════════════════════
+   RESCHEDULE GRID - Simple Color Coding
+   ══════════════════════════════════════════ */
+
+.reschedule-grid-wrap {
+    overflow-x: auto;
+    margin-bottom: 12px;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--r-lg);
+}
+
+.reschedule-grid {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    min-width: 480px;
+    font-size: .66rem;
+}
+
+.reschedule-grid thead th {
+    padding: 8px 4px;
+    font-family: 'Poppins', sans-serif;
+    font-size: .6rem;
+    font-weight: 700;
+    color: var(--gray-400);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    border-bottom: 2px solid var(--gray-200);
+    background: var(--gray-50);
+    text-align: center;
+}
+
+.reschedule-grid thead th.time-head {
+    width: 60px;
+    color: var(--navy);
+}
+
+.reschedule-grid .time-cell {
+    padding: 6px 4px;
+    font-size: .6rem;
+    font-weight: 700;
+    color: var(--gray-400);
+    background: var(--gray-50);
+    border-right: 2px solid var(--gray-200);
+    text-align: center;
+}
+
+.reschedule-grid .time-cell .time-period {
+    display: block;
+    font-size: .5rem;
+    color: var(--gray-300);
+}
+
+/* ═══════════════════════════════════════
+   RESCHEDULE CELLS - Simple Colors
+   ═══════════════════════════════════════ */
+
+.reschedule-cell {
+    height: 44px;
+    min-width: 50px;
+    border-bottom: 1px solid var(--gray-100);
+    border-right: 1px solid var(--gray-100);
+    padding: 2px;
+    vertical-align: middle;
+    text-align: center;
+    transition: all .12s;
+    cursor: default;
+}
+
+/* AVAILABLE - GREEN */
+.reschedule-cell.cell-available {
+    background: #22c55e;  /* Green-500 */
+    cursor: pointer;
+}
+
+.reschedule-cell.cell-available:hover {
+    background: #16a34a;  /* Green-600 */
+    transform: scale(1.02);
+}
+
+/* BLOCKED/Past/Weekend - GRAY */
+.reschedule-cell.cell-blocked {
+    background: #9ca3af;  /* Gray-400 */
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* BOOKED - Already taken - GRAY */
+.reschedule-cell.cell-booked {
+    background: #6b7280;  /* Gray-500 */
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* SELECTED - DARK GREEN */
+.reschedule-cell.bk-slot-selected {
+    background: #14532d !important;  /* Green-900 */
+    border: 3px solid #166534 !important;  /* Green-800 */
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.4);
+}
+
+/* TODAY - Blue accent bar */
+.reschedule-cell.cell-today {
+    border-top: 3px solid #3b82f6;
+}
+
+/* Lunch row */
+.reschedule-grid .lunch-row {
+    background: var(--gray-100);
+}
+
+.reschedule-grid .lunch-row td {
+    padding: 8px;
+    text-align: center;
+    font-weight: 600;
+    color: var(--gray-500);
+    font-size: .6rem;
+}

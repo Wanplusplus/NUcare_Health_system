@@ -86,7 +86,7 @@ $activeSidebarItem = 'schedule';
             </div>
         </div>
 
-        <!-- ══ MAIN LAYOUT (Schedule full width) ══ -->
+        <!-- ══ MAIN LAYOUT ══ -->
         <div class="schedule-main-layout" style="display:block;">
 
             <!-- ══ SCHEDULE CARD ══ -->
@@ -98,7 +98,7 @@ $activeSidebarItem = 'schedule';
                     </div>
                     <div class="toolbar-right">
                         <select class="professional-select" id="professionalSelect">
-                            <!-- Populated by JS via API -->
+                            <!-- Populated by JS -->
                         </select>
                         <div class="week-nav">
                             <button class="nav-btn" id="prevWeek" title="Previous Week">
@@ -151,13 +151,10 @@ $activeSidebarItem = 'schedule';
                         <div class="legend-dot dot-today"></div> Today
                     </div>
                 </div>
-            </div><!-- /.schedule-card -->
+            </div>
 
-
-
-        </div><!-- /.schedule-main-layout -->
-
-    </div><!-- /.schedule-page -->
+        </div>
+    </div>
 
 
     <!-- ══════════════════════════════════════════
@@ -165,8 +162,6 @@ $activeSidebarItem = 'schedule';
     ══════════════════════════════════════════ -->
     <div id="slotModal" class="modal-backdrop">
         <div class="modal-box">
-
-            <!-- Modal Header -->
             <div class="modal-header">
                 <div class="modal-header-info">
                     <div class="modal-slot-badge">
@@ -181,7 +176,6 @@ $activeSidebarItem = 'schedule';
                 </button>
             </div>
 
-            <!-- Availability Toggle -->
             <div class="availability-section">
                 <div class="avail-label">
                     <i class="fa-solid fa-circle-dot"></i>
@@ -203,10 +197,7 @@ $activeSidebarItem = 'schedule';
                 </div>
             </div>
 
-            <!-- Modal Body (scrollable) -->
             <div class="modal-body-scroll">
-
-                <!-- Appointment Info -->
                 <div class="modal-section">
                     <div class="modal-section-label">
                         <i class="fa-solid fa-notes-medical"></i>
@@ -217,7 +208,6 @@ $activeSidebarItem = 'schedule';
                     </div>
                 </div>
 
-                <!-- Notes -->
                 <div class="modal-section" style="padding-top:0">
                     <div class="modal-section-label">
                         <i class="fa-solid fa-pen-to-square"></i>
@@ -225,10 +215,8 @@ $activeSidebarItem = 'schedule';
                     </div>
                     <textarea class="slot-notes-textarea" id="slotNotes" placeholder="Add internal notes or remarks for this time slot…"></textarea>
                 </div>
+            </div>
 
-            </div><!-- /.modal-body-scroll -->
-
-            <!-- Modal Footer -->
             <div class="modal-footer">
                 <button class="btn-outline" id="modalCancelBtn">Cancel</button>
                 <button class="btn-success" id="modalSaveBtn">
@@ -236,18 +224,16 @@ $activeSidebarItem = 'schedule';
                     Save Changes
                 </button>
             </div>
-
-        </div><!-- /.modal-box -->
-    </div><!-- /.modal-backdrop -->
+        </div>
+    </div>
 
 
     <!-- ══════════════════════════════════════════
-         BOOKING RESPOND MODAL (Accept / Decline)
+         BOOKING RESPOND MODAL
     ══════════════════════════════════════════ -->
     <div id="respondModal" class="modal-backdrop">
         <div class="modal-box modal-box--respond">
 
-            <!-- Header -->
             <div class="modal-header">
                 <div class="modal-header-info">
                     <div class="modal-slot-badge respond-badge">
@@ -264,60 +250,146 @@ $activeSidebarItem = 'schedule';
                 </button>
             </div>
 
-            <!-- Body -->
             <div class="modal-body-scroll">
                 <div class="respond-info-box">
                     <div class="respond-info-row">
                         <i class="fa-solid fa-circle-check" style="color:var(--success)"></i>
                         <div>
-                            <strong>Accept</strong> — The booking will be confirmed and the patient will be notified that their appointment has been approved.
+                            <strong>Accept</strong> — The booking will be confirmed and the patient will be notified.
+                        </div>
+                    </div>
+                    <div class="respond-info-row" style="margin-top:10px">
+                        <i class="fa-solid fa-clock" style="color:var(--blue-500)"></i>
+                        <div>
+                            <strong>Reschedule</strong> — Propose a new time slot. The patient must approve the new time.
                         </div>
                     </div>
                     <div class="respond-info-row" style="margin-top:10px">
                         <i class="fa-solid fa-circle-xmark" style="color:var(--danger)"></i>
                         <div>
-                            <strong>Decline</strong> — The booking will be rejected, the slot will be released, and the patient will be notified that the doctor is unavailable to accept the appointment.
+                            <strong>Decline</strong> — The booking will be rejected.
                         </div>
                     </div>
                 </div>
 
-                <!-- Decline reason (shown only when declining) -->
+<!-- Reschedule Section - Weekly Calendar Grid -->
+<div id="rescheduleSection" style="display:none; margin-top:15px;">
+    <div style="font-weight:600; margin-bottom:12px; color:var(--blue-600);">
+        <i class="fa-solid fa-calendar-week"></i> Select New Date & Time
+    </div>
+    
+    <!-- Week navigator -->
+    <div class="reschedule-week-nav">
+        <button type="button" class="nav-btn" id="reschedulePrevWeek" title="Previous Week">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <span class="week-label" id="rescheduleWeekLabel">Loading…</span>
+        <button type="button" class="nav-btn" id="rescheduleNextWeek" title="Next Week">
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>
+    </div>
+    
+    <!-- Schedule Grid -->
+    <div class="reschedule-grid-wrap">
+        <table class="schedule-grid reschedule-grid">
+            <thead>
+                <tr>
+                    <th class="time-head">TIME</th>
+                    <th id="rsSun">SUN</th>
+                    <th id="rsMon">MON</th>
+                    <th id="rsTue">TUE</th>
+                    <th id="rsWed">WED</th>
+                    <th id="rsThu">THU</th>
+                    <th id="rsFri">FRI</th>
+                    <th id="rsSat">SAT</th>
+                </tr>
+            </thead>
+            <tbody id="rescheduleBody">
+                <!-- Populated by JS -->
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Legend - Simple Green/Gray -->
+<div class="legend-row" style="padding:10px 0; gap:16px; border-top:1px solid var(--gray-200); margin-top:10px;">
+    <div class="legend-item">
+        <div class="legend-dot" style="background:#22c55e; border:2px solid #16a34a;"></div>
+        <span>Available</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-dot" style="background:#9ca3af; border:2px solid #6b7280;"></div>
+        <span>Unavailable</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-dot" style="background:#14532d; border:3px solid #166534;"></div>
+        <span>Selected</span>
+    </div>
+</div>
+    
+    <!-- Selected slot display -->
+    <div id="rescheduleSelectedSlot">
+        <i class="fa-solid fa-circle-check" style="color:var(--success);"></i>
+        <strong>Selected:</strong>
+        <span id="rescheduleSelectedText">—</span>
+        <button type="button" class="bk-clear-slot" id="rescheduleClearSlot" title="Clear selection">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    
+    <div style="margin-top:10px; font-size:0.8rem; color:var(--gray-500);">
+        <i class="fa-solid fa-info-circle" style="color:var(--blue-500);"></i> 
+        The patient will be notified and must approve this new time.
+    </div>
+</div>
+
+                <!-- Decline Reason Section -->
                 <div id="declineReasonSection" style="display:none; margin-top:16px;">
                     <div class="modal-section-label" style="margin-bottom:8px;">
                         <i class="fa-solid fa-pen-to-square"></i>
-                        Reason for Declining <span style="color:var(--gray-400);font-weight:500">(optional — sent to patient)</span>
+                        Reason for Declining <span style="color:var(--gray-400);font-weight:500">(optional)</span>
                     </div>
-                    <textarea
-                        id="declineReasonText"
-                        class="slot-notes-textarea"
-                        rows="3"
-                        placeholder="e.g. The doctor is fully booked on that date. Please try booking another available slot…"></textarea>
+                    <textarea id="declineReasonText" class="slot-notes-textarea" rows="3" placeholder="e.g. Doctor is fully booked..."></textarea>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="modal-footer" style="flex-wrap: wrap; gap: 8px;">
+                <button class="btn-outline" id="respondModalCancelBtn">Cancel</button>
+                
+                <!-- Primary Actions -->
+                <div style="display: flex; gap: 8px; flex: 1;">
+                    <button class="btn-success" id="btnAcceptBooking" style="flex: 1;">
+                        <i class="fa-solid fa-check"></i> Accept
+                    </button>
+                    
+                    <button class="btn-decline-modal" id="btnDeclineBooking">
+                        <i class="fa-solid fa-xmark"></i> Decline
+                    </button>
+                    <button class="btn-decline-modal btn-decline-confirm" id="btnDeclineConfirm" style="display:none;">
+                        <i class="fa-solid fa-paper-plane"></i> Send Decline
+                    </button>
+                </div>
+
+                <!-- Reschedule Row -->
+                <div style="display: flex; gap: 8px; width: 100%;" id="rescheduleRow">
+                    <button class="btn-outline" id="btnRescheduleBooking" style="flex: 1; justify-content: center; background: var(--blue-50); color: var(--blue-600); border-color: var(--blue-200);">
+                        <i class="fa-solid fa-clock"></i> Reschedule
+                    </button>
+                    
+                    <button class="btn-success" id="btnRescheduleConfirm" style="display: none; flex: 1; justify-content: center; background: var(--blue-600);">
+                        <i class="fa-solid fa-paper-plane"></i> Send Reschedule
+                    </button>
                 </div>
             </div>
 
-            <!-- Footer -->
-            <div class="modal-footer">
-                <button class="btn-outline" id="respondModalCancelBtn">Cancel</button>
-                <button class="btn-decline-modal" id="btnDeclineBooking">
-                    <i class="fa-solid fa-circle-xmark"></i> Decline
-                </button>
-                <button class="btn-decline-modal btn-decline-confirm" id="btnDeclineConfirm" style="display:none;">
-                    <i class="fa-solid fa-paper-plane"></i> Send Decline
-                </button>
-                <button class="btn-success" id="btnAcceptBooking">
-                    <i class="fa-solid fa-circle-check"></i> Accept Booking
-                </button>
-            </div>
-
-        </div><!-- /.modal-box -->
-    </div><!-- /.modal-backdrop -->
-
+        </div>
+    </div>
 
     <!-- Toast -->
     <div id="scheduleToast" class="schedule-toast"></div>
 
     </main>
-</div><!-- /.app-shell -->
+</div>
 
 <script src="../../assets/js/app.js"></script>
 <script src="../../assets/js/schedule.js?v=2"></script>
