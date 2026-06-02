@@ -53,6 +53,7 @@ $pdo = require __DIR__ . '/../../config/db_pdo.php';
 $upcoming = [];
 $pending  = [];
 
+// UPDATED: Added reschedule fields to query
 if ($schoolPersonId > 0) {
     $stmt = $pdo->prepare(
         "SELECT b.BookingID,
@@ -61,6 +62,10 @@ if ($schoolPersonId > 0) {
                 b.AppointmentEnd,
                 b.BookingStatus,
                 b.ServiceType,
+                b.RescheduleProposedDate,
+                b.RescheduleProposedStart,
+                b.RescheduleProposedEnd,
+                b.RescheduleStatus,
                 mp.MedProfID,
                 mp.Profession,
                 sp.FirstName,
@@ -118,6 +123,142 @@ $upd = $pdo->prepare("UPDATE bookings SET BookingStatus = 'Cancelled' WHERE Book
 
         header('Location: my_schedule.php?cancelled=1');
         exit;
+    }
+}
+// Handle reschedule response from patient
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['respond_reschedule'])) {
+    $bookingId = (int)($_POST['booking_id'] ?? 0);
+    $response = $_POST['respond_reschedule'];
+    
+    if ($bookingId > 0 && in_array($response, ['accept', 'decline'])) {
+        try {
+            // Get current booking and proposal details
+            $fetch = $pdo->prepare("
+                SELECT BookingID, MedProfID, AppointmentDate, AppointmentStart, 
+                       RescheduleProposedDate, RescheduleProposedStart, 
+                       RescheduleProposedEnd, AvailabilityID
+                FROM bookings WHERE BookingID = ? LIMIT 1
+            ");
+            $fetch->execute([$bookingId]);
+            $booking = $fetch->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$booking) {
+                header('Location: my_schedule.php?error=booking_not_found');
+                exit;
+            }
+            
+            if ($response === 'accept') {
+                // === ACCEPT RESCHEDULE ===
+                $newDate = $booking['RescheduleProposedDate'];
+                $newStart = $booking['RescheduleProposedStart'];
+                $newEnd = $booking['RescheduleProposedEnd'];
+                $medProfId = (int)$booking['MedProfID'];
+                
+                // 1. Update booking with new date/time
+                $upd = $pdo->prepare("
+                    UPDATE bookings
+                    SET AppointmentDate = :newDate,
+                        AppointmentStart = :newStart,
+                        AppointmentEnd = :newEnd,
+                        RescheduleStatus = 'Accepted',
+                        BookingStatus = 'Approved'
+                    WHERE BookingID = :id
+                ");
+                $upd->execute([
+                    ':newDate' => $newDate,
+                    ':newStart' => $newStart,
+                    ':newEnd' => $newEnd,
+                    ':id' => $bookingId
+                ]);
+                
+                // 2. Create/mark availability slot for NEW date as Unavailable
+                if ($medProfId > 0) {
+                    // Check if slot exists for new date
+                    $checkAvail = $pdo->prepare("
+                        SELECT AvailabilityID FROM medical_professional_availability
+                        WHERE MedProfID = ? AND AvailableDate = ? AND StartTime = ? LIMIT 1
+                    ");
+                    $checkAvail->execute([$medProfId, $newDate, $newStart]);
+                    $existingAvail = $checkAvail->fetch();
+                    
+                    if ($existingAvail) {
+                        // Mark existing slot as Unavailable
+                        $updAvail = $pdo->prepare("
+                            UPDATE medical_professional_availability
+                            SET AvailabilityStatus = 'Unavailable'
+                            WHERE AvailabilityID = ?
+                        ");
+                        $updAvail->execute([$existingAvail['AvailabilityID']]);
+                    } else {
+                        // Create new slot as Unavailable
+                        $insAvail = $pdo->prepare("
+                            INSERT INTO medical_professional_availability
+                                (MedProfID, AvailableDate, StartTime, EndTime, SlotDurationMinutes, AvailabilityStatus)
+                            VALUES (?, ?, ?, ?, 60, 'Unavailable')
+                        ");
+                        $insAvail->execute([$medProfId, $newDate, $newStart, $newEnd]);
+                    }
+                }
+                
+                // 3. Release OLD availability slot (optional)
+                if (!empty($booking['AvailabilityID'])) {
+                    $relAvail = $pdo->prepare("
+                        UPDATE medical_professional_availability
+                        SET AvailabilityStatus = 'Available'
+                        WHERE AvailabilityID = ?
+                    ");
+                    $relAvail->execute([$booking['AvailabilityID']]);
+                }
+                
+                header('Location: my_schedule.php?reschedule=accepted');
+                exit;
+                
+            } else {
+                // === DECLINE RESCHEDULE ===
+                $medProfId = (int)$booking['MedProfID'];
+                $propDate = $booking['RescheduleProposedDate'];
+                $propStart = $booking['RescheduleProposedStart'];
+                
+                // 1. Clear the reschedule proposal, keep original booking
+                $upd = $pdo->prepare("
+                    UPDATE bookings
+                    SET RescheduleProposedDate = NULL,
+                        RescheduleProposedStart = NULL,
+                        RescheduleProposedEnd = NULL,
+                        RescheduleStatus = 'Declined'
+                    WHERE BookingID = ?
+                ");
+                $upd->execute([$bookingId]);
+                
+                // 2. Release the proposed date availability back to Available
+                if ($medProfId > 0 && $propDate && $propStart) {
+                    $checkAvail = $pdo->prepare("
+                        SELECT AvailabilityID FROM medical_professional_availability
+                        WHERE MedProfID = ? AND AvailableDate = ? AND StartTime = ? 
+                          AND AvailabilityStatus = 'Unavailable' LIMIT 1
+                    ");
+                    $checkAvail->execute([$medProfId, $propDate, $propStart]);
+                    $propAvail = $checkAvail->fetch();
+                    
+                    if ($propAvail) {
+                        // Release the slot back to Available
+                        $relAvail = $pdo->prepare("
+                            UPDATE medical_professional_availability
+                            SET AvailabilityStatus = 'Available'
+                            WHERE AvailabilityID = ?
+                        ");
+                        $relAvail->execute([$propAvail['AvailabilityID']]);
+                    }
+                }
+                
+                header('Location: my_schedule.php?reschedule=declined');
+                exit;
+            }
+        } catch (PDOException $e) {
+            error_log("Reschedule ERROR: " . $e->getMessage());
+            header('Location: my_schedule.php?error=reschedule_failed');
+            exit;
+        }
     }
 }
 
@@ -410,82 +551,124 @@ $cancelledCount = count(array_filter($upcoming, fn($a) => strtolower($a['Booking
             </div>
 
             <!-- Pending Requests -->
-            <div class="schedule-card">
-                <div class="card-toolbar">
-                    <div class="card-section-label">
-                        <i class="fa-solid fa-hourglass-half"></i>
-                        Pending Requests
-                    </div>
-                    <span class="card-count-badge"><?php echo count($pending); ?> pending</span>
+<div class="schedule-card">
+    <div class="card-toolbar">
+        <div class="card-section-label">
+            <i class="fa-solid fa-hourglass-half"></i>
+            Pending Requests
+        </div>
+        <span class="card-count-badge"><?php echo count($pending); ?> pending</span>
+    </div>
+    <div class="appt-list" id="pendingList">
+        <?php if (!$pending): ?>
+            <div class="empty-state">
+                <div class="empty-state-icon"><i class="fa-solid fa-calendar-xmark"></i></div>
+                <p>No pending requests.</p>
+                <span>Your pending bookings will appear here.</span>
+            </div>
+        <?php else: ?>
+            <?php foreach ($pending as $p):
+                $prefix   = in_array($p['Profession'] ?? '', ['Doctor', 'Dentist'], true) ? 'Dr. ' : '';
+                $profName = $prefix . (trim(($p['raw_name'] ?? '') ?: (($p['FirstName'] ?? '') . ' ' . ($p['LastName'] ?? ''))) ?: ($p['Profession'] ?? 'Medical Professional'));
+                $dt = new DateTime($p['AppointmentDate'] ?? 'now');
+                $startFmt = '';
+                if ($p['AppointmentStart']) {
+                    $t = new DateTime($p['AppointmentStart']);
+                    $startFmt = $t->format('g:i A');
+                }
+                $endFmt = '';
+                if ($p['AppointmentEnd']) {
+                    $t2 = new DateTime($p['AppointmentEnd']);
+                    $endFmt = ' – ' . $t2->format('g:i A');
+                }
+                
+                // Check for reschedule proposal
+                $hasReschedule = ($p['RescheduleStatus'] ?? '') === 'Proposed' && !empty($p['RescheduleProposedDate']);
+                $newDt = $hasReschedule ? new DateTime($p['RescheduleProposedDate']) : null;
+                $newStartFmt = '';
+                if ($hasReschedule && $p['RescheduleProposedStart']) {
+                    $t3 = new DateTime($p['RescheduleProposedStart']);
+                    $newStartFmt = $t3->format('g:i A');
+                }
+            ?>
+            <div class="appt-card status-pending">
+                <div class="appt-date-block">
+                    <div class="appt-date-day"><?php echo $dt->format('d'); ?></div>
+                    <div class="appt-date-mon"><?php echo strtoupper($dt->format('M')); ?></div>
                 </div>
-                <div class="appt-list" id="pendingList">
-                    <?php if (!$pending): ?>
-                        <div class="empty-state">
-                            <div class="empty-state-icon"><i class="fa-solid fa-calendar-xmark"></i></div>
-                            <p>No pending requests.</p>
-                            <span>Your pending bookings will appear here.</span>
+                <div class="appt-info">
+                    <div class="appt-doctor">
+                        <i class="fa-solid fa-user-doctor" style="color:var(--gold);font-size:.8rem;margin-right:4px;"></i>
+                        <?php echo htmlspecialchars($profName); ?>
+                    </div>
+                    <div class="appt-time">
+                        <i class="fa-solid fa-clock"></i>
+                        <?php echo htmlspecialchars($startFmt . $endFmt); ?>
+                    </div>
+                    <?php if ($p['ServiceType']): ?>
+                    <span class="service-tag">
+                        <i class="fa-solid fa-stethoscope"></i>
+                        <?php echo htmlspecialchars($p['ServiceType']); ?>
+                    </span>
+                    <?php endif; ?>
+                    
+                    <?php if ($hasReschedule): ?>
+                    <!-- Reschedule Proposal Banner -->
+                    <div class="reschedule-proposal-banner">
+                        <div class="rp-banner-header">
+                            <i class="fa-solid fa-clock"></i>
+                            <span>New Time Proposed</span>
                         </div>
-                    <?php else: ?>
-                        <?php foreach ($pending as $p):
-                            $prefix   = in_array($p['Profession'] ?? '', ['Doctor', 'Dentist'], true) ? 'Dr. ' : '';
-                            $profName = $prefix . (trim(($p['raw_name'] ?? '') ?: (($p['FirstName'] ?? '') . ' ' . ($p['LastName'] ?? ''))) ?: ($p['Profession'] ?? 'Medical Professional'));
-                            $dt = new DateTime($p['AppointmentDate'] ?? 'now');
-                            $startFmt = '';
-                            if ($p['AppointmentStart']) {
-                                $t = new DateTime($p['AppointmentStart']);
-                                $startFmt = $t->format('g:i A');
-                            }
-                            $endFmt = '';
-                            if ($p['AppointmentEnd']) {
-                                $t2 = new DateTime($p['AppointmentEnd']);
-                                $endFmt = ' – ' . $t2->format('g:i A');
-                            }
-                        ?>
-                        <div class="appt-card status-pending">
-                            <div class="appt-date-block">
-                                <div class="appt-date-day"><?php echo $dt->format('d'); ?></div>
-                                <div class="appt-date-mon"><?php echo strtoupper($dt->format('M')); ?></div>
+                        <div class="rp-banner-details">
+                            <div class="rp-new-date">
+                                <i class="fa-solid fa-calendar"></i>
+                                <?php echo $newDt ? htmlspecialchars($newDt->format('l, F j, Y')) : ''; ?> at <?php echo htmlspecialchars($newStartFmt); ?>
                             </div>
-                            <div class="appt-info">
-                                <div class="appt-doctor">
-                                    <i class="fa-solid fa-user-doctor" style="color:var(--gold);font-size:.8rem;margin-right:4px;"></i>
-                                    <?php echo htmlspecialchars($profName); ?>
-                                </div>
-                                <div class="appt-time">
-                                    <i class="fa-solid fa-clock"></i>
-                                    <?php echo htmlspecialchars($startFmt . $endFmt); ?>
-                                </div>
-                                <?php if ($p['ServiceType']): ?>
-                                <span class="service-tag">
-                                    <i class="fa-solid fa-stethoscope"></i>
-                                    <?php echo htmlspecialchars($p['ServiceType']); ?>
-                                </span>
-                                <?php endif; ?>
-                            </div>
-                            <div class="appt-right">
-                                <span class="status-badge pending">
-                                    <i class="fa-solid fa-clock"></i>
-                                    Pending
-                                </span>
-                                <button class="btn-danger js-cancel-btn"
-                                    data-id="<?php echo (int)$p['BookingID']; ?>"
-                                    data-date="<?php echo htmlspecialchars($dt->format('l, F j, Y')); ?>"
-                                    data-time="<?php echo htmlspecialchars($startFmt); ?>"
-                                    data-prof="<?php echo htmlspecialchars($profName); ?>"
-                                    data-svc="<?php echo htmlspecialchars($p['ServiceType'] ?? ''); ?>">
-                                    <i class="fa-solid fa-xmark"></i> Cancel
+                        </div>
+                        <div class="rp-banner-actions">
+                            <form method="post" style="display:contents;">
+                                <input type="hidden" name="booking_id" value="<?php echo (int)$p['BookingID']; ?>">
+                                <input type="hidden" name="respond_reschedule" value="accept">
+                                <button type="submit" class="btn-sm btn-success">
+                                    <i class="fa-solid fa-check"></i> Accept
                                 </button>
-                            </div>
+                            </form>
+                            <form method="post" style="display:contents;">
+                                <input type="hidden" name="booking_id" value="<?php echo (int)$p['BookingID']; ?>">
+                                <input type="hidden" name="respond_reschedule" value="decline">
+                                <button type="submit" class="btn-sm btn-danger-outline">
+                                    <i class="fa-solid fa-xmark"></i> Decline
+                                </button>
+                            </form>
                         </div>
-                        <?php endforeach; ?>
+                    </div>
                     <?php endif; ?>
                 </div>
-                <div class="card-footer-note">
-                    <i class="fa-solid fa-circle-info"></i>
-                    Only pending requests can be cancelled.
+                <div class="appt-right">
+                    <span class="status-badge pending">
+                        <i class="fa-solid fa-clock"></i>
+                        Pending
+                    </span>
+                    <?php if (!$hasReschedule): ?>
+                    <button class="btn-danger js-cancel-btn"
+                        data-id="<?php echo (int)$p['BookingID']; ?>"
+                        data-date="<?php echo htmlspecialchars($dt->format('l, F j, Y')); ?>"
+                        data-time="<?php echo htmlspecialchars($startFmt); ?>"
+                        data-prof="<?php echo htmlspecialchars($profName); ?>"
+                        data-svc="<?php echo htmlspecialchars($p['ServiceType'] ?? ''); ?>">
+                        <i class="fa-solid fa-xmark"></i> Cancel
+                    </button>
+                    <?php endif; ?>
                 </div>
             </div>
-
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+    <div class="card-footer-note">
+        <i class="fa-solid fa-circle-info"></i>
+        Only pending requests can be cancelled.
+    </div>
+</div>
         </div><!-- /.schedule-main-grid -->
 
     </div><!-- /.my-schedule-page -->

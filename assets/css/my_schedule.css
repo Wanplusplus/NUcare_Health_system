@@ -1471,3 +1471,59 @@
     border: 2.5px solid #2563eb;
     box-shadow: 0 0 0 2px rgba(37,99,235,.2);
 }
+/* ── Reschedule Proposal Banner ── */
+.reschedule-proposal-banner {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border: 1px solid #3b82f6;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 10px;
+}
+.rp-banner-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    color: #1d4ed8;
+    font-size: 0.8rem;
+    margin-bottom: 8px;
+}
+.rp-banner-header i { color: #f59e0b; }
+.rp-banner-details {
+    font-size: 0.85rem;
+    color: #1e3a8a;
+    margin-bottom: 10px;
+}
+.rp-new-date {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+}
+.rp-banner-actions {
+    display: flex;
+    gap: 8px;
+}
+.rp-banner-actions .btn-sm {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+}
+.rp-banner-actions .btn-success {
+    background: #22c55e;
+    color: white;
+}
+.rp-banner-actions .btn-success:hover {
+    background: #16a34a;
+}
+.rp-banner-actions .btn-danger-outline {
+    background: #6b7280;
+    color: white;
+}
+.rp-banner-actions .btn-danger-outline:hover {
+    background: #4b5563;
+}

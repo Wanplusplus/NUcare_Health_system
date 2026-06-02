@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function bindUI() {
+    /* Week navigation */
     $('prevWeek').addEventListener('click',  () => { weekOffset--; refreshGrid(); });
     $('nextWeek').addEventListener('click',  () => { weekOffset++; refreshGrid(); });
     $('professionalSelect').addEventListener('change', e => {
@@ -71,6 +72,9 @@ function bindUI() {
         refreshGrid();
         loadPendingBookings();
     });
+    $('btnExport').addEventListener('click', exportSchedule);
+
+    /* Slot Modal */
     $('modalCloseBtn').addEventListener('click',  closeModal);
     $('modalCancelBtn').addEventListener('click',  closeModal);
     $('modalSaveBtn').addEventListener('click',    saveSlot);
@@ -79,24 +83,105 @@ function bindUI() {
     $('slotModal').addEventListener('click', e => {
         if (e.target === $('slotModal')) closeModal();
     });
-    $('btnExport').addEventListener('click', exportSchedule);
 
-    /* Booking respond modal */
+    /* Respond Modal - Close */
     $('respondModalCloseBtn').addEventListener('click',  closeRespondModal);
     $('respondModalCancelBtn').addEventListener('click', closeRespondModal);
     $('respondModal').addEventListener('click', e => {
         if (e.target === $('respondModal')) closeRespondModal();
     });
-    $('btnAcceptBooking').addEventListener('click',  () => submitBookingResponse('accept'));
+
+    /* Accept Button */
+    $('btnAcceptBooking').addEventListener('click', () => {
+        submitBookingResponse('accept');
+    });
+
+    /* Decline Toggle */
     $('btnDeclineBooking').addEventListener('click', () => {
         const declineSection = $('declineReasonSection');
-        declineSection.style.display = declineSection.style.display === 'none' ? 'block' : 'none';
-        $('btnDeclineConfirm').style.display = declineSection.style.display === 'block' ? 'inline-flex' : 'none';
-        $('btnDeclineBooking').style.display  = declineSection.style.display === 'block' ? 'none'         : 'inline-flex';
+        const btnConfirm = $('btnDeclineConfirm');
+        const btnToggle = $('btnDeclineBooking');
+        
+        // Properly check if hidden - handles both empty string and 'none'
+        const isHidden = !declineSection.style.display || declineSection.style.display === 'none';
+        
+        if (isHidden) {
+            declineSection.style.display = 'block';
+            btnConfirm.style.display = 'inline-flex';
+            btnToggle.style.display = 'none';
+            
+            // Hide reschedule
+            $('rescheduleSection').style.display = 'none';
+            $('btnRescheduleConfirm').style.display = 'none';
+            $('btnRescheduleBooking').style.display = 'inline-flex';
+            $('btnRescheduleBooking').innerHTML = '<i class="fa-solid fa-clock"></i> Reschedule';
+        } else {
+            declineSection.style.display = 'none';
+            btnConfirm.style.display = 'none';
+            btnToggle.style.display = 'inline-flex';
+        }
     });
-    $('btnDeclineConfirm').addEventListener('click', () => submitBookingResponse('decline'));
-}
 
+    /* Decline Confirm */
+    $('btnDeclineConfirm').addEventListener('click', () => {
+        submitBookingResponse('decline');
+    });
+
+// Reschedule Button Toggle
+ $('btnRescheduleBooking').addEventListener('click', () => {
+        const rescheduleSection = $('rescheduleSection');
+        const btnConfirm = $('btnRescheduleConfirm');
+        const btnToggle = $('btnRescheduleBooking');
+        
+        const isHidden = !rescheduleSection.style.display || rescheduleSection.style.display === 'none';
+        
+        if (isHidden) {
+            rescheduleSection.style.display = 'block';
+            btnConfirm.style.display = 'flex';
+            btnToggle.innerHTML = '<i class="fa-solid fa-xmark"></i> Cancel Reschedule';
+            btnToggle.style.background = 'var(--gray-200)';
+            btnToggle.style.color = 'var(--gray-700)';
+            
+            // Hide decline
+            $('declineReasonSection').style.display = 'none';
+            $('btnDeclineConfirm').style.display = 'none';
+            $('btnDeclineBooking').style.display = 'inline-flex';
+            
+            // Open weekly grid
+            openRescheduleSection();
+        } else {
+            rescheduleSection.style.display = 'none';
+            btnConfirm.style.display = 'none';
+            btnToggle.innerHTML = '<i class="fa-solid fa-clock"></i> Reschedule';
+            btnToggle.style.background = 'var(--blue-50)';
+            btnToggle.style.color = 'var(--blue-600)';
+            
+            clearRescheduleSlot();
+        }
+    });
+
+    /* Reschedule Confirm */
+    $('btnRescheduleConfirm').addEventListener('click', () => {
+        submitBookingResponse('reschedule');
+    });
+    
+    /* Reschedule Week Navigation */
+    $('reschedulePrevWeek').addEventListener('click', () => {
+        rescheduleWeekOffset--;
+        updateRescheduleWeekLabel();
+        updateRescheduleHeaders();
+        loadRescheduleSlots();
+    });
+    
+    $('rescheduleNextWeek').addEventListener('click', () => {
+        rescheduleWeekOffset++;
+        updateRescheduleWeekLabel();
+        updateRescheduleHeaders();
+        loadRescheduleSlots();
+    });
+    
+    $('rescheduleClearSlot').addEventListener('click', clearRescheduleSlot);
+}
 /* ════════════════════════════════════════════
    LOAD PROFESSIONALS
    ════════════════════════════════════════════ */
@@ -131,7 +216,7 @@ async function loadProfessionals() {
         }
 
     } catch (err) {
-        showToast('Network error — cannot reach schedule_ajax.php.', 'error');
+        showToast('Network error — cannot reach schedule.ajax.php.', 'error');
         professionals = [];
     }
 
@@ -332,16 +417,16 @@ function buildGrid() {
             td.dataset.day  = di;
             td.dataset.time = timeObj.label;
 
-            if (!slot.disabled && !isPast) {
-                td.addEventListener('click', () => openModal(di, timeObj.label));
+    if (!slot.disabled && !isPast) {
+        td.addEventListener('click', () => openModal(di, timeObj.label));
 
-                if (slot.booking) {
-                    td.appendChild(buildChip(slot.booking));
-                } else {
-                    const hint = el('span', 'slot-add-hint');
-                    hint.innerHTML = '<i class="fa-solid fa-plus" style="font-size:.65rem"></i> Add';
-                    td.appendChild(hint);
-                }
+        if (slot.booking) {
+            td.appendChild(buildChip(slot.booking));
+        } else {
+            const hint = el('span', 'slot-add-hint');
+            hint.innerHTML = '<i class="fa-solid fa-plus" style="font-size:.65rem"></i> Add';
+            td.appendChild(hint);
+        }
             }
 
             tr.appendChild(td);
@@ -352,15 +437,33 @@ function buildGrid() {
 }
 
 function buildChip(booking) {
-    const isPending  = booking.status === 'Pending';
-    const chipClass  = isPending
-        ? 'booking-chip chip-pending'
-        : `booking-chip ${CHIP_CLASS[booking.type] || 'chip-general'}`;
+    const status = (booking.status || '').toLowerCase();
+    const rescheduleStatus = (booking.reschedule_status || '').toLowerCase();
+    const isPending = status === 'pending';
+    const isApproved = status === 'approved';
+    const isRescheduled = isApproved && rescheduleStatus === 'accepted';
+
+    let chipClass;
+    let statusLabel;
+
+    if (isPending) {
+        chipClass = 'booking-chip chip-pending';
+        statusLabel = '⏳ Pending Review';
+    } else if (isRescheduled) {
+        chipClass = 'booking-chip chip-rescheduled';
+        statusLabel = '🔁 Rescheduled';
+    } else if (isApproved) {
+        chipClass = 'booking-chip chip-approved';
+        statusLabel = '✓ Confirmed';
+    } else {
+        chipClass = 'booking-chip ' + (CHIP_CLASS[booking.type] || 'chip-general');
+        statusLabel = VISIT_TYPES[booking.type] || booking.type;
+    }
 
     const chip = el('div', chipClass);
     chip.innerHTML = `
         <div class="chip-name">${escHtml(booking.patient)}</div>
-        <div class="chip-type">${isPending ? '⏳ Pending Review' : (VISIT_TYPES[booking.type] || booking.type)}</div>
+        <div class="chip-type">${escHtml(statusLabel)}</div>
     `;
     return chip;
 }
@@ -488,6 +591,17 @@ function renderBookingContent(booking) {
     const initials  = booking.patient.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
     const typeLabel = VISIT_TYPES[booking.type] || booking.type;
     const isPending = booking.status === 'Pending';
+    const isRescheduled = booking.status === 'Approved' && (booking.reschedule_status || '').toLowerCase() === 'accepted';
+
+    const rescheduleInfo = isRescheduled && booking.reschedule_proposed_date
+        ? `<div class="bd-field" style="grid-column:1/-1">
+                <div class="bd-field-label">Rescheduled To</div>
+                <div class="bd-field-val" style="color:var(--blue-600);font-weight:600">
+                    <i class="fa-solid fa-calendar-check" style="margin-right:4px"></i>
+                    ${escHtml(booking.reschedule_proposed_date)}${booking.reschedule_proposed_start ? ' at ' + escHtml(booking.reschedule_proposed_start.slice(0,5)) : ''}
+                </div>
+           </div>`
+        : '';
 
     container.innerHTML = `
         <div class="booking-detail-card">
@@ -514,11 +628,12 @@ function renderBookingContent(booking) {
                 <div class="bd-field">
                     <div class="bd-field-label">Booking Status</div>
                     <div class="bd-field-val">
-                        <span class="inline-status-badge status-${(booking.status || '').toLowerCase()}">
-                            ${escHtml(booking.status ?? '')}
+                        <span class="inline-status-badge status-${(booking.status || '').toLowerCase()}${isRescheduled ? ' status-rescheduled' : ''}">
+                            ${isRescheduled ? '🔁 Rescheduled' : escHtml(booking.status ?? '')}
                         </span>
                     </div>
                 </div>
+                ${rescheduleInfo}
             </div>
             ${isPending ? `
             <div class="slot-respond-actions">
@@ -734,11 +849,16 @@ function openRespondModal(bookingId, showDeclineFirst = false) {
     activeBookingId = bookingId;
 
     /* Reset modal state */
-    $('declineReasonSection').style.display = 'none';
-    $('declineReasonText').value            = '';
-    $('btnDeclineConfirm').style.display    = 'none';
-    $('btnDeclineBooking').style.display    = 'inline-flex';
-    $('respondBookingId').textContent       = `#${bookingId}`;
+    $('declineReasonSection').style.display  = 'none';
+    $('declineReasonText').value             = '';
+    $('btnDeclineConfirm').style.display     = 'none';
+    $('btnDeclineBooking').style.display     = 'inline-flex';
+    $('rescheduleSection').style.display     = 'none';
+    $('btnRescheduleConfirm').style.display  = 'none';
+    $('btnRescheduleBooking').innerHTML      = '<i class="fa-solid fa-clock"></i> Reschedule';
+    if ($('rescheduleDate'))  $('rescheduleDate').value  = '';
+    if ($('rescheduleTime'))  $('rescheduleTime').value  = '';
+    $('respondBookingId').textContent        = `#${bookingId}`;
     $('respondModal').classList.add('open');
 
     /* Close the slot modal if open */
@@ -759,54 +879,91 @@ function closeRespondModal() {
 async function submitBookingResponse(action) {
     if (!activeBookingId) return;
 
-    const declineReason = ($('declineReasonText').value || '').trim();
-    const acceptBtn  = $('btnAcceptBooking');
-    const declineBtn = $('btnDeclineConfirm');
-    const btn        = action === 'accept' ? acceptBtn : declineBtn;
+    // Validate reschedule
+    if (action === 'reschedule') {
+        if (!selectedRescheduleSlot) {
+            showToast('Please select a new date and time for rescheduling.', 'error');
+            return;
+        }
+    }
 
+    // Get button
+    let btn;
+    if (action === 'accept') btn = $('btnAcceptBooking');
+    else if (action === 'decline') btn = $('btnDeclineConfirm');
+    else if (action === 'reschedule') btn = $('btnRescheduleConfirm');
+    
+    if (!btn) return;
+
+    // Show loading
     btn.disabled = true;
-    const orig   = btn.innerHTML;
+    const origHTML = btn.innerHTML;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…';
 
+    // Build payload
+    const payload = {
+        action: 'respond_booking',
+        booking_id: activeBookingId,
+        response: action,
+    };
+
+    if (action === 'decline') {
+        payload.decline_reason = ($('declineReasonText').value || '').trim();
+    }
+
+    if (action === 'reschedule' && selectedRescheduleSlot) {
+        // Map the display label (e.g. "1:00") to 24-hour time (e.g. "13:00:00")
+        // so PHP stores and indexes it correctly.
+        const reschedStartMap = {
+            '8:00':'08:00:00','8:30':'08:30:00',
+            '9:00':'09:00:00','9:30':'09:30:00',
+            '10:00':'10:00:00','10:30':'10:30:00',
+            '11:00':'11:00:00','11:30':'11:30:00',
+            '1:00':'13:00:00','1:30':'13:30:00',
+            '2:00':'14:00:00','2:30':'14:30:00',
+            '3:00':'15:00:00','3:30':'15:30:00',
+            '4:00':'16:00:00','4:30':'16:30:00',
+            '5:00':'17:00:00','5:30':'17:30:00',
+        };
+        payload.new_date  = selectedRescheduleSlot.date;
+        payload.new_start = reschedStartMap[selectedRescheduleSlot.time] || selectedRescheduleSlot.time + ':00';
+    }
+
+    console.log('Sending:', payload);
+
     try {
-        const res  = await fetch(AJAX, {
-            method  : 'POST',
-            headers : { 'Content-Type': 'application/json' },
-            body    : JSON.stringify({
-                action         : 'respond_booking',
-                booking_id     : activeBookingId,
-                response       : action,
-                decline_reason : declineReason,
-            }),
+        const res = await fetch(AJAX, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
         });
+
         const data = await res.json();
+        console.log('Response:', data);
 
         if (data.status === 'ok') {
-            const resolvedId = activeBookingId;
-            btn.disabled  = false;
-            btn.innerHTML = orig;
-            closeRespondModal();
-            const msg = action === 'accept'
-                ? `Booking #${resolvedId} has been approved and the patient has been notified.`
-                : `Booking #${resolvedId} has been declined. The slot has been released.`;
-            showToast(msg, action === 'accept' ? 'success' : 'info');
-
-            /* Refresh both the grid and the requests panel */
             await refreshGrid();
             await loadPendingBookings();
+            closeRespondModal();
+            
+            const msgs = {
+                accept: `Booking #${activeBookingId} accepted!`,
+                reschedule: 'Reschedule request sent to patient',
+                decline: `Booking #${activeBookingId} declined`
+            };
+            showToast(msgs[action], action === 'accept' ? 'success' : 'info');
         } else {
-            showToast('Error: ' + (data.message || 'Unknown error'), 'error');
-            btn.disabled  = false;
-            btn.innerHTML = orig;
+            showToast(data.message || 'Error', 'error');
+            btn.disabled = false;
+            btn.innerHTML = origHTML;
         }
-
     } catch (err) {
-        showToast('Network error — could not save response.', 'error');
-        btn.disabled  = false;
-        btn.innerHTML = orig;
+        console.error(err);
+        showToast('Network error', 'error');
+        btn.disabled = false;
+        btn.innerHTML = origHTML;
     }
 }
-
 /* ════════════════════════════════════════════
    EXPORT (stub)
    ════════════════════════════════════════════ */
@@ -835,4 +992,210 @@ function escHtml(str) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+}
+ /* ════════════════════════════════════════════
+   RESCHEDULE WEEKLY GRID - Complete version
+   ════════════════════════════════════════════ */
+let rescheduleWeekOffset = 0;
+let selectedRescheduleSlot = null;
+
+function getRescheduleWeekStart(offset) {
+    const d = new Date();
+    d.setDate(d.getDate() - d.getDay() + offset * 7);
+    d.setHours(0, 0, 0, 0);
+    return d;
+}
+
+function isoDateReschedule(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dd}`;
+}
+
+function updateRescheduleHeaders() {
+    const ws = getRescheduleWeekStart(rescheduleWeekOffset);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const headIds = ['rsSun', 'rsMon', 'rsTue', 'rsWed', 'rsThu', 'rsFri', 'rsSat'];
+    
+    headIds.forEach((hid, i) => {
+        const dt = new Date(ws);
+        dt.setDate(dt.getDate() + i);
+        const isToday = dt.getTime() === today.getTime();
+        const th = $(hid);
+        if (th) {
+            th.innerHTML = DAY_KEYS[i]
+                + `<br><span style="font-size:.65rem;font-weight:600;color:${
+                    isToday ? 'var(--blue-600)' : 'var(--gray-300)'
+                }">${dt.getDate()}</span>`;
+            th.className = isToday ? 'today-col' : '';
+        }
+    });
+}
+
+function updateRescheduleWeekLabel() {
+    const ws = getRescheduleWeekStart(rescheduleWeekOffset);
+    const we = new Date(ws);
+    we.setDate(we.getDate() + 6);
+    if ($('rescheduleWeekLabel')) {
+        $('rescheduleWeekLabel').textContent = fmtDate(ws) + ' – ' + fmtDate(we);
+    }
+}
+
+async function loadRescheduleSlots() {
+    const ws = isoDateReschedule(getRescheduleWeekStart(rescheduleWeekOffset));
+    
+    const tbody = $('rescheduleBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = `
+        <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--gray-400)">
+            <i class="fa-solid fa-spinner fa-spin" style="margin-right:6px"></i>Loading…
+        </td></tr>`;
+
+    try {
+        const res = await fetch(
+            `${AJAX}?action=get_slots`
+            + `&professional_id=${encodeURIComponent(currentProfId)}`
+            + `&week_start=${encodeURIComponent(ws)}`
+        );
+        const data = await res.json();
+        
+        if (data.status === 'ok') {
+            buildRescheduleGrid(data.slots || {});
+        } else {
+            buildRescheduleGrid({});
+        }
+    } catch (err) {
+        console.error('Error loading reschedule slots:', err);
+        buildRescheduleGrid({});
+    }
+}
+
+/* ════════════════════════════════════════════
+   RESCHEDULE WEEKLY GRID - Build Cells
+   ════════════════════════════════════════════ */
+
+function buildRescheduleGrid(slots) {
+    const ws = getRescheduleWeekStart(rescheduleWeekOffset);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tbody = $('rescheduleBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    TIMES.forEach((timeObj, ti) => {
+        // Lunch break row
+        if (ti === 8) {
+            const lr = el('tr', 'lunch-row');
+            lr.innerHTML = `<td colspan="8"><i class="fa-solid fa-utensils"></i> Lunch Break (12:00 - 1:00 PM)</td>`;
+            tbody.appendChild(lr);
+        }
+        
+        const tr = el('tr');
+        
+        // Time column
+        const tc = el('td', 'time-cell');
+        tc.innerHTML = `${timeObj.label}<span class="time-period">${timeObj.period}</span>`;
+        tr.appendChild(tc);
+        
+        // Day columns
+        DAY_KEYS.forEach((_, di) => {
+            const dt = new Date(ws);
+            dt.setDate(dt.getDate() + di);
+            
+            // Skip weekends (0=Sun, 6=Sat)
+            const isWeekend = (di === 0 || di === 6);
+            const isToday = dt.getTime() === today.getTime();
+            const isPast = dt < today;
+            
+            const key = `${di}-${timeObj.label}`;
+            const slot = slots[key] || { disabled: false, booking: null };
+            
+            // Determine cell state
+            const hasBooking = slot.booking !== null;
+            const isDisabled = isWeekend || isPast || hasBooking || slot.disabled;
+            
+            const td = el('td', 'sched-cell');
+            
+            // Apply classes
+            let cellClass = 'reschedule-cell';
+            if (isDisabled) {
+                cellClass += ' cell-blocked';
+            } else {
+                cellClass += ' cell-available';
+            }
+            if (isToday) cellClass += ' cell-today';
+            
+            td.className = cellClass;
+            td.dataset.day = di;
+            td.dataset.time = timeObj.label;
+            
+            // Add click only for available slots
+            if (!isDisabled) {
+                td.addEventListener('click', () => selectRescheduleSlot(di, timeObj.label, dt));
+                td.title = `Select: ${DAY_FULL[di]}, ${timeObj.label} ${timeObj.period}`;
+            } else {
+                let reason = isWeekend ? 'Weekend' : (isPast ? 'Past date' : (hasBooking ? 'Already booked' : 'Unavailable'));
+                td.title = reason;
+            }
+            
+            tr.appendChild(td);
+        });
+        
+        tbody.appendChild(tr);
+    });
+}
+
+function selectRescheduleSlot(dayIdx, timeLabel, dateObj) {
+    const dateStr = isoDateReschedule(dateObj);
+    const timeStr = timeLabel;
+    const dayName = DAY_FULL[dayIdx];
+    const dateDisplay = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    
+    selectedRescheduleSlot = {
+        date: dateStr,
+        time: timeStr,
+        display: `${dayName}, ${dateDisplay} at ${timeStr}`
+    };
+    
+    // Update selected display
+    const selectedDisplay = $('rescheduleSelectedSlot');
+    const selectedText = $('rescheduleSelectedText');
+    
+    if (selectedDisplay) selectedDisplay.style.display = 'flex';
+    if (selectedText) selectedText.textContent = selectedRescheduleSlot.display;
+    
+    // Remove previous selection
+    document.querySelectorAll('.reschedule-cell').forEach(cell => {
+        cell.classList.remove('bk-slot-selected');
+    });
+    
+    // Add selection to clicked cell
+    const cell = document.querySelector(`.reschedule-cell[data-day="${dayIdx}"][data-time="${timeLabel}"]`);
+    if (cell) {
+        cell.classList.add('bk-slot-selected');
+    }
+    
+    // Show toast
+    showToast(`Selected: ${selectedRescheduleSlot.display}`, 'success');
+}
+
+function clearRescheduleSlot() {
+    selectedRescheduleSlot = null;
+    
+    const selectedDisplay = $('rescheduleSelectedSlot');
+    if (selectedDisplay) selectedDisplay.style.display = 'none';
+    
+    document.querySelectorAll('.reschedule-cell').forEach(cell => {
+        cell.classList.remove('bk-slot-selected');
+    });
+}
+function openRescheduleSection() {
+    rescheduleWeekOffset = 0;
+    clearRescheduleSlot();
+    updateRescheduleWeekLabel();
+    updateRescheduleHeaders();
+    loadRescheduleSlots();
 }

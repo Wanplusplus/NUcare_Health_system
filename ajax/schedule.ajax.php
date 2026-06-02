@@ -104,9 +104,10 @@ switch ($action) {
     case 'get_slots':            getSlots($pdo, $params);             break;
     case 'save_slot':            saveSlot($pdo, $params);             break;
     case 'get_stats':            getStats($pdo, $params);             break;
-    case 'get_pending_bookings': getPendingBookings($pdo, $params);   break;
-    case 'respond_booking':      respondBooking($pdo, $params);       break;
-    case 'debug':                debugInfo($pdo);                     break;
+    case 'get_pending_bookings':        getPendingBookings($pdo, $params);          break;
+    case 'respond_booking':             respondBooking($pdo, $params);              break;
+    case 'patient_respond_reschedule':  patientRespondReschedule($pdo, $params);    break;
+    case 'debug':                       debugInfo($pdo);                            break;
     default:
         echo json_encode([
             'status'  => 'error',
@@ -222,6 +223,9 @@ function getSlots(PDO $pdo, array $p): void
                 b.ServiceType,
                 b.ReasonForVisit,
                 b.BookingStatus,
+                b.RescheduleStatus,
+                b.RescheduleProposedDate,
+                b.RescheduleProposedStart,
                 COALESCE(
                     NULLIF(TRIM(CONCAT(sp.FirstName, ' ', sp.LastName)), ''),
                     'Unknown Patient'
@@ -315,13 +319,16 @@ function getSlots(PDO $pdo, array $p): void
 
             if ($bkRow) {
                 $booking = [
-                    'booking_id' => (int) $bkRow['BookingID'],
-                    'patient'    => $bkRow['patient_name'],
-                    'id'         => $bkRow['school_id'],
-                    'program'    => $bkRow['program_or_dept'] ?: $bkRow['person_type'],
-                    'type'       => mapServiceType($bkRow['ServiceType'] ?? ''),
-                    'purpose'    => $bkRow['ReasonForVisit'] ?? '',
-                    'status'     => $bkRow['BookingStatus'],
+                    'booking_id'               => (int) $bkRow['BookingID'],
+                    'patient'                  => $bkRow['patient_name'],
+                    'id'                       => $bkRow['school_id'],
+                    'program'                  => $bkRow['program_or_dept'] ?: $bkRow['person_type'],
+                    'type'                     => mapServiceType($bkRow['ServiceType'] ?? ''),
+                    'purpose'                  => $bkRow['ReasonForVisit'] ?? '',
+                    'status'                   => $bkRow['BookingStatus'],
+                    'reschedule_status'        => $bkRow['RescheduleStatus'] ?? null,
+                    'reschedule_proposed_date' => $bkRow['RescheduleProposedDate'] ?? null,
+                    'reschedule_proposed_start'=> $bkRow['RescheduleProposedStart'] ?? null,
                 ];
             }
 
@@ -449,7 +456,7 @@ function saveSlot(PDO $pdo, array $p): void
                     (MedProfID, AvailableDate, StartTime, EndTime,
                      SlotDurationMinutes, AvailabilityStatus, Notes)
                 VALUES
-                    (:prof, :date, :start, :end, 60, :status, :notes)
+                    (:prof, :date, :start, :end, 30, :status, :notes)
             ");
             $ins->execute([
                 ':prof'   => $profId,
@@ -574,41 +581,48 @@ function getPendingBookings(PDO $pdo, array $p): void
     }
 
     try {
-        $stmt = $pdo->prepare("
-            SELECT
-                b.BookingID,
-                b.AppointmentDate,
-                b.AppointmentStart,
-                b.AppointmentEnd,
-                b.ServiceType,
-                b.ReasonForVisit,
-                b.BookingStatus,
-                b.BookingType,
-                COALESCE(
-                    NULLIF(TRIM(CONCAT(sp.FirstName, ' ', sp.LastName)), ''),
-                    'Unknown Patient'
-                )                           AS patient_name,
-                COALESCE(sp.SchoolID,   '') AS school_id,
-                COALESCE(sp.PersonType, '') AS person_type,
-                COALESCE(
-                    (SELECT pr.ProgramName
-                     FROM   student_enrollments se
-                     JOIN   programs pr ON pr.ProgramID = se.ProgramID
-                     WHERE  se.SchoolPersonID = b.SchoolPersonID
-                     ORDER  BY se.EnrollmentID DESC LIMIT 1),
-                    (SELECT ea.Department
-                     FROM   employee_assignments ea
-                     WHERE  ea.SchoolPersonID  = b.SchoolPersonID
-                       AND  ea.EmploymentStatus = 'Employed'
-                     LIMIT 1),
-                    sp.PersonType
-                )                           AS program_or_dept
-            FROM bookings b
-            LEFT JOIN school_people sp ON sp.SchoolPersonID = b.SchoolPersonID
-            WHERE b.MedProfID     = :prof
-              AND b.BookingStatus = 'Pending'
-            ORDER BY b.AppointmentDate ASC, b.AppointmentStart ASC
-        ");
+        /* Inside schedule.ajax.php, modify getPendingBookings() function */
+
+// Replace the SQL in getPendingBookings() with this version:
+$stmt = $pdo->prepare("
+    SELECT
+        b.BookingID,
+        b.AppointmentDate,
+        b.AppointmentStart,
+        b.AppointmentEnd,
+        b.ServiceType,
+        b.ReasonForVisit,
+        b.BookingStatus,
+        b.BookingType,
+        b.RescheduleProposedDate,
+        b.RescheduleProposedStart,
+        b.RescheduleProposedEnd,
+        b.RescheduleStatus,
+        COALESCE(
+            NULLIF(TRIM(CONCAT(sp.FirstName, ' ', sp.LastName)), ''),
+            'Unknown Patient'
+        )                           AS patient_name,
+        COALESCE(sp.SchoolID,   '') AS school_id,
+        COALESCE(sp.PersonType, '') AS person_type,
+        COALESCE(
+            (SELECT pr.ProgramName
+             FROM   student_enrollments se
+             JOIN   programs pr ON pr.ProgramID = se.ProgramID
+             WHERE  se.SchoolPersonID = b.SchoolPersonID
+             ORDER  BY se.EnrollmentID DESC LIMIT 1),
+            (SELECT ea.Department
+             FROM   employee_assignments ea
+             WHERE  ea.SchoolPersonID  = b.SchoolPersonID
+               AND  ea.EmploymentStatus = 'Employed'
+             LIMIT 1),
+            sp.PersonType
+        )                           AS program_or_dept
+    FROM bookings b
+    LEFT JOIN school_people sp ON sp.SchoolPersonID = b.SchoolPersonID
+    WHERE b.MedProfID     = :prof
+      AND b.BookingStatus = 'Pending'
+    ORDER BY b.AppointmentDate ASC, b.AppointmentStart ASC
+");
         $stmt->execute([':prof' => $profId]);
         $rows = $stmt->fetchAll();
 
@@ -634,25 +648,35 @@ function getPendingBookings(PDO $pdo, array $p): void
               → availability slot flipped back to 'Available'
               → DeclineReason stored (requires column — see note)
    ════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════
+   respond_booking
+   Medical staff accepts, declines, or reschedules a patient booking.
+   ════════════════════════════════════════════════════ */
+
 function respondBooking(PDO $pdo, array $p): void
 {
-    $bookingId     = (int)  ($p['booking_id']     ?? 0);
-    $response      = strtolower(trim($p['response'] ?? ''));
-    $declineReason = trim($p['decline_reason'] ?? '');
+    $bookingId      = (int)  ($p['booking_id']      ?? 0);
+    $response       = strtolower(trim($p['response']       ?? ''));
+    $declineReason  = trim($p['decline_reason']  ?? '');
+    
+    // Reschedule parameters
+    $newDate        = trim($p['new_date']        ?? '');
+    $newStart       = trim($p['new_start']       ?? '');
 
     if (!$bookingId) {
         echo json_encode(['status' => 'error', 'message' => 'booking_id is required']);
         return;
     }
-    if (!in_array($response, ['accept', 'decline'], true)) {
-        echo json_encode(['status' => 'error', 'message' => "response must be 'accept' or 'decline'"]);
+
+    if (!in_array($response, ['accept', 'decline', 'reschedule'], true)) {
+        echo json_encode(['status' => 'error', 'message' => "response must be 'accept', 'decline' or 'reschedule'"]);
         return;
     }
 
     try {
-        /* Fetch the booking to verify it exists and is still Pending */
+        // Fetch the booking to verify it exists and is still Pending
         $fetch = $pdo->prepare("
-            SELECT BookingID, BookingStatus, AvailabilityID, MedProfID
+            SELECT BookingID, BookingStatus, AvailabilityID, MedProfID, AppointmentDate, AppointmentStart
             FROM   bookings
             WHERE  BookingID = :id
             LIMIT  1
@@ -665,91 +689,116 @@ function respondBooking(PDO $pdo, array $p): void
             return;
         }
 
-        if (strtolower($booking['BookingStatus']) !== 'pending') {
-            echo json_encode([
-                'status'  => 'error',
-                'message' => "Booking #{$bookingId} is already '{$booking['BookingStatus']}' and cannot be changed",
-            ]);
-            return;
-        }
-
-        /* ── ACCEPT ── */
-    if ($response === 'accept') {
+        // --- ACCEPT ---
+        if ($response === 'accept') {
             $upd = $pdo->prepare("
                 UPDATE bookings
-                SET    BookingStatus = 'Approved'
+                SET    BookingStatus = 'Approved', RescheduleStatus = NULL
                 WHERE  BookingID     = :id
             ");
             $upd->execute([':id' => $bookingId]);
 
-            // Audit log: approved appointment booking
-            try {
-                auditLog(
-                    isset($_SESSION['UserID']) ? (int)$_SESSION['UserID'] : null,
-                    isset($_SESSION['SchoolPersonID']) ? (int)$_SESSION['SchoolPersonID'] : null,
-                    'booking_approved',
-                    'Schedule',
-                    (int)$bookingId,
-                    'Approved appointment booking #' . $bookingId,
-                    null
-                );
-            } catch (Throwable $auditE) {
-                // non-fatal
-            }
-
+            // Audit log
+            auditLog(
+                isset($_SESSION['UserID']) ? (int)$_SESSION['UserID'] : null,
+                isset($_SESSION['SchoolPersonID']) ? (int)$_SESSION['SchoolPersonID'] : null,
+                'booking_approved',
+                'Schedule',
+                (int)$bookingId,
+                'Approved appointment booking #' . $bookingId,
+                null
+            );
 
             echo json_encode([
                 'status'     => 'ok',
-                'action'     => 'accepted',
+                'action'    => 'accepted',
                 'booking_id' => $bookingId,
-                'message'    => "Booking #{$bookingId} has been accepted. The patient will be notified.",
+                'message'    => "Booking #{$bookingId} has been accepted.",
             ]);
             return;
         }
 
+        // --- RESCHEDULE ---
+        // In respondBooking function - ensure this section exists:
+if ($response === 'reschedule') {
+    if (!$newDate || !$newStart) {
+        echo json_encode(['status' => 'error', 'message' => 'New date and time are required']);
+        return;
+    }
 
-        /* ── DECLINE ── */
-        /* BookingStatus ENUM only allows: Pending, Approved, Completed, Cancelled.
-           'Declined' is not a valid value — use 'Cancelled' instead. */
-        try {
-            $upd = $pdo->prepare("
-                UPDATE bookings
-                SET    BookingStatus  = 'Cancelled',
-                       DeclineReason = :reason
-                WHERE  BookingID     = :id
-            ");
-            $upd->execute([':reason' => $declineReason ?: null, ':id' => $bookingId]);
-        } catch (PDOException $colErr) {
-            /* Column DeclineReason doesn't exist yet — update without it */
-            $upd = $pdo->prepare("
-                UPDATE bookings
-                SET    BookingStatus = 'Cancelled'
-                WHERE  BookingID    = :id
-            ");
-            $upd->execute([':id' => $bookingId]);
-        }
+    // Map 24-hour start → 30-min-later end (matches saveSlot endMap)
+    $endMap = [
+        '08:00:00' => '08:30:00', '08:30:00' => '09:00:00',
+        '09:00:00' => '09:30:00', '09:30:00' => '10:00:00',
+        '10:00:00' => '10:30:00', '10:30:00' => '11:00:00',
+        '11:00:00' => '11:30:00', '11:30:00' => '12:00:00',
+        '13:00:00' => '13:30:00', '13:30:00' => '14:00:00',
+        '14:00:00' => '14:30:00', '14:30:00' => '15:00:00',
+        '15:00:00' => '15:30:00', '15:30:00' => '16:00:00',
+        '16:00:00' => '16:30:00', '16:30:00' => '17:00:00',
+        '17:00:00' => '17:30:00', '17:30:00' => '18:00:00',
+    ];
+    // Normalise incoming start to HH:MM:SS (it should already be from JS map)
+    $newStart = strlen($newStart) === 5 ? $newStart . ':00' : $newStart;
+    $newEnd   = $endMap[$newStart] ?? null;
+    if (!$newEnd) {
+        // Fallback: add 30 minutes via DateTime
+        $newEnd = (new DateTime($newStart))->modify('+30 minutes')->format('H:i:s');
+    }
 
-        /* Release the availability slot back to Available */
-        if (!empty($booking['AvailabilityID'])) {
+    // Save reschedule proposal
+    $upd = $pdo->prepare("
+        UPDATE bookings
+        SET    RescheduleProposedDate   = :newDate,
+              RescheduleProposedStart = :newStart,
+              RescheduleProposedEnd   = :newEnd,
+              RescheduleStatus      = 'Proposed'
+        WHERE  BookingID            = :id
+    ");
+    $upd->execute([
+        ':newDate' => $newDate,
+        ':newStart' => $newStart,
+        ':newEnd' => $newEnd,
+        ':id' => $bookingId
+    ]);
+
+    echo json_encode([
+        'status' => 'ok',
+        'action' => 'rescheduled',
+        'booking_id' => $bookingId,
+        'message' => "Reschedule request sent to patient."
+    ]);
+    return;
+}
+        // --- DECLINE ---
+        if ($response === 'decline') {
             try {
-                $rel = $pdo->prepare("
-                    UPDATE medical_professional_availability
-                    SET    AvailabilityStatus = 'Available'
-                    WHERE  AvailabilityID     = :avid
+                $upd = $pdo->prepare("
+                    UPDATE bookings
+                    SET    BookingStatus  = 'Cancelled',
+                           DeclineReason = :reason
+                    WHERE  BookingID     = :id
                 ");
-                $rel->execute([':avid' => (int) $booking['AvailabilityID']]);
-            } catch (PDOException $e2) {
-                /* Non-fatal — log but don't fail the whole request */
-                error_log('schedule_ajax respond_booking (release slot): ' . $e2->getMessage());
+                $upd->execute([':reason' => $declineReason ?: null, ':id' => $bookingId]);
+            } catch (PDOException $colErr) {
+                $upd = $pdo->prepare("UPDATE bookings SET BookingStatus = 'Cancelled' WHERE BookingID = :id");
+                $upd->execute([':id' => $bookingId]);
             }
-        }
 
-        echo json_encode([
-            'status'     => 'ok',
-            'action'     => 'declined',
-            'booking_id' => $bookingId,
-            'message'    => "Booking #{$bookingId} has been declined. The slot has been released and the patient will be notified.",
-        ]);
+            if (!empty($booking['AvailabilityID'])) {
+                try {
+                    $rel = $pdo->prepare("UPDATE medical_professional_availability SET AvailabilityStatus = 'Available' WHERE AvailabilityID = :avid");
+                    $rel->execute([':avid' => (int) $booking['AvailabilityID']]);
+                } catch (PDOException $e2) { /* non-fatal */ }
+            }
+
+            echo json_encode([
+                'status'     => 'ok',
+                'action'    => 'declined',
+                'booking_id' => $bookingId,
+                'message'   => "Booking #{$bookingId} has been declined.",
+            ]);
+        }
 
     } catch (PDOException $e) {
         echo json_encode(['status' => 'error', 'message' => 'DB error (respond_booking): ' . $e->getMessage()]);
@@ -805,8 +854,190 @@ function debugInfo(PDO $pdo): void
 }
 
 /* ════════════════════════════════════════════════════
-   Helper — map ServiceType string → JS chip type key
+   patient_respond_reschedule
+   Patient accepts or declines a reschedule proposal from staff.
+
+   Expected params:
+     booking_id  – int
+     response    – 'accept' | 'decline'
+
+   On Accept  → AppointmentDate/Start/End updated with proposed values
+              → RescheduleStatus = 'Accepted'
+              → BookingStatus    = 'Approved'
+   On Decline → RescheduleStatus = 'Rejected'
+              → BookingStatus    stays 'Pending' (staff can propose again)
    ════════════════════════════════════════════════════ */
+function patientRespondReschedule(PDO $pdo, array $p): void
+{
+    $bookingId = (int) ($p['booking_id'] ?? 0);
+    $response  = strtolower(trim($p['response'] ?? ''));
+
+    if (!$bookingId) {
+        echo json_encode(['status' => 'error', 'message' => 'booking_id is required']);
+        return;
+    }
+    if (!in_array($response, ['accept', 'decline'], true)) {
+        echo json_encode(['status' => 'error', 'message' => "response must be 'accept' or 'decline'"]);
+        return;
+    }
+
+    try {
+        $fetch = $pdo->prepare("
+            SELECT BookingID, BookingStatus, RescheduleStatus,
+                   RescheduleProposedDate, RescheduleProposedStart, RescheduleProposedEnd,
+                   AppointmentDate, AppointmentStart, MedProfID,
+                   AvailabilityID, SchoolPersonID
+            FROM   bookings
+            WHERE  BookingID = :id
+            LIMIT  1
+        ");
+        $fetch->execute([':id' => $bookingId]);
+        $booking = $fetch->fetch();
+
+        if (!$booking) {
+            echo json_encode(['status' => 'error', 'message' => "Booking #{$bookingId} not found"]);
+            return;
+        }
+
+        if (($booking['RescheduleStatus'] ?? '') !== 'Proposed') {
+            echo json_encode(['status' => 'error', 'message' => 'No pending reschedule proposal for this booking']);
+            return;
+        }
+
+        // Verify the patient owns this booking
+        $sessionSPID = isset($_SESSION['SchoolPersonID']) ? (int)$_SESSION['SchoolPersonID'] : 0;
+        if (!DEV_BYPASS && $sessionSPID && (int)$booking['SchoolPersonID'] !== $sessionSPID) {
+            echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
+            return;
+        }
+
+        if ($response === 'accept') {
+            $newDate  = $booking['RescheduleProposedDate'];
+            $newStart = $booking['RescheduleProposedStart'];
+            $newEnd   = $booking['RescheduleProposedEnd'];
+            $profId   = (int) $booking['MedProfID'];
+            $oldAvailId = !empty($booking['AvailabilityID']) ? (int)$booking['AvailabilityID'] : null;
+
+            // 1. Free the OLD availability slot so it shows as open again
+            if ($oldAvailId) {
+                try {
+                    $freeOld = $pdo->prepare("
+                        UPDATE medical_professional_availability
+                        SET    AvailabilityStatus = 'Available'
+                        WHERE  AvailabilityID = :avid
+                    ");
+                    $freeOld->execute([':avid' => $oldAvailId]);
+                } catch (PDOException $e2) { /* non-fatal */ }
+            }
+
+            // 2. Find or create the NEW availability slot and mark it Unavailable
+            $newAvailId = null;
+            try {
+                $findNew = $pdo->prepare("
+                    SELECT AvailabilityID FROM medical_professional_availability
+                    WHERE  MedProfID      = :prof
+                      AND  AvailableDate  = :date
+                      AND  StartTime      = :start
+                    LIMIT  1
+                ");
+                $findNew->execute([':prof' => $profId, ':date' => $newDate, ':start' => $newStart]);
+                $existingSlot = $findNew->fetch();
+
+                if ($existingSlot) {
+                    // Slot exists — mark it unavailable and link to this booking
+                    $newAvailId = (int) $existingSlot['AvailabilityID'];
+                    $blockNew = $pdo->prepare("
+                        UPDATE medical_professional_availability
+                        SET    AvailabilityStatus = 'Unavailable'
+                        WHERE  AvailabilityID = :avid
+                    ");
+                    $blockNew->execute([':avid' => $newAvailId]);
+                } else {
+                    // Slot doesn't exist yet — insert it as Unavailable
+                    $insNew = $pdo->prepare("
+                        INSERT INTO medical_professional_availability
+                               (MedProfID, AvailableDate, StartTime, EndTime, AvailabilityStatus, Notes)
+                        VALUES (:prof, :date, :start, :end, 'Unavailable', 'Rescheduled appointment')
+                    ");
+                    $insNew->execute([
+                        ':prof'  => $profId,
+                        ':date'  => $newDate,
+                        ':start' => $newStart,
+                        ':end'   => $newEnd ?? '',
+                    ]);
+                    $newAvailId = (int) $pdo->lastInsertId();
+                }
+            } catch (PDOException $e2) { /* non-fatal — booking update still proceeds */ }
+
+            // 3. Update the booking: move to new date/time, set status Approved, link new slot
+            $updSql = "
+                UPDATE bookings
+                SET    AppointmentDate  = :newDate,
+                       AppointmentStart = :newStart,
+                       AppointmentEnd   = :newEnd,
+                       RescheduleStatus = 'Accepted',
+                       BookingStatus    = 'Approved'
+            ";
+            $updParams = [':newDate' => $newDate, ':newStart' => $newStart, ':newEnd' => $newEnd, ':id' => $bookingId];
+            if ($newAvailId) {
+                $updSql .= ", AvailabilityID = :availId";
+                $updParams[':availId'] = $newAvailId;
+            }
+            $updSql .= " WHERE BookingID = :id";
+            $upd = $pdo->prepare($updSql);
+            $upd->execute($updParams);
+
+            auditLog(
+                isset($_SESSION['UserID']) ? (int)$_SESSION['UserID'] : null,
+                isset($_SESSION['SchoolPersonID']) ? (int)$_SESSION['SchoolPersonID'] : null,
+                'reschedule_accepted',
+                'Schedule',
+                $bookingId,
+                "Patient accepted reschedule for booking #{$bookingId}",
+                null
+            );
+
+            echo json_encode([
+                'status'     => 'ok',
+                'action'     => 'accepted',
+                'booking_id' => $bookingId,
+                'new_date'   => $booking['RescheduleProposedDate'],
+                'new_start'  => $booking['RescheduleProposedStart'],
+                'message'    => "Reschedule accepted. Appointment confirmed for {$booking['RescheduleProposedDate']}.",
+            ]);
+
+        } else {
+            $upd = $pdo->prepare("
+                UPDATE bookings
+                SET    RescheduleStatus = 'Rejected'
+                WHERE  BookingID = :id
+            ");
+            $upd->execute([':id' => $bookingId]);
+
+            auditLog(
+                isset($_SESSION['UserID']) ? (int)$_SESSION['UserID'] : null,
+                isset($_SESSION['SchoolPersonID']) ? (int)$_SESSION['SchoolPersonID'] : null,
+                'reschedule_rejected',
+                'Schedule',
+                $bookingId,
+                "Patient declined reschedule for booking #{$bookingId}",
+                null
+            );
+
+            echo json_encode([
+                'status'     => 'ok',
+                'action'     => 'declined',
+                'booking_id' => $bookingId,
+                'message'    => "Reschedule declined. The clinic will be notified.",
+            ]);
+        }
+
+    } catch (PDOException $e) {
+        echo json_encode(['status' => 'error', 'message' => 'DB error (patient_respond_reschedule): ' . $e->getMessage()]);
+    }
+}
+
+
 function mapServiceType(string $svc): string
 {
     $s = strtolower($svc);
