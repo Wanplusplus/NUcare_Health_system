@@ -539,7 +539,22 @@ $statusOptions = ['Active', 'Disabled', 'Enrolled', 'Dropped', 'Graduated', 'Emp
         <?php endif; ?>
 
         <?php if ($success): ?>
-            <div class="alert alert-success" role="alert" style="margin-top: 12px;"><?= htmlspecialchars($success) ?></div>
+            <div id="successAlert" class="alert alert-success" role="alert" style="margin-top: 12px;"><?= htmlspecialchars($success) ?></div>
+            <script>
+                // Auto-dismiss success message after 3 seconds with fade-out
+                (function() {
+                    const alert = document.getElementById('successAlert');
+                    if (alert) {
+                        setTimeout(() => {
+                            alert.style.transition = 'opacity 0.3s ease-out';
+                            alert.style.opacity = '0';
+                            setTimeout(() => {
+                                alert.style.display = 'none';
+                            }, 300);
+                        }, 3000);
+                    }
+                })();
+            </script>
         <?php endif; ?>
 
         <div class="admin-filterbar user-filterbar-enterprise" style="margin-top: 12px;">

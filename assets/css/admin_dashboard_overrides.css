@@ -210,6 +210,7 @@
   background: #b91c1c !important;
   color: #fff !important;
   box-shadow: 0 2px 4px rgba(185,28,28,0.12);
+  min-width: 110px;
 }
 
 .btn-action-deactivate:hover{
@@ -233,6 +234,7 @@
   background: #15803d !important;
   color: #fff !important;
   box-shadow: 0 2px 4px rgba(21,128,61,0.12);
+  min-width: 110px;
 }
 
 .btn-action-activate:hover{
