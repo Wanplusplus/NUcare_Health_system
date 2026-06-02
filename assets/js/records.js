@@ -294,6 +294,12 @@
             switchTab(tab.dataset.tab);
         });
 
+        document.querySelector('.modal-tabs')?.addEventListener('wheel', function (e) {
+            if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+            this.scrollLeft += e.deltaY;
+            e.preventDefault();
+        }, { passive: false });
+
         document.getElementById('togglePatientInfoEdit')?.addEventListener('click', function () {
             const form = document.getElementById('recordsPatientInfoForm');
             if (form) form.style.display = form.style.display === 'none' ? 'flex' : 'none';
@@ -322,6 +328,7 @@
         if (activeBtn) {
             activeBtn.classList.add('active');
             activeBtn.setAttribute('aria-selected', 'true');
+            activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
         document.getElementById(tabId)?.classList.add('active');
     }
@@ -666,12 +673,12 @@
                     <span class="tl-attach-size">${escHtml(attachmentCategory)}${a.createdAt ? ` · ${formatDate(a.createdAt)}` : ''}</span>
                     ${a.fileSizeBytes ? `<span class="tl-attach-size">${formatFileSize(a.fileSizeBytes)}</span>` : ''}
                     ${a.viewUrl
-                        ? `<a href="${escAttr(a.viewUrl)}" target="_blank" rel="noopener" class="tl-attach-link">
+                        ? `<a href="${escAttr(a.viewUrl)}" target="_blank" rel="noopener" class="tl-attach-link" onclick="event.stopPropagation()">
                                <i class="fa-solid fa-eye"></i> View
                            </a>`
                         : ''}
                     ${a.downloadUrl
-                        ? `<a href="${escAttr(a.downloadUrl)}" target="_blank" rel="noopener" class="tl-attach-link">
+                        ? `<a href="${escAttr(a.downloadUrl)}" target="_blank" rel="noopener" class="tl-attach-link" onclick="event.stopPropagation()">
                                <i class="fa-solid fa-download"></i> Download
                            </a>`
                         : ''}
@@ -957,6 +964,8 @@
             toast.className = 'records-toast';
         }, 2600);
     }
+
+    window.openTransactionDetail = openTransactionDetail;
 
     function openTransactionDetail(transactionID) {
         const modal = document.getElementById('transactionDetailModal');

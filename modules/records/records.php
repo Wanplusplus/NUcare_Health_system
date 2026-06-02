@@ -21,7 +21,7 @@ $activeSidebarItem = 'records';
     <title>NUCARE | Patient Records</title>
     <link rel="icon" href="/NUcare_Health_system/assets/image/nucarelogo.png">
     <link rel="stylesheet" href="../../assets/css/app.css?v=1">
-    <link rel="stylesheet" href="../../assets/css/records.css?v=2">
+    <link rel="stylesheet" href="../../assets/css/records.css?v=3">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
@@ -516,6 +516,6 @@ $activeSidebarItem = 'records';
 </div>
 
 <script src="../../assets/js/app.js"></script>
-<script src="../../assets/js/records.js?v=6"></script>
+<script src="../../assets/js/records.js?v=7"></script>
 </body>
 </html>
