@@ -1,37 +1,26 @@
-# TODO — NUCARE Records Module (3NF read-only)
+# TODO
 
-## Step 1 (done)
-Inspect and fix backend list endpoint: `ajax/get_records.ajax.php`
-- Remove non-allowed joins/tables (employee_assignments)
-- Ensure latest enrollment only
-- Keep output fields compatible with `assets/js/records.js`
+## User Management table + Audit Logs deep link
 
-## Step 2 (partial)
-Inspect and fix backend patient detail endpoint: `ajax/get_patient_record.ajax.php`
-- Remove non-allowed tables for diseases and emergencies
-- DONE: derive Known Medical Conditions + Emergencies from `clinic_transactions` (with minimal, read-only logic)
+- [ ] Update `admin/user_management.php`
+  - [x] Remove PersonType column (header, row cell, filter dropdown, and SQL where/select bits)
 
-## Step 3 (pending)
-Match/align frontend JS to backend JSON keys (transactions/emergencies/certificates/attachments)
-- Verify that `certificates` array used by `assets/js/records.js` matches expected category/upload date fields
-- Filter certificates strictly from `consultation_attachments` via `clinic_transactions` behavior
+  - [x] Format Full Name as `FirstName MiddleName LastName` (middle omitted if empty)
+  - [x] Ensure table columns are exactly: Full Name | School ID | Email | Current Roles | Account Status | Actions
+  - [x] Remove “Reset Password” button from UI (backend left untouched)
+  - [x] Add “Audit Logs” button beside Edit Roles/Deactivate
+    - [x] Redirect to `admin/audit_logs.php?school_id={SchoolID}`
+    - [x] Styling: make buttons match sidebar admin red `#8b0000`
+  - [x] Update “Edit Roles” button styling only to sidebar red `#8b0000`
 
-## Step 4 (pending)
-Ensure empty states:
-- "No clinic visits on record yet."
-- "No emergency records found."
-- "No medical certificates issued."
+- [ ] Update `admin/audit_logs.php`
+  - [x] Add `school_id` query param handling to automatically filter results to that SchoolID
 
-## Step 5 (pending)
-Run smoke test(s)
-- `php ../../../tmp/records_endpoint_smoke.php`
+  - [x] Preserve existing filters: search, module, date range (today/this_week/this_month/custom)
 
-## Step 6 (pending)
-Manual verification checklist
-- Records list loads
-- View opens modal
-- Clinic History timeline renders correctly
-- Emergencies empty state works
-- Certificates empty state works
-- Transaction detail modal physical exam/meds/attachments renders
+- [ ] Verification
+  - [x] Confirm UI renders correct columns and no PersonType references remain
+  - [x] Confirm clicking “Audit Logs” applies the `school_id` filter and still supports other filters
+
+
 

@@ -94,8 +94,8 @@ try {
     $userStmt->execute([(int)$person['SchoolPersonID']]);
     $user = $userStmt->fetch();
 
-    if (!$user || (int)$user['IsActive'] !== 1) {
-        auditLog(null, (int)$person['SchoolPersonID'], 'failed_login', 'auth', $schoolId, 'User not found or inactive', $ip);
+    if (!$user) {
+        auditLog(null, (int)$person['SchoolPersonID'], 'failed_login', 'auth', $schoolId, 'User record not found', $ip);
         echo json_encode([
             'status' => 'error',
             'message' => 'Invalid School ID or password.',
@@ -122,6 +122,16 @@ try {
         echo json_encode([
             'status' => 'error',
             'message' => 'Invalid School ID or password.',
+        ]);
+        exit;
+    }
+
+    // Password is correct - now check account status
+    if ((int)$user['IsActive'] !== 1) {
+        auditLog((int)$user['UserID'], (int)$person['SchoolPersonID'], 'failed_login', 'auth', $schoolId, 'Account inactive - login blocked', $ip);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Your account is currently blocked. Please contact an administrator.',
         ]);
         exit;
     }
