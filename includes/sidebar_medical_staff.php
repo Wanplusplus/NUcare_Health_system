@@ -46,6 +46,47 @@ $activeSidebarItem = $activeSidebarItem ?? 'dashboard';
     background: #f0f4ff;
     color: #06285e;
   }
+
+  .sidebar-medical .nav-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .sidebar-medical .nav-settings summary {
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .sidebar-medical .nav-settings summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .sidebar-medical .nav-settings summary::after {
+    content: '\f078';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    margin-left: auto;
+    font-size: .7rem;
+    transition: transform .15s ease;
+  }
+
+  .sidebar-medical .nav-settings[open] summary::after {
+    transform: rotate(180deg);
+  }
+
+  .sidebar-medical .nav-submenu {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-left: 14px;
+  }
+
+  .sidebar-medical .nav-subitem {
+    font-size: .88rem;
+    padding-top: 9px;
+    padding-bottom: 9px;
+  }
 </style>
 
 <button class="hamburger-btn" id="hamburgerBtn" type="button" aria-label="Toggle menu"></button>
@@ -76,9 +117,22 @@ $activeSidebarItem = $activeSidebarItem ?? 'dashboard';
     <a class="nav-item <?php echo $activeSidebarItem === 'schedule' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/schedule/schedule.php">
       <span class="nav-dot"></span>Schedule
     </a>
-   <a class="nav-item <?php echo $activeSidebarItem === 'settings' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/settings/settings.php">
-      <span class="nav-dot"></span>Settings
-    </a>
+    <details class="nav-settings" <?php echo in_array($activeSidebarItem, ['my_profile', 'settings'], true) ? 'open' : ''; ?>>
+      <summary class="nav-item <?php echo in_array($activeSidebarItem, ['my_profile', 'settings'], true) ? 'active' : ''; ?>">
+        <span class="nav-dot"></span>Settings
+      </summary>
+      <div class="nav-submenu">
+        <a class="nav-item nav-subitem <?php echo $activeSidebarItem === 'my_profile' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/settings/my_profile.php">
+          <span class="nav-dot"></span>My Profile
+        </a>
+        <a class="nav-item nav-subitem <?php echo $activeSidebarItem === 'settings' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/settings/settings.php">
+          <span class="nav-dot"></span>Update Password
+        </a>
+        <a class="nav-item nav-subitem" href="/NUcare_Health_system/auth/logout.php">
+          <span class="nav-dot"></span>Logout
+        </a>
+      </div>
+    </details>
   </nav>
 
   <div class="sidebar-footer">

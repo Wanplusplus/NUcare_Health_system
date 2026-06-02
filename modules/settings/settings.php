@@ -198,14 +198,6 @@ $activeSidebarItem = 'settings';
         .modal-btn.reset .btn-icon { background: rgba(15,118,110,.15); color: var(--primary); }
         .modal-btn.reset:hover     { background: #b2f0e8; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(15,118,110,.12); }
 
-        .modal-btn.logout {
-            background: #fef2f2;
-            border-color: rgba(220,38,38,.2);
-            color: #b91c1c;
-        }
-        .modal-btn.logout .btn-icon { background: #fee2e2; color: #dc2626; }
-        .modal-btn.logout:hover     { background: #fee2e2; border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,.1); }
-
         .modal-divider { height: 1px; background: var(--border); margin: 4px 0; }
 
         @media (max-width: 500px) {
@@ -321,22 +313,6 @@ if (file_exists($sidebarPath)) require_once $sidebarPath;
                 </form>
             </div>
 
-
-            <!-- Logout: ../../auth/logout.php -->
-            <a href="../../auth/logout.php" class="modal-btn logout">
-                <div class="btn-icon">
-                    <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9"/>
-                    </svg>
-                </div>
-                <div class="btn-label">
-                    <div>Logout</div>
-                    <div class="btn-sublabel">End your current session</div>
-                </div>
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
-                </svg>
-            </a>
 
         </div>
     </div>

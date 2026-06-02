@@ -102,10 +102,27 @@ try {
             se.EnrollmentStatus,
             pr.ProgramName,
             pr.Department AS StudentDepartment,
+            pi.contact_no,
+            pi.gender,
+            pi.birth_date,
+            pi.age,
+            pi.nationality,
+            pi.status AS PatientInfoStatus,
+            pi.religion,
+            pi.address,
+            pi.guardian_name,
+            pi.relationship,
+            pi.mobile_no,
+            pi.telephone,
+            pi.emergency_address,
 
             COALESCE(v.visitCount, 0) AS visitCount,
             v.lastVisit
         FROM school_people sp
+        LEFT JOIN users u
+            ON u.SchoolPersonID = sp.SchoolPersonID
+        LEFT JOIN patients_info pi
+            ON pi.UserID = u.UserID
         LEFT JOIN (
             SELECT se1.*
             FROM student_enrollments se1
@@ -176,7 +193,22 @@ foreach ($rows as $row) {
             'sex' => $row['Sex'] ?? null,
             'personType' => $personType !== '' ? $personType : '—',
             'birthday' => $row['Birthday'] ?? null,
-            'contactNumber' => $row['ContactNumber'] ?? null,
+            'contactNumber' => $row['contact_no'] ?? $row['ContactNumber'] ?? null,
+            'patientsInfo' => [
+                'contact_no' => $row['contact_no'] ?? null,
+                'gender' => $row['gender'] ?? null,
+                'birth_date' => $row['birth_date'] ?? null,
+                'age' => $row['age'] ?? null,
+                'nationality' => $row['nationality'] ?? null,
+                'status' => $row['PatientInfoStatus'] ?? null,
+                'religion' => $row['religion'] ?? null,
+                'address' => $row['address'] ?? null,
+                'guardian_name' => $row['guardian_name'] ?? null,
+                'relationship' => $row['relationship'] ?? null,
+                'mobile_no' => $row['mobile_no'] ?? null,
+                'telephone' => $row['telephone'] ?? null,
+                'emergency_address' => $row['emergency_address'] ?? null,
+            ],
             'program' => $program,
             'department' => $department,
             'positionTitle' => null,

@@ -10,6 +10,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 $pdo = require __DIR__ . '/../config/db_pdo.php';
+require_once __DIR__ . '/../includes/patients_info_helpers.php';
 
 $schoolPersonID = (int)($_GET['school_person_id'] ?? $_GET['schoolpersonid'] ?? $_GET['id'] ?? 0);
 
@@ -164,8 +165,11 @@ try {
 
             ea.Department AS EmployeeDepartment,
             ea.PositionTitle,
-            ea.EmploymentStatus
+            ea.EmploymentStatus,
+            u.UserID
         FROM school_people sp
+        LEFT JOIN users u
+            ON u.SchoolPersonID = sp.SchoolPersonID
         LEFT JOIN (
             SELECT se1.*
             FROM student_enrollments se1
@@ -573,6 +577,7 @@ foreach ($attachmentsByTransaction as $ctid => $attachments) {
 }
 
 $personType = (string)($person['PersonType'] ?? '');
+$personUserID = (int)($person['UserID'] ?? 0);
 $isStudent = $personType === 'Student';
 $isEmployee = $personType === 'Faculty' || $personType === 'Staff';
 
@@ -623,11 +628,22 @@ echo json_encode([
         'enrollmentStatus' => $enrollmentStatus,
         'employmentStatus' => $employmentStatus,
         'status' => $status,
+        'patientsInfo' => $personUserID > 0 ? patientsInfoLoad($pdo, $personUserID) : patientsInfoEmpty(),
     ],
     'diseases' => $diseases,
     'transactions' => $transactions,
     'emergencies' => $emergencies,
     'certificates' => $attachmentsFlat,
+    'medicalProfile' => array_values(array_filter(array_map(
+        static fn(array $tx): ?array => !empty($tx['physicalExam']) ? array_merge($tx['physicalExam'], [
+            'clinicTransactionID' => $tx['clinicTransactionID'],
+            'visitDate' => $tx['visitDate'],
+            'serviceType' => $tx['serviceType'],
+            'status' => $tx['status'],
+        ]) : null,
+        $transactions
+    ))),
+    'familyHistory' => $personUserID > 0 ? familyHistoryLoad($pdo, $personUserID) : [],
     'stats' => [
         'totalVisits' => count($transactions),
         'emergencies' => count($emergencies),

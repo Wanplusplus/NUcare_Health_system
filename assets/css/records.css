@@ -1212,3 +1212,107 @@
     .cert-card { flex-wrap: wrap; }
     .cert-actions { flex-direction: row; margin-left: 0; width: 100%; }
 }
+
+.records-edit-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 14px;
+}
+
+.records-edit-form {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.records-form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.records-form-grid label,
+.records-family-row label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: .68rem;
+    font-weight: 800;
+    color: var(--gray-700);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.records-form-grid label.full {
+    grid-column: 1 / -1;
+}
+
+.records-form-grid input,
+.records-form-grid select,
+.records-form-grid textarea,
+.records-family-row input {
+    width: 100%;
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--r-md);
+    padding: 10px 11px;
+    font-family: 'Nunito', sans-serif;
+    font-size: .86rem;
+    font-weight: 700;
+    color: var(--text);
+    background: #fff;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.records-form-grid textarea {
+    min-height: 76px;
+    resize: vertical;
+}
+
+.records-edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.records-family-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.3fr auto;
+    gap: 10px;
+    align-items: end;
+    padding: 12px;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--r-md);
+    margin-bottom: 10px;
+    background: var(--gray-50);
+}
+
+.records-family-remove {
+    border: none;
+    border-radius: var(--r-md);
+    height: 40px;
+    width: 42px;
+    background: var(--danger-bg);
+    color: var(--danger);
+    cursor: pointer;
+}
+
+.medical-profile-card {
+    border: 1px solid var(--gray-200);
+    border-radius: var(--r-lg);
+    background: var(--white);
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.medical-profile-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    color: var(--navy);
+    font-weight: 900;
+}

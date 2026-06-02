@@ -28,6 +28,7 @@
     let currentPage = 1;
     const PAGE_SIZE = 15;
     let activeModal = null;           // SchoolPersonID of open modal (or null)
+    let activeRecordData = null;
 
     /* ══════════════════════════════════════════════════════════
        BOOT
@@ -292,6 +293,22 @@
             e.preventDefault();
             switchTab(tab.dataset.tab);
         });
+
+        document.getElementById('togglePatientInfoEdit')?.addEventListener('click', function () {
+            const form = document.getElementById('recordsPatientInfoForm');
+            if (form) form.style.display = form.style.display === 'none' ? 'flex' : 'none';
+        });
+
+        document.getElementById('cancelPatientInfoEdit')?.addEventListener('click', function () {
+            const form = document.getElementById('recordsPatientInfoForm');
+            if (form) form.style.display = 'none';
+        });
+
+        document.getElementById('recordsPatientInfoForm')?.addEventListener('submit', saveRecordsPatientInfo);
+        document.getElementById('recordsFamilyHistoryForm')?.addEventListener('submit', saveRecordsFamilyHistory);
+        document.getElementById('addRecordsFamilyRow')?.addEventListener('click', function () {
+            addRecordsFamilyRow();
+        });
     }
 
     function switchTab(tabId) {
@@ -346,7 +363,9 @@
     ══════════════════════════════════════════════════════════ */
 
     function populateModal(data) {
+        activeRecordData = data;
         const p = data.patient || {};
+        const pi = p.patientsInfo || {};
 
         /* ── Modal header ── */
         const fullName = p.fullName || [p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ') || '—';
@@ -370,7 +389,17 @@
         setEl('infoSex',         p.sex           || '—');
         setEl('infoBirthday',    p.birthday      || '—');
         setEl('infoEmail',       p.email         || '—');
-        setEl('infoContact',     p.contactNumber || '—');
+        setEl('infoContact',     pi.contact_no || p.contactNumber || '—');
+        setEl('infoAge',         pi.age || '—');
+        setEl('infoNationality', pi.nationality || '—');
+        setEl('infoReligion',    pi.religion || '—');
+        setEl('infoPatientStatus', pi.status || '—');
+        setEl('infoAddress',     pi.address || '—');
+        setEl('infoGuardianName', pi.guardian_name || '—');
+        setEl('infoRelationship', pi.relationship || '—');
+        setEl('infoMobileNo',     pi.mobile_no || '—');
+        setEl('infoTelephone',    pi.telephone || '—');
+        setEl('infoEmergencyAddress', pi.emergency_address || '—');
         setEl('infoPersonTypes', p.personType    || '—');
         setEl('infoProgram',     p.program || p.positionTitle || p.department || '—');
         setEl('infoDepartment',  p.department    || '—');
@@ -397,11 +426,16 @@
 
         /* Tab count badges */
         setEl('tabHistoryCount',   txList.length || '');
+        setEl('tabMedicalProfileCount', (data.medicalProfile || []).length || '');
+        setEl('tabFamilyHistoryCount', (data.familyHistory || []).length || '');
         setEl('tabEmergencyCount', (data.emergencies  || []).length || '');
         setEl('tabCertsCount',     (data.certificates || []).length || '');
 
         /* ── Other tabs ── */
+        fillPatientInfoEditForm(p);
         renderTimeline(txList);
+        renderMedicalProfile(data.medicalProfile || []);
+        renderFamilyHistory(data.familyHistory || []);
         renderEmergencies(data.emergencies  || []);
         renderCertificates(data.certificates || []);
     }
@@ -409,6 +443,153 @@
     /* ══════════════════════════════════════════════════════════
        4.  TIMELINE (Clinic History)
     ══════════════════════════════════════════════════════════ */
+
+    function fillPatientInfoEditForm(patient) {
+        const pi = patient.patientsInfo || {};
+        const map = {
+            editSchoolPersonID: patient.schoolPersonID || activeModal || '',
+            edit_contact_no: pi.contact_no || patient.contactNumber || '',
+            edit_gender: pi.gender || patient.sex || '',
+            edit_birth_date: pi.birth_date || patient.birthday || '',
+            edit_age: pi.age || '',
+            edit_nationality: pi.nationality || '',
+            edit_status: pi.status || '',
+            edit_religion: pi.religion || '',
+            edit_address: pi.address || '',
+            edit_guardian_name: pi.guardian_name || '',
+            edit_relationship: pi.relationship || '',
+            edit_mobile_no: pi.mobile_no || '',
+            edit_telephone: pi.telephone || '',
+            edit_emergency_address: pi.emergency_address || '',
+        };
+
+        Object.entries(map).forEach(([id, value]) => {
+            const el = document.getElementById(id);
+            if (el) el.value = value ?? '';
+        });
+    }
+
+    function renderMedicalProfile(items) {
+        const container = document.getElementById('medicalProfileList');
+        if (!container) return;
+
+        if (!items.length) {
+            container.innerHTML = `<div class="no-history">
+                <i class="fa-solid fa-clipboard-list"></i>
+                <p>No physical examination data found.</p>
+                <span>Physical examination records entered in Consultation will appear here.</span>
+            </div>`;
+            return;
+        }
+
+        container.innerHTML = items.map(item => `
+            <div class="medical-profile-card">
+                <div class="medical-profile-head">
+                    <span><i class="fa-solid fa-calendar-check"></i> ${escHtml(formatDate(item.examDate || item.visitDate))}</span>
+                    <span>${escHtml(item.cardioClearance || item.status || '—')}</span>
+                </div>
+                <div class="info-fields">
+                    ${item.height ? detailField('Height', item.height + ' cm') : ''}
+                    ${item.weight ? detailField('Weight', item.weight + ' kg') : ''}
+                    ${item.bloodPressure ? detailField('Blood Pressure', item.bloodPressure) : ''}
+                    ${item.pulseRate ? detailField('Pulse Rate', item.pulseRate + ' bpm') : ''}
+                    ${item.ears ? detailField('Ears', item.ears) : ''}
+                    ${item.eyesPupil ? detailField('Eyes / Pupil', item.eyesPupil) : ''}
+                    ${item.heart ? detailField('Heart', item.heart) : ''}
+                    ${item.nose ? detailField('Nose', item.nose) : ''}
+                    ${item.thorax ? detailField('Thorax', item.thorax) : ''}
+                    ${item.abdomen ? detailField('Abdomen', item.abdomen) : ''}
+                    ${item.lungs ? detailField('Lungs', item.lungs) : ''}
+                    ${item.skin ? detailField('Skin', item.skin) : ''}
+                    ${item.extremities ? detailField('Extremities', item.extremities) : ''}
+                    ${item.deformities ? detailField('Deformities', item.deformities) : ''}
+                    ${item.cardioClearance ? detailField('Cardio Clearance', item.cardioClearance) : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function addRecordsFamilyRow(item = {}) {
+        const container = document.getElementById('recordsFamilyRows');
+        if (!container) return;
+
+        const row = document.createElement('div');
+        row.className = 'records-family-row';
+        row.innerHTML = `
+            <label>Condition <input name="condition_name" value="${escAttr(item.condition_name || '')}" placeholder="e.g. Diabetes"></label>
+            <label>Relationship <input name="family_relationship" value="${escAttr(item.relationship || '')}" placeholder="e.g. Father"></label>
+            <label>Notes <input name="family_notes" value="${escAttr(item.notes || '')}" placeholder="Optional notes"></label>
+            <button type="button" class="records-family-remove" aria-label="Remove"><i class="fa-solid fa-xmark"></i></button>
+        `;
+        row.querySelector('.records-family-remove')?.addEventListener('click', () => row.remove());
+        container.appendChild(row);
+    }
+
+    function renderFamilyHistory(items) {
+        const container = document.getElementById('recordsFamilyRows');
+        if (!container) return;
+        container.innerHTML = '';
+        (items || []).forEach(addRecordsFamilyRow);
+        if (!container.children.length) addRecordsFamilyRow();
+    }
+
+    function collectRecordsFamilyHistory() {
+        return Array.from(document.querySelectorAll('#recordsFamilyRows .records-family-row')).map(row => ({
+            condition_name: row.querySelector('[name="condition_name"]')?.value.trim() || '',
+            relationship: row.querySelector('[name="family_relationship"]')?.value.trim() || '',
+            notes: row.querySelector('[name="family_notes"]')?.value.trim() || '',
+        })).filter(item => item.condition_name || item.relationship || item.notes);
+    }
+
+    function saveRecordsPatientInfo(event) {
+        event.preventDefault();
+        if (!activeModal) return;
+
+        const form = document.getElementById('recordsPatientInfoForm');
+        if (!form) return;
+
+        const body = new FormData(form);
+        body.set('school_person_id', String(activeModal));
+        body.set('family_history', JSON.stringify(collectRecordsFamilyHistory()));
+
+        fetch('../../ajax/records_patient_info_save.ajax.php', { method: 'POST', body })
+            .then(r => r.json())
+            .then(resp => {
+                if (!resp.ok) throw new Error(resp.message || 'Save failed.');
+                if (activeRecordData?.patient) {
+                    activeRecordData.patient.patientsInfo = resp.patientsInfo || {};
+                    activeRecordData.familyHistory = resp.familyHistory || [];
+                    populateModal(activeRecordData);
+                }
+                const editForm = document.getElementById('recordsPatientInfoForm');
+                if (editForm) editForm.style.display = 'none';
+                showToast(resp.message || 'Patient information saved.', 'success');
+            })
+            .catch(err => showToast(err.message, 'error'));
+    }
+
+    function saveRecordsFamilyHistory(event) {
+        event.preventDefault();
+        if (!activeModal) return;
+
+        const body = new FormData();
+        body.set('school_person_id', String(activeModal));
+        body.set('mode', 'family_only');
+        body.set('family_history', JSON.stringify(collectRecordsFamilyHistory()));
+
+        fetch('../../ajax/records_patient_info_save.ajax.php', { method: 'POST', body })
+            .then(r => r.json())
+            .then(resp => {
+                if (!resp.ok) throw new Error(resp.message || 'Save failed.');
+                if (activeRecordData) {
+                    activeRecordData.familyHistory = resp.familyHistory || [];
+                    renderFamilyHistory(activeRecordData.familyHistory);
+                    setEl('tabFamilyHistoryCount', activeRecordData.familyHistory.length || '');
+                }
+                showToast('Family history saved.', 'success');
+            })
+            .catch(err => showToast(err.message, 'error'));
+    }
 
     function renderTimeline(transactions) {
         const container = document.getElementById('clinicTimeline');
@@ -674,13 +855,15 @@
         const avatarEl = document.getElementById('modalAvatarIcon');
         if (avatarEl) avatarEl.innerHTML = '<i class="fa-solid fa-user-nurse"></i>';
 
-        ['tabHistoryCount', 'tabEmergencyCount', 'tabCertsCount'].forEach(id => setEl(id, ''));
+        ['tabHistoryCount', 'tabMedicalProfileCount', 'tabFamilyHistoryCount', 'tabEmergencyCount', 'tabCertsCount'].forEach(id => setEl(id, ''));
 
         const tabInfoEl = document.getElementById('tabInfo');
         if (tabInfoEl && !_tabInfoStaticHTML) _tabInfoStaticHTML = tabInfoEl.innerHTML;
         if (tabInfoEl && _tabInfoStaticHTML)  tabInfoEl.innerHTML = _tabInfoStaticHTML;
 
         ['infoSchoolID','infoFullName','infoSex','infoBirthday','infoEmail','infoContact',
+         'infoAge','infoNationality','infoReligion','infoPatientStatus','infoAddress',
+         'infoGuardianName','infoRelationship','infoMobileNo','infoTelephone','infoEmergencyAddress',
          'infoPersonTypes','infoProgram','infoDepartment','infoSection','infoStatus','infoAcadYear',
          'summaryVisits','summaryEmergencies','summaryCerts','summaryLastVisit'
         ].forEach(id => setEl(id, '—'));
@@ -690,7 +873,7 @@
 
         const skeletonLine = (w) => `<div class="skeleton" style="height:14px;width:${w}%;border-radius:5px;margin-bottom:10px;"></div>`;
         const skel = `<div style="padding:20px 0;">${[80,60,90,50,70].map(skeletonLine).join('')}</div>`;
-        ['clinicTimeline', 'emergencyList', 'certList'].forEach(id => {
+        ['clinicTimeline', 'medicalProfileList', 'recordsFamilyRows', 'emergencyList', 'certList'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.innerHTML = skel;
         });
@@ -762,6 +945,17 @@
                 `<td><div class="skeleton" style="height:14px;width:${[60,80,50,70,50,40,60,40][i]}%;border-radius:4px;"></div></td>`
             ).join('')}</tr>`
         ).join('');
+    }
+
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('recordsToast');
+        if (!toast) return;
+        toast.textContent = message || '';
+        toast.className = 'records-toast ' + (type === 'error' ? 'error-toast' : 'success');
+        clearTimeout(showToast._timer);
+        showToast._timer = setTimeout(() => {
+            toast.className = 'records-toast';
+        }, 2600);
     }
 
     function openTransactionDetail(transactionID) {
