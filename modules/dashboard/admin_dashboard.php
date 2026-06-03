@@ -259,7 +259,7 @@ $activePage = 'dashboard';
         }
         .adm-role-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             gap: 8px;
         }
         .adm-role-chip {
@@ -272,10 +272,23 @@ $activePage = 'dashboard';
             border: 1px solid var(--adm-border);
             font-size: 13px;
             color: var(--adm-text);
+            white-space: nowrap;
+            min-width: 0;
         }
-        .adm-role-chip span:last-child {
+        .adm-role-chip > span:first-child {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
+        }
+        .adm-role-chip > span:last-child {
             font-weight: 700;
             font-family: 'Poppins', sans-serif;
+            margin-left: 8px;
+            flex-shrink: 0;
         }
 
         /* ================================================================
@@ -283,7 +296,7 @@ $activePage = 'dashboard';
            ================================================================ */
         .adm-metrics-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 16px;
         }
 
@@ -415,7 +428,7 @@ $activePage = 'dashboard';
            ================================================================ */
         .adm-actions-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 14px;
         }
 
@@ -603,11 +616,6 @@ $activePage = 'dashboard';
                     <div class="adm-metric-label">Pending Consultations</div>
                     <div class="adm-metric-value" id="admConsultations">—</div>
                 </article>
-                <article class="adm-metric-card">
-                    <div class="adm-metric-icon"><i class="bi bi-folder2-open"></i></div>
-                    <div class="adm-metric-label">Pending Records</div>
-                    <div class="adm-metric-value" id="admRecords">—</div>
-                </article>
             </div>
 
             <!-- Health Card -->
@@ -659,12 +667,6 @@ $activePage = 'dashboard';
                     <div class="adm-action-icon"><i class="bi bi-journal-text"></i></div>
                     <div class="adm-action-label">Audit Logs</div>
                     <div class="adm-action-sub">Activity history</div>
-                </a>
-
-                <a href="/NUcare_Health_system/modules/schedule/" class="adm-action-card">
-                    <div class="adm-action-icon"><i class="bi bi-calendar-week"></i></div>
-                    <div class="adm-action-label">Schedule</div>
-                    <div class="adm-action-sub">Manage bookings</div>
                 </a>
 
                 <a href="/NUcare_Health_system/admin/reports.php" class="adm-action-card">
@@ -787,7 +789,6 @@ $activePage = 'dashboard';
         $('admTotalUsers').textContent      = fmt(s.totalUsers);
         $('admAppointments').textContent    = fmt(s.todayAppointments);
         $('admConsultations').textContent   = fmt(s.pendingConsultations);
-        $('admRecords').textContent         = fmt(s.pendingRecords);
         $('admTodayVisits').textContent     = fmt(s.todayVisits);
     }
 
