@@ -226,6 +226,10 @@
         document.body.style.overflow = 'hidden';
         activeModal = userID;
 
+        // Always hide the edit form when opening a new record (prevents stale state)
+        const editForm = document.getElementById('recordsPatientInfoForm');
+        if (editForm) editForm.style.display = 'none';
+
         switchTab('tabInfo');
         showModalSkeleton();
 
@@ -300,9 +304,38 @@
             e.preventDefault();
         }, { passive: false });
 
-        document.getElementById('togglePatientInfoEdit')?.addEventListener('click', function () {
-            const form = document.getElementById('recordsPatientInfoForm');
-            if (form) form.style.display = form.style.display === 'none' ? 'flex' : 'none';
+        // Event delegation: the edit button can be affected by modal re-rendering/skeleton swaps.
+        // Delegate off the modal body so clicks always work.
+        const modalBody = document.getElementById('recordModal');
+        modalBody?.addEventListener('click', function (e) {
+            const btn = e.target.closest('#togglePatientInfoEdit');
+            if (!btn) return;
+
+            try {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const form = document.getElementById('recordsPatientInfoForm');
+                if (!form) {
+                    console.warn('[Records] Edit form not found (recordsPatientInfoForm).');
+                    return;
+                }
+
+                const isHidden = form.style.display === 'none' || getComputedStyle(form).display === 'none';
+                
+                // FIX: Populate form BEFORE showing it so fields have current data
+                if (isHidden) {
+                    populatePatientInfoForm();
+                }
+                
+                form.style.display = isHidden ? 'block' : 'none';
+
+                if (isHidden) {
+                    form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            } catch (err) {
+                console.error('[Records] togglePatientInfoEdit failed:', err);
+            }
         });
 
         document.getElementById('cancelPatientInfoEdit')?.addEventListener('click', function () {
@@ -555,24 +588,56 @@
         const form = document.getElementById('recordsPatientInfoForm');
         if (!form) return;
 
+        // Disable the save button to prevent double-submit
+        const saveBtn = document.getElementById('savePatientInfoEdit');
+        if (saveBtn) { 
+            saveBtn.disabled = true; 
+            saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…'; 
+        }
+
+        // Ensure school_person_id is in the form data
         const body = new FormData(form);
         body.set('school_person_id', String(activeModal));
         body.set('family_history', JSON.stringify(collectRecordsFamilyHistory()));
 
         fetch('../../ajax/records_patient_info_save.ajax.php', { method: 'POST', body })
-            .then(r => r.json())
-            .then(resp => {
-                if (!resp.ok) throw new Error(resp.message || 'Save failed.');
-                if (activeRecordData?.patient) {
-                    activeRecordData.patient.patientsInfo = resp.patientsInfo || {};
-                    activeRecordData.familyHistory = resp.familyHistory || [];
-                    populateModal(activeRecordData);
-                }
-                const editForm = document.getElementById('recordsPatientInfoForm');
-                if (editForm) editForm.style.display = 'none';
-                showToast(resp.message || 'Patient information saved.', 'success');
+            .then(r => {
+                // Catch session/auth errors explicitly so nurses see the real reason
+                if (r.status === 401) throw new Error('Session expired. Please refresh the page and log in again.');
+                if (!r.ok) throw new Error('Server error (' + r.status + '). Please try again.');
+                return r.json();
             })
-            .catch(err => showToast(err.message, 'error'));
+            .then(resp => {
+                if (!resp.ok) {
+                    // Surface the real server error (e.g. "does not have a linked user account")
+                    throw new Error(resp.message || 'Save failed.');
+                }
+                
+                // Re-fetch patient record from server so the modal always reflects DB state
+                const userID = String(activeModal);
+                fetch(`../../ajax/get_patient_record.ajax.php?school_person_id=${encodeURIComponent(userID)}`)
+                    .then(rr => rr.json())
+                    .then(refreshed => {
+                        if (!refreshed.ok) throw new Error(refreshed.message || 'Failed to reload record');
+                        populateModal(refreshed);
+                        form.style.display = 'none';
+                        showToast(resp.message || 'Patient information saved.', 'success');
+                    })
+                    .catch(reloadErr => {
+                        console.error('[Records] Reload after save failed:', reloadErr);
+                        showToast(resp.message || 'Patient information saved.', 'success');
+                    });
+            })
+            .catch(err => {
+                console.error('[Records] Save error:', err);
+                showToast(err.message || 'Could not save. Please try again.', 'error');
+            })
+            .finally(() => {
+                if (saveBtn) { 
+                    saveBtn.disabled = false; 
+                    saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Changes'; 
+                }
+            });
     }
 
     function saveRecordsFamilyHistory(event) {
@@ -596,6 +661,39 @@
                 showToast('Family history saved.', 'success');
             })
             .catch(err => showToast(err.message, 'error'));
+    }
+
+    /**
+     * populatePatientInfoForm()
+     * ────────────────────────────
+     * Fills the edit form with current patient data from activeRecordData
+     * Called before showing the edit form to ensure it has the latest data
+     */
+    function populatePatientInfoForm() {
+        if (!activeRecordData?.patient || !activeModal) return;
+        
+        const info = activeRecordData.patient.patientsInfo || {};
+        
+        // Set the hidden school_person_id
+        const spidInput = document.getElementById('editSchoolPersonID');
+        if (spidInput) spidInput.value = String(activeModal);
+        
+        // Populate personal information fields
+        document.getElementById('edit_contact_no').value     = info.contact_no || '';
+        document.getElementById('edit_gender').value         = info.gender || '';
+        document.getElementById('edit_birth_date').value     = info.birth_date || '';
+        document.getElementById('edit_age').value            = info.age || '';
+        document.getElementById('edit_nationality').value    = info.nationality || '';
+        document.getElementById('edit_status').value         = info.status || '';
+        document.getElementById('edit_religion').value       = info.religion || '';
+        document.getElementById('edit_address').value        = info.address || '';
+        
+        // Populate emergency contact fields
+        document.getElementById('edit_guardian_name').value  = info.guardian_name || '';
+        document.getElementById('edit_relationship').value   = info.relationship || '';
+        document.getElementById('edit_mobile_no').value      = info.mobile_no || '';
+        document.getElementById('edit_telephone').value      = info.telephone || '';
+        document.getElementById('edit_emergency_address').value = info.emergency_address || '';
     }
 
     function renderTimeline(transactions) {
@@ -850,8 +948,8 @@
        7.  SKELETON LOADER
     ══════════════════════════════════════════════════════════ */
 
-    let _tabInfoStaticHTML = null;
-
+    // Keep skeleton rendering limited to content areas.
+    // Do NOT overwrite #tabInfo HTML (it contains the edit form and can interfere with event wiring).
     function showModalSkeleton() {
         setEl('modalPatientName',    'Loading…');
         setEl('modalPatientID',      '—');
@@ -863,10 +961,6 @@
         if (avatarEl) avatarEl.innerHTML = '<i class="fa-solid fa-user-nurse"></i>';
 
         ['tabHistoryCount', 'tabMedicalProfileCount', 'tabFamilyHistoryCount', 'tabEmergencyCount', 'tabCertsCount'].forEach(id => setEl(id, ''));
-
-        const tabInfoEl = document.getElementById('tabInfo');
-        if (tabInfoEl && !_tabInfoStaticHTML) _tabInfoStaticHTML = tabInfoEl.innerHTML;
-        if (tabInfoEl && _tabInfoStaticHTML)  tabInfoEl.innerHTML = _tabInfoStaticHTML;
 
         ['infoSchoolID','infoFullName','infoSex','infoBirthday','infoEmail','infoContact',
          'infoAge','infoNationality','infoReligion','infoPatientStatus','infoAddress',

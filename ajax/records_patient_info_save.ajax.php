@@ -6,9 +6,11 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['UserID'])) {
+// Support multiple session key names used by different login flows
+$sessionUserID = $_SESSION['UserID'] ?? $_SESSION['user_id'] ?? $_SESSION['userid'] ?? null;
+if (!$sessionUserID) {
     http_response_code(401);
-    echo json_encode(['ok' => false, 'message' => 'Unauthorized.']);
+    echo json_encode(['ok' => false, 'message' => 'Unauthorized. Please log in again.']);
     exit;
 }
 

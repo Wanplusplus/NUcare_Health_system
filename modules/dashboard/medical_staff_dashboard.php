@@ -461,6 +461,58 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
             .logbook-wrapper { padding: 0 12px 24px; }
             .logbook-table-wrap { margin-left: 8px; }
         }
+
+        /* ── Month / Year period pickers ── */
+        .lb-period-label {
+            font-size: .72rem;
+            font-weight: 800;
+            font-family: 'Nunito', sans-serif;
+            color: rgba(255,255,255,.85);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+        }
+
+        .lb-period-select {
+            font-family: 'Nunito', sans-serif;
+            font-size: .73rem;
+            font-weight: 800;
+            color: #3730a3;
+            background: rgba(255,255,255,.92);
+            border: 1.5px solid rgba(255,255,255,.5);
+            border-radius: 8px;
+            padding: 4px 10px 4px 8px;
+            cursor: pointer;
+            outline: none;
+            transition: background .15s, box-shadow .15s;
+            -webkit-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237c3aed'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 7px center;
+            padding-right: 22px;
+        }
+        .lb-period-select:hover { background-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,.4); }
+        .lb-period-select:focus { box-shadow: 0 0 0 2.5px #fbbf24; }
+
+        .lb-period-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(255,255,255,.18);
+            border: 1px solid rgba(255,255,255,.3);
+            border-radius: 999px;
+            padding: 3px 10px;
+            font-size: .68rem;
+            font-weight: 800;
+            font-family: 'Nunito', sans-serif;
+            color: #fff;
+            white-space: nowrap;
+            transition: background .2s;
+        }
+        .lb-period-badge.loaded { background: rgba(16,185,129,.35); border-color: rgba(16,185,129,.5); }
+        .lb-period-badge.new    { background: rgba(251,191,36,.25);  border-color: rgba(251,191,36,.5); }
     </style>
 
     <!-- jsPDF + html2canvas for PDF export -->
@@ -559,6 +611,34 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
                                 &nbsp;·&nbsp; Term: <strong>2nd</strong>
                                 &nbsp;·&nbsp; Dept: <strong>NU Bacolod </strong>
                             </p>
+                            <!-- Month / Year pickers -->
+                            <div class="lb-period-pickers" style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                                <label class="lb-period-label" for="lbPickerMonth">
+                                    <i class="fa-regular fa-calendar" style="font-size:.75rem;opacity:.8;"></i>
+                                    Record:
+                                </label>
+                                <select id="lbPickerMonth" class="lb-period-select">
+                                    <?php
+                                    $months = ['January','February','March','April','May','June',
+                                               'July','August','September','October','November','December'];
+                                    $curMonth = (int)date('n');
+                                    foreach ($months as $i => $m) {
+                                        $sel = ($i + 1 === $curMonth) ? ' selected' : '';
+                                        echo "<option value=\"".($i+1)."\"$sel>$m</option>\n";
+                                    }
+                                    ?>
+                                </select>
+                                <select id="lbPickerYear" class="lb-period-select">
+                                    <?php
+                                    $curYear = (int)date('Y');
+                                    for ($y = $curYear - 2; $y <= $curYear + 1; $y++) {
+                                        $sel = ($y === $curYear) ? ' selected' : '';
+                                        echo "<option value=\"$y\"$sel>$y</option>\n";
+                                    }
+                                    ?>
+                                </select>
+                                <span id="lbPeriodBadge" class="lb-period-badge"></span>
+                            </div>
                         </div>
                     </div>
                     <div class="logbook-header-right">
@@ -829,6 +909,74 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
         </div>
 
         <script>
+        /* ── Period helpers ── */
+        function getLbKey() {
+            const m = document.getElementById('lbPickerMonth');
+            const y = document.getElementById('lbPickerYear');
+            if (!m || !y) return 'nucare_logbook';
+            const pad = String(m.value).padStart(2,'0');
+            return 'nucare_logbook_' + y.value + '_' + pad;
+        }
+
+        function getPeriodLabel() {
+            const m = document.getElementById('lbPickerMonth');
+            const y = document.getElementById('lbPickerYear');
+            if (!m || !y) return '';
+            return m.options[m.selectedIndex].text + ' ' + y.value;
+        }
+
+        function updateMonthDisplay() {
+            const m = document.getElementById('lbPickerMonth');
+            const lbMonth = document.getElementById('lbMonth');
+            if (m && lbMonth) lbMonth.textContent = m.options[m.selectedIndex].text;
+        }
+
+        function updatePeriodBadge(state) {
+            const badge = document.getElementById('lbPeriodBadge');
+            if (!badge) return;
+            if (state === 'loaded') {
+                badge.textContent = '✔ Record loaded';
+                badge.className = 'lb-period-badge loaded';
+            } else {
+                badge.textContent = '✦ New record';
+                badge.className = 'lb-period-badge new';
+            }
+        }
+
+        /* ── Load logbook for the selected period ── */
+        function loadLogbookForPeriod() {
+            updateMonthDisplay();
+            const key = getLbKey();
+            try {
+                const raw = localStorage.getItem(key);
+                const allInputs = document.querySelectorAll('.lb-edit');
+                const notes = document.getElementById('lbNotes');
+
+                if (raw) {
+                    const data = JSON.parse(raw);
+                    allInputs.forEach((inp, i) => {
+                        inp.value = (data['lb_input_' + i] !== undefined) ? data['lb_input_' + i] : 0;
+                        inp.dispatchEvent(new Event('input'));
+                    });
+                    if (notes && data['lb_notes'] !== undefined) notes.value = data['lb_notes'];
+                    updatePeriodBadge('loaded');
+                } else {
+                    // blank slate for a new period
+                    allInputs.forEach(inp => { inp.value = 0; inp.dispatchEvent(new Event('input')); });
+                    if (notes) notes.value = '';
+                    updatePeriodBadge('new');
+                }
+            } catch(e) { updatePeriodBadge('new'); }
+        }
+
+        /* ── Wire up picker changes ── */
+        (function wirePickers() {
+            const mPicker = document.getElementById('lbPickerMonth');
+            const yPicker = document.getElementById('lbPickerYear');
+            if (mPicker) mPicker.addEventListener('change', loadLogbookForPeriod);
+            if (yPicker) yPicker.addEventListener('change', loadLogbookForPeriod);
+        })();
+
         /* ── Auto-total for tables with data-autototal ── */
         document.querySelectorAll('table[data-autototal="true"]').forEach(table => {
             table.querySelectorAll('tbody tr').forEach(row => {
@@ -861,14 +1009,17 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
                     + ' ' + now.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             }
 
-            // Save all inputs to localStorage
+            // Save all inputs to localStorage under the period key
+            const key = getLbKey();
             const data = {};
             document.querySelectorAll('.lb-edit').forEach((inp, i) => {
                 data['lb_input_' + i] = inp.value;
             });
             const notes = document.getElementById('lbNotes');
             if (notes) data['lb_notes'] = notes.value;
-            try { localStorage.setItem('nucare_logbook', JSON.stringify(data)); } catch(e){}
+            try { localStorage.setItem(key, JSON.stringify(data)); } catch(e){}
+
+            updatePeriodBadge('loaded');
 
             // Button feedback
             btn.classList.add('saved');
@@ -1060,22 +1211,8 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
         }
     }
 
-        /* ── Restore from localStorage on load ── */
-        (function restoreLogbook() {
-            try {
-                const raw = localStorage.getItem('nucare_logbook');
-                if (!raw) return;
-                const data = JSON.parse(raw);
-                document.querySelectorAll('.lb-edit').forEach((inp, i) => {
-                    if (data['lb_input_' + i] !== undefined) {
-                        inp.value = data['lb_input_' + i];
-                        inp.dispatchEvent(new Event('input')); // trigger auto-total
-                    }
-                });
-                const notes = document.getElementById('lbNotes');
-                if (notes && data['lb_notes'] !== undefined) notes.value = data['lb_notes'];
-            } catch(e){}
-        })();
+        /* ── Restore from localStorage on load (period-aware) ── */
+        loadLogbookForPeriod();
         </script>
     </main>
 

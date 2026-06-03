@@ -1,6 +1,15 @@
 <?php
 declare(strict_types=1);
 
+/* ════════════════════════════════════════════════════════════════════
+   patient_search.ajax.php   →  PLACE IN:  ajax/consultation/
+   ────────────────────────────────────────────────────────────────────
+   FIXED: the exact-match check used trim($row['SchoolID']) which raises a
+   deprecation/TypeError on PHP 8.1+ when SchoolID is NULL (walk-ins). All
+   SchoolID reads are now cast with (string) so NULL never breaks the query
+   — aligning with the spec rule "NULL SchoolID must not break queries".
+══════════════════════════════════════════════════════════════════════ */
+
 header('Content-Type: application/json; charset=utf-8');
 
 if (session_status() === PHP_SESSION_NONE) session_start();
@@ -20,8 +29,6 @@ $normalized = trim((string)preg_replace('/^\s*SCH[-\s]+/i', '', $q));
 $like     = '%' . $q . '%';
 $likeNorm = '%' . $normalized . '%';
 
-// ── PDO named params cannot be reused — use numbered suffixes ─────────────
-// Each unique placeholder name must appear EXACTLY ONCE in execute().
 $sql = "
 SELECT
     sp.SchoolPersonID,
@@ -75,14 +82,14 @@ if (empty($rows)) {
 function buildPatient(array $p): array {
     $parts = array_filter([
         $p['FirstName'] ?? '',
-        !empty($p['MiddleName']) ? mb_substr($p['MiddleName'], 0, 1) . '.' : '',
+        !empty($p['MiddleName']) ? mb_substr((string)$p['MiddleName'], 0, 1) . '.' : '',
         $p['LastName']  ?? '',
     ]);
     $fullName = trim(implode(' ', $parts));
 
     return [
         'SchoolPersonID' => (int)$p['SchoolPersonID'],
-        'SchoolID'       => $p['SchoolID'],
+        'SchoolID'       => $p['SchoolID'],            // may be NULL (walk-in)
         'FirstName'      => $p['FirstName']  ?? '',
         'MiddleName'     => $p['MiddleName'] ?? '',
         'LastName'       => $p['LastName']   ?? '',
@@ -94,13 +101,11 @@ function buildPatient(array $p): array {
     ];
 }
 
-// Check for exact SchoolID match first
+// Check for exact SchoolID match first — (string) cast guards against NULL.
 $exactMatch = null;
 foreach ($rows as $row) {
-    if (
-        strtolower(trim($row['SchoolID'])) === strtolower($q) ||
-        strtolower(trim($row['SchoolID'])) === strtolower($normalized)
-    ) {
+    $sid = strtolower(trim((string)($row['SchoolID'] ?? '')));
+    if ($sid !== '' && ($sid === strtolower($q) || $sid === strtolower($normalized))) {
         $exactMatch = $row;
         break;
     }

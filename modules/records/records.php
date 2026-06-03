@@ -45,12 +45,6 @@ $activeSidebarItem = 'records';
                     <h1 class="page-title">Patient Records</h1>
                     <p class="page-desc">Long-term medical records for all registered patients â€” view clinic history, vitals, medicines dispensed, emergencies, and certificates.</p>
                 </div>
-                <div class="page-header-right">
-                    <a href="../../auth/logout.php" class="btn-outline">
-                        <i class="fa-solid fa-right-from-bracket"></i>
-                        Logout
-                    </a>
-                </div>
             </div>
 
             <div class="records-stats">
@@ -154,7 +148,7 @@ $activeSidebarItem = 'records';
                             <i class="fa-solid fa-user-nurse"></i>
                         </div>
                         <div>
-                            <div class="modal-patient-name" id="modalPatientName">Loadingâ€¦</div>
+                            <div class="modal-patient-name" id="modalPatientName">Loading</div>
                             <div class="modal-patient-sub">
                                 <span><i class="fa-solid fa-id-card"></i> <span id="modalPatientID">â€”</span></span>
                                 <span><i class="fa-solid fa-user-tag"></i> <span id="modalPatientType">â€”</span></span>
@@ -164,9 +158,6 @@ $activeSidebarItem = 'records';
                         </div>
                     </div>
                     <div class="modal-header-actions">
-                        <button class="modal-print-btn" id="modalPrintBtn" title="Print record" aria-label="Print patient record">
-                            <i class="fa-solid fa-print"></i>
-                        </button>
                         <button class="modal-close" id="modalCloseBtn" title="Close" aria-label="Close modal">
                             <i class="fa-solid fa-xmark"></i>
                         </button>
@@ -209,7 +200,7 @@ $activeSidebarItem = 'records';
 
                     <div id="tabInfo" class="tab-panel active" role="tabpanel">
                         <div class="records-edit-toolbar">
-                            <button type="button" class="btn-outline" id="togglePatientInfoEdit">
+                            <button type="button" class="btn-outline" id="togglePatientInfoEdit" style="cursor:pointer;pointer-events:auto;">
                                 <i class="fa-solid fa-pen-to-square"></i>
                                 Edit Patient Info
                             </button>
