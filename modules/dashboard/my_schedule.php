@@ -277,6 +277,7 @@ try {
          FROM medical_professionals mp
          LEFT JOIN users         u  ON u.UserID          = mp.UserID
          LEFT JOIN school_people sp ON sp.SchoolPersonID = u.SchoolPersonID
+         WHERE mp.Profession NOT IN ('Nurse', 'Nursing')
          ORDER BY mp.Profession, sp.LastName, sp.FirstName"
     );
     $professionals = $profStmt->fetchAll(PDO::FETCH_ASSOC);
