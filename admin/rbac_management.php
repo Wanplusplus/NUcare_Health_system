@@ -15,6 +15,20 @@ require_once __DIR__ . '/../includes/audit.php';
 
 requireModule('Admin Panel', 'access');
 
+// ---------------------------------------------------------------------------
+// RBAC Management is a Super Admin-only feature.
+// Admin accounts must never access this page.
+// ---------------------------------------------------------------------------
+$hasSuperAdminRole = false;
+if (isset($_SESSION['Roles']) && is_array($_SESSION['Roles'])) {
+    $hasSuperAdminRole = in_array('Super Admin', $_SESSION['Roles'], true);
+}
+if (!$hasSuperAdminRole) {
+    $_SESSION['error_message'] = 'Access denied. Only Super Administrators can manage RBAC permissions.';
+    header('Location: ../modules/dashboard/admin_dashboard.php');
+    exit;
+}
+
 $pdo = require __DIR__ . '/../config/db_pdo.php';
 
 // Current actor info for audit logs

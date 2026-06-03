@@ -58,9 +58,18 @@
     <a class="nav-item <?= $activeKey === 'user_management' ? 'active' : '' ?>" href="/NUcare_Health_system/admin/user_management.php">
       <span class="nav-dot"></span>User Management
     </a>
+    <?php
+    // RBAC Management is visible ONLY to Super Admin users.
+    $showRbacMenu = false;
+    if (isset($_SESSION['Roles']) && is_array($_SESSION['Roles'])) {
+        $showRbacMenu = in_array('Super Admin', $_SESSION['Roles'], true);
+    }
+    ?>
+    <?php if ($showRbacMenu): ?>
     <a class="nav-item <?= $activeKey === 'rbac_management' ? 'active' : '' ?>" href="/NUcare_Health_system/admin/rbac_management.php">
       <span class="nav-dot"></span>RBAC Management
     </a>
+    <?php endif; ?>
     <a class="nav-item <?= $activeKey === 'reports' ? 'active' : '' ?>" href="/NUcare_Health_system/admin/reports.php">
       <span class="nav-dot"></span>Reports
     </a>

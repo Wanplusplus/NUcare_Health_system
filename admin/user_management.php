@@ -27,6 +27,21 @@ $actorSchoolPersonId = isset($_SESSION['SchoolPersonID']) ? (int)$_SESSION['Scho
 $errors = [];
 $success = null;
 
+// -----------------------------
+// Role assignment policy
+// -----------------------------
+// "Super Admin" must NEVER be assignable/creatable through this interface,
+// regardless of who is logged in. This is the canonical list of roles that
+// the User Management UI is allowed to offer for assignment.
+const ASSIGNABLE_ROLES_SUPER_ADMIN = ['Admin', 'Doctor', 'Dentist', 'Nurse', 'Staff', 'Faculty', 'Student'];
+
+// Admins may manage the same set EXCEPT they cannot assign "Admin" (and never "Super Admin").
+const ASSIGNABLE_ROLES_ADMIN = ['Doctor', 'Dentist', 'Nurse', 'Staff', 'Faculty', 'Student'];
+
+// Roles that can NEVER be assigned through User Management, under any circumstance.
+const FORBIDDEN_ASSIGNABLE_ROLES = ['Super Admin'];
+
+
 // Sidebar active state (UI consistency)
 $activeSidebarItem = $activeSidebarItem ?? 'user_management';
 
@@ -38,6 +53,16 @@ function getIp(): ?string
     return $_SERVER['HTTP_X_FORWARDED_FOR'] ?? ($_SERVER['REMOTE_ADDR'] ?? null);
 }
 
+/**
+ * Returns the list of role names the given actor is permitted to ASSIGN through
+ * the User Management interface. "Super Admin" is never included for anyone.
+ */
+function assignableRolesForActor(bool $actorIsSuperAdmin): array
+{
+    return $actorIsSuperAdmin
+        ? ASSIGNABLE_ROLES_SUPER_ADMIN
+        : ASSIGNABLE_ROLES_ADMIN;
+}
 
 function fetchAll(PDO $pdo, string $sql, array $params = []): array
 {
@@ -153,6 +178,17 @@ function auditSimple(?int $actorUserId, ?int $actorSchoolPersonId, string $actio
     );
 }
 
+// ---------------------------------------------------------------------------
+// Determine actor's privileges (Super Admin vs Admin)
+// ---------------------------------------------------------------------------
+$actorIsSuperAdmin = $actorUserId !== null ? isSuperAdmin($pdo, $actorUserId) : false;
+
+// The roles this actor is permitted to assign through the user management form.
+$assignableRoles = assignableRolesForActor($actorIsSuperAdmin);
+
+// Quick lookup set for forbidden assignments
+$forbiddenRolesSet = array_flip(FORBIDDEN_ASSIGNABLE_ROLES);
+
 // -----------------------------
 // Handle role promotion/de-promotion and account activation
 // -----------------------------
@@ -168,18 +204,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
     } elseif (isSuperAdmin($pdo, $targetUserId)) {
         // Prevent any modifications to Super Admin accounts
         $errors[] = 'Cannot modify Super Admin accounts. This account is protected.';
-    } else {
-        // Fetch roles for mapping.
-        $roleToProfessionMap = [
-            'Doctor' => 'Doctor',
-            'Dentist' => 'Dentist',
-            'Nurse' => 'Nurse',
-        ];
-
+    } elseif (!$actorIsSuperAdmin && $targetUserId === $actorUserId) {
+        // ------------------------------------------------------------------
+        // ADMIN SELF-PROTECTION: An Admin cannot edit their own roles.
+        // They cannot remove Admin from themselves.
+        // ------------------------------------------------------------------
         if ($actionType === 'update_roles') {
-            // Expected inputs:
-            // roles_to_add[] and roles_to_remove[]
-            // NOTE: Even if the UI sends multiple roles, we enforce **single role per user** here.
+            $errors[] = 'You cannot modify your own Admin role. The Admin role is locked on your account.';
+        } elseif ($actionType === 'set_active') {
+            $errors[] = 'You cannot deactivate/activate your own account.';
+        } else {
+            $errors[] = 'You cannot modify your own account.';
+        }
+    } elseif (!$actorIsSuperAdmin && $targetUserId !== $actorUserId) {
+        // ------------------------------------------------------------------
+        // ADMIN EDITING OTHERS: must check that no forbidden roles are being
+        // assigned (Super Admin, Admin - since Admin cannot assign Admin).
+        // ------------------------------------------------------------------
+        if ($actionType === 'update_roles') {
+            $rolesToAdd = isset($_POST['roles_to_add']) && is_array($_POST['roles_to_add']) ? array_values($_POST['roles_to_add']) : [];
+
+            foreach ($rolesToAdd as $role) {
+                if (isset($forbiddenRolesSet[$role])) {
+                    $errors[] = 'Cannot assign Super Admin. This role is not available through User Management.';
+                    break;
+                }
+            }
+
+            foreach ($rolesToAdd as $role) {
+                if ($role === 'Admin') {
+                    $errors[] = 'You do not have permission to assign the Admin role.';
+                    break;
+                }
+            }
+        }
+    }
+
+    // ---- PROCESSING (applies to both Super Admin and Admin, if no errors) ----
+    if (empty($errors)) {
+        if ($actionType === 'update_roles') {
+            // Fetch roles for mapping.
+            $roleToProfessionMap = [
+                'Doctor' => 'Doctor',
+                'Dentist' => 'Dentist',
+                'Nurse' => 'Nurse',
+            ];
+
             $rolesToAdd = isset($_POST['roles_to_add']) && is_array($_POST['roles_to_add']) ? array_values($_POST['roles_to_add']) : [];
             $rolesToRemove = isset($_POST['roles_to_remove']) && is_array($_POST['roles_to_remove']) ? array_values($_POST['roles_to_remove']) : [];
 
@@ -191,151 +261,179 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
             $rolesToAdd = array_values(array_filter($rolesToAdd, fn($r) => isset($knownSet[(string)$r])));
             $rolesToRemove = array_values(array_filter($rolesToRemove, fn($r) => isset($knownSet[(string)$r])));
 
-            $currentRoles = rolesForUser($pdo, $targetUserId);
-            $desiredRoles = array_values(array_unique(array_merge(
-                array_values(array_diff($currentRoles, $rolesToRemove)),
-                $rolesToAdd
-            )));
-
-            // Enforce single role: pick highest priority among desired roles.
-            // Priority order can be adjusted later.
-            $priority = ['Doctor', 'Dentist', 'Nurse'];
-            $chosenRole = null;
-
-            foreach ($priority as $pRole) {
-                if (in_array($pRole, $desiredRoles, true)) {
-                    $chosenRole = $pRole;
-                    break;
+            // ------------------------------------------------------------------
+            // SECURITY ENFORCEMENT: Block any attempt to assign/promote to a
+            // forbidden role. This catches Super Admin assignments even if the
+            // UI is bypassed (e.g. via curl/Postman).
+            // ------------------------------------------------------------------
+            foreach ($rolesToAdd as $role) {
+                if (isset($forbiddenRolesSet[$role])) {
+                    $errors[] = 'Forbidden: Cannot assign the role "' . htmlspecialchars($role) . '" through User Management.';
+                }
+            }
+            foreach ($rolesToRemove as $role) {
+                if (isset($forbiddenRolesSet[$role])) {
+                    $errors[] = 'Forbidden: Cannot remove the role "' . htmlspecialchars($role) . '" through User Management.';
                 }
             }
 
-            // If none of the prioritized roles are present, pick the first desired role (if any)
-            if ($chosenRole === null && !empty($desiredRoles)) {
-                $chosenRole = $desiredRoles[0];
+            // If actor is not a Super Admin, also forbid assigning "Admin"
+            if (!$actorIsSuperAdmin) {
+                $assignableSet = array_flip($assignableRoles);
+                foreach ($rolesToAdd as $role) {
+                    if (!isset($assignableSet[$role])) {
+                        $errors[] = 'You do not have permission to assign the role "' . htmlspecialchars($role) . '".';
+                    }
+                }
             }
 
-            $pdo->beginTransaction();
-            try {
-                // Remove ALL existing roles for user first to guarantee single-role invariant.
-                $existingRoleNames = $currentRoles;
-                foreach ($existingRoleNames as $existingRoleName) {
-                    $roleRow = fetchOne($pdo, "SELECT RoleID FROM roles WHERE RoleName = ? LIMIT 1", [$existingRoleName]);
-                    if (!$roleRow) continue;
-                    $roleId = (int)$roleRow['RoleID'];
+            if (empty($errors)) {
+                $currentRoles = rolesForUser($pdo, $targetUserId);
+                $desiredRoles = array_values(array_unique(array_merge(
+                    array_values(array_diff($currentRoles, $rolesToRemove)),
+                    $rolesToAdd
+                )));
 
-                    $stmtDel = $pdo->prepare("DELETE FROM user_roles WHERE UserID = ? AND RoleID = ?");
-                    $stmtDel->execute([$targetUserId, $roleId]);
+                // Enforce single role: pick highest priority among desired roles.
+                // Priority order can be adjusted later.
+                $priority = ['Doctor', 'Dentist', 'Nurse'];
+                $chosenRole = null;
 
-                    auditSimple(
-                        $actorUserId,
-                        $actorSchoolPersonId,
-                        'role_removal',
-                        'users',
-                        $targetUserId,
-                        "Removed role: {$existingRoleName}"
-                    );
-
-                    if (isset($roleToProfessionMap[$existingRoleName])) {
-                        removeMedicalProfessionalEntry($pdo, $targetUserId, $roleToProfessionMap[$existingRoleName]);
+                foreach ($priority as $pRole) {
+                    if (in_array($pRole, $desiredRoles, true)) {
+                        $chosenRole = $pRole;
+                        break;
                     }
                 }
 
-                // Insert only chosen role.
-                if ($chosenRole !== null) {
+                // If none of the prioritized roles are present, pick the first desired role (if any)
+                if ($chosenRole === null && !empty($desiredRoles)) {
+                    $chosenRole = $desiredRoles[0];
+                }
 
-                    // Debug: trace promotion sync timing
-                    if (function_exists('rbacDebug')) {
-                        rbacDebug('promotion_before_role_assignment', [
-
-                            'actorUserId' => $actorUserId,
-                            'targetUserId' => $targetUserId,
-                            'desiredRolesToAdd' => $rolesToAdd,
-                            'desiredRolesToRemove' => $rolesToRemove,
-                            'chosenRole' => $chosenRole,
-                        ]);
-                    }
-
-                    $roleRow = fetchOne($pdo, "SELECT RoleID FROM roles WHERE RoleName = ? LIMIT 1", [$chosenRole]);
-                    if ($roleRow) {
+                $pdo->beginTransaction();
+                try {
+                    // Remove ALL existing roles for user first to guarantee single-role invariant.
+                    $existingRoleNames = $currentRoles;
+                    foreach ($existingRoleNames as $existingRoleName) {
+                        $roleRow = fetchOne($pdo, "SELECT RoleID FROM roles WHERE RoleName = ? LIMIT 1", [$existingRoleName]);
+                        if (!$roleRow) continue;
                         $roleId = (int)$roleRow['RoleID'];
 
-                        // user_roles schema compatibility: some dumps may not have CreatedAt/UpdatedAt.
-                        $hasUserRolesTimestamps = fetchOne(
-                            $pdo,
-                            "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_roles' AND COLUMN_NAME IN ('CreatedAt','UpdatedAt') LIMIT 1"
-                        );
-
-                        if ($hasUserRolesTimestamps) {
-                            $stmt = $pdo->prepare(
-                                "INSERT INTO user_roles (UserID, RoleID, CreatedAt, UpdatedAt) VALUES (?, ?, NOW(), NOW())"
-                            );
-                            $stmt->execute([$targetUserId, $roleId]);
-                        } else {
-                            $stmt = $pdo->prepare("INSERT INTO user_roles (UserID, RoleID) VALUES (?, ?)");
-                            $stmt->execute([$targetUserId, $roleId]);
-                        }
+                        $stmtDel = $pdo->prepare("DELETE FROM user_roles WHERE UserID = ? AND RoleID = ?");
+                        $stmtDel->execute([$targetUserId, $roleId]);
 
                         auditSimple(
                             $actorUserId,
                             $actorSchoolPersonId,
-                            'role_assignment',
+                            'role_removal',
                             'users',
                             $targetUserId,
-                            "Assigned role: {$chosenRole}"
+                            "Removed role: {$existingRoleName}"
                         );
 
-                        if (isset($roleToProfessionMap[$chosenRole])) {
-                            ensureMedicalProfessional($pdo, $targetUserId, $roleToProfessionMap[$chosenRole]);
-                        }
-
-                        // Ensure RBAC permissions exist for promoted medical roles.
-                        // This prevents promoted users from being blocked by module_guard.php.
-                        if (in_array($chosenRole, ['Doctor', 'Dentist', 'Nurse'], true)) {
-                            $requiredModules = ['Consultation', 'Records', 'Schedule', 'Medicine'];
-                            $requiredPermissions = ['access', 'View', 'Create', 'Edit', 'Approve'];
-
-                            // Remove existing entries for this role+module+permission set, then insert fresh.
-                            // This avoids duplicate-key failures when the role is changed multiple times.
-
-                            $deleteSql = "
-                                DELETE rp
-                                FROM role_permissions rp
-                                INNER JOIN roles rr ON rr.RoleID = rp.RoleID
-                                INNER JOIN modules mm ON mm.ModuleID = rp.ModuleID
-                                INNER JOIN permissions p ON p.PermissionID = rp.PermissionID
-                                WHERE rr.RoleName = ?
-                                  AND mm.ModuleName IN ('" . implode("','", $requiredModules) . "')
-                                  AND p.PermissionName IN ('" . implode("','", $requiredPermissions) . "')
-                            ";
-
-                            $delStmt = $pdo->prepare($deleteSql);
-                            $delStmt->execute([$chosenRole]);
-
-                            $insertSql = "
-                                INSERT INTO role_permissions (RoleID, ModuleID, PermissionID)
-                                SELECT rr.RoleID, mm.ModuleID, p.PermissionID
-                                FROM roles rr
-                                CROSS JOIN modules mm
-                                CROSS JOIN permissions p
-                                WHERE rr.RoleName = ?
-                                  AND mm.ModuleName IN ('" . implode("','", $requiredModules) . "')
-                                  AND p.PermissionName IN ('" . implode("','", $requiredPermissions) . "')
-                            ";
-
-                            $stmt = $pdo->prepare($insertSql);
-                            $stmt->execute([$chosenRole]);
+                        if (isset($roleToProfessionMap[$existingRoleName])) {
+                            removeMedicalProfessionalEntry($pdo, $targetUserId, $roleToProfessionMap[$existingRoleName]);
                         }
                     }
+
+                    // Insert only chosen role.
+                    if ($chosenRole !== null) {
+
+                        // Debug: trace promotion sync timing
+                        if (function_exists('rbacDebug')) {
+                            rbacDebug('promotion_before_role_assignment', [
+
+                                'actorUserId' => $actorUserId,
+                                'targetUserId' => $targetUserId,
+                                'desiredRolesToAdd' => $rolesToAdd,
+                                'desiredRolesToRemove' => $rolesToRemove,
+                                'chosenRole' => $chosenRole,
+                            ]);
+                        }
+
+                        $roleRow = fetchOne($pdo, "SELECT RoleID FROM roles WHERE RoleName = ? LIMIT 1", [$chosenRole]);
+                        if ($roleRow) {
+                            $roleId = (int)$roleRow['RoleID'];
+
+                            // user_roles schema compatibility: some dumps may not have CreatedAt/UpdatedAt.
+                            $hasUserRolesTimestamps = fetchOne(
+                                $pdo,
+                                "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_roles' AND COLUMN_NAME IN ('CreatedAt','UpdatedAt') LIMIT 1"
+                            );
+
+                            if ($hasUserRolesTimestamps) {
+                                $stmt = $pdo->prepare(
+                                    "INSERT INTO user_roles (UserID, RoleID, CreatedAt, UpdatedAt) VALUES (?, ?, NOW(), NOW())"
+                                );
+                                $stmt->execute([$targetUserId, $roleId]);
+                            } else {
+                                $stmt = $pdo->prepare("INSERT INTO user_roles (UserID, RoleID) VALUES (?, ?)");
+                                $stmt->execute([$targetUserId, $roleId]);
+                            }
+
+                            auditSimple(
+                                $actorUserId,
+                                $actorSchoolPersonId,
+                                'role_assignment',
+                                'users',
+                                $targetUserId,
+                                "Assigned role: {$chosenRole}"
+                            );
+
+                            if (isset($roleToProfessionMap[$chosenRole])) {
+                                ensureMedicalProfessional($pdo, $targetUserId, $roleToProfessionMap[$chosenRole]);
+                            }
+
+                            // Ensure RBAC permissions exist for promoted medical roles.
+                            // This prevents promoted users from being blocked by module_guard.php.
+                            if (in_array($chosenRole, ['Doctor', 'Dentist', 'Nurse'], true)) {
+                                $requiredModules = ['Consultation', 'Records', 'Schedule', 'Medicine'];
+                                $requiredPermissions = ['access', 'View', 'Create', 'Edit', 'Approve'];
+
+                                // Remove existing entries for this role+module+permission set, then insert fresh.
+                                // This avoids duplicate-key failures when the role is changed multiple times.
+
+                                $deleteSql = "
+                                    DELETE rp
+                                    FROM role_permissions rp
+                                    INNER JOIN roles rr ON rr.RoleID = rp.RoleID
+                                    INNER JOIN modules mm ON mm.ModuleID = rp.ModuleID
+                                    INNER JOIN permissions p ON p.PermissionID = rp.PermissionID
+                                    WHERE rr.RoleName = ?
+                                      AND mm.ModuleName IN ('" . implode("','", $requiredModules) . "')
+                                      AND p.PermissionName IN ('" . implode("','", $requiredPermissions) . "')
+                                ";
+
+                                $delStmt = $pdo->prepare($deleteSql);
+                                $delStmt->execute([$chosenRole]);
+
+                                $insertSql = "
+                                    INSERT INTO role_permissions (RoleID, ModuleID, PermissionID)
+                                    SELECT rr.RoleID, mm.ModuleID, p.PermissionID
+                                    FROM roles rr
+                                    CROSS JOIN modules mm
+                                    CROSS JOIN permissions p
+                                    WHERE rr.RoleName = ?
+                                      AND mm.ModuleName IN ('" . implode("','", $requiredModules) . "')
+                                      AND p.PermissionName IN ('" . implode("','", $requiredPermissions) . "')
+                                ";
+
+                                $stmt = $pdo->prepare($insertSql);
+                                $stmt->execute([$chosenRole]);
+                            }
+                        }
+                    }
+
+
+                    $pdo->commit();
+                    $success = 'Role updated successfully (single-role enforced).';
+                } catch (Throwable $e) {
+                    $pdo->rollBack();
+                    $errors[] = 'Failed to update roles.';
+                    // Expose the real exception during development so we can fix the underlying issue.
+                    $errors[] = 'Error detail: ' . $e->getMessage();
                 }
-
-
-                $pdo->commit();
-                $success = 'Role updated successfully (single-role enforced).';
-            } catch (Throwable $e) {
-                $pdo->rollBack();
-                $errors[] = 'Failed to update roles.';
-                // Expose the real exception during development so we can fix the underlying issue.
-                $errors[] = 'Error detail: ' . $e->getMessage();
             }
         } elseif ($actionType === 'set_active') {
             // Expected: is_active (0/1)
@@ -618,6 +716,10 @@ $statusOptions = ['Active', 'Disabled', 'Enrolled', 'Dropped', 'Graduated', 'Emp
                         $rolesText = $roles ? implode(', ', $roles) : '—';
                         $isActive = (int)$u['IsActive'] === 1;
                         $isSuperAdmin = isSuperAdmin($pdo, $uid);
+                        // Hide Edit Roles button when:
+                        // 1. Target is a Super Admin (no one can edit them), OR
+                        // 2. Actor is an Admin AND target is themselves (Admin cannot edit own Admin role).
+                        $hideEditRoles = $isSuperAdmin || (!$actorIsSuperAdmin && $actorUserId === $uid);
                     ?>
                         <tr>
                             <td><?= htmlspecialchars((string)($u['FirstName'] ?? '') . (isset($u['MiddleName']) && $u['MiddleName'] !== null && $u['MiddleName'] !== '' ? ' ' . (string)$u['MiddleName'] : '') . ' ' . (string)($u['LastName'] ?? '')) ?></td>
@@ -639,9 +741,11 @@ $statusOptions = ['Active', 'Disabled', 'Enrolled', 'Dropped', 'Graduated', 'Emp
                             </td>
                             <td>
                                 <div class="d-flex flex-wrap gap-2">
-                                    <?php if (!$isSuperAdmin): ?>
+                                    <?php if (!$hideEditRoles): ?>
                                         <button class="btn-action btn-action-edit" type="button" onclick="openRolesModal(<?= $uid ?>, <?= htmlspecialchars(json_encode($roles)) ?>)">Edit Roles</button>
+                                    <?php endif; ?>
 
+                                    <?php if (!$isSuperAdmin): ?>
                                         <form method="post" style="display:inline-block;" onsubmit="return confirm('<?= $isActive ? 'Deactivate' : 'Activate' ?> this account?');">
                                             <input type="hidden" name="action_type" value="set_active">
                                             <input type="hidden" name="target_user_id" value="<?= $uid ?>">
@@ -706,7 +810,7 @@ $statusOptions = ['Active', 'Disabled', 'Enrolled', 'Dropped', 'Graduated', 'Emp
                                     Choose exactly <strong>one</strong> role.
                                 </div>
 
-                                <?php foreach ($roleNames as $roleName): ?>
+                                <?php foreach ($assignableRoles as $roleName): ?>
                                     <div class="col-md-3">
                                         <div class="form-check">
                                             <input class="form-check-input role-checkbox"
@@ -857,4 +961,3 @@ $statusOptions = ['Active', 'Disabled', 'Enrolled', 'Dropped', 'Graduated', 'Emp
 </script>
 </body>
 </html>
-
