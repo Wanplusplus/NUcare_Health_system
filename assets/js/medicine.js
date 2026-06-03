@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (quantity <= 0) return 'Out Of Stock';
     if (days < 0) return 'Expired';
     if (days <= 30) return 'Near Expiry';
-    if (quantity <= 20) return 'Low Stock';
+    if (quantity <= 50) return 'Low Stock';
     return 'Available';
   };
 
