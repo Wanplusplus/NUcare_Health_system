@@ -53,46 +53,16 @@ $activeSidebarItem = $activeSidebarItem ?? 'dashboard';
     </div>
   </div>
 
-<?php
-// RBAC-driven: query role_permissions for 'access' permission
-$pdoSide = require __DIR__ . '/../config/db_pdo.php';
-$userIdSide = isset($_SESSION['UserID']) ? (int)$_SESSION['UserID'] : 0;
-
-$accessibleModules = [];
-if ($userIdSide > 0) {
-    $stmtSide = $pdoSide->prepare(
-        "SELECT DISTINCT m.ModuleName
-         FROM user_roles ur
-         INNER JOIN role_permissions rp ON rp.RoleID = ur.RoleID
-         INNER JOIN modules m ON m.ModuleID = rp.ModuleID
-         INNER JOIN permissions p ON p.PermissionID = rp.PermissionID
-         WHERE ur.UserID = ? AND p.PermissionName = 'access'"
-    );
-    $stmtSide->execute([$userIdSide]);
-    foreach ($stmtSide->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $accessibleModules[$row['ModuleName']] = true;
-    }
-}
-
-// Module name → URL mapping
-$patientNav = [
-    'Schedule' => ['url' => '/NUcare_Health_system/modules/dashboard/my_schedule.php', 'label' => 'My Schedule', 'key' => 'schedule'],
-    'Records'  => ['url' => '/NUcare_Health_system/modules/dashboard/my_records.php', 'label' => 'My Records',  'key' => 'records'],
-];
-?>
-
   <nav class="nav-menu">
-    <!-- Dashboard: always visible -->
     <a class="nav-item <?php echo $activeSidebarItem === 'dashboard' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/dashboard/patient_dashboard.php">
       <span class="nav-dot"></span>Dashboard
     </a>
-    <?php foreach ($patientNav as $modName => $info): ?>
-      <?php if (isset($accessibleModules[$modName])): ?>
-    <a class="nav-item <?php echo $activeSidebarItem === $info['key'] ? 'active' : ''; ?>" href="<?= $info['url'] ?>">
-      <span class="nav-dot"></span><?= $info['label'] ?>
+    <a class="nav-item <?php echo $activeSidebarItem === 'schedule' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/dashboard/my_schedule.php">
+      <span class="nav-dot"></span>My Schedule
     </a>
-      <?php endif; ?>
-    <?php endforeach; ?>
+    <a class="nav-item <?php echo $activeSidebarItem === 'records' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/dashboard/my_records.php">
+      <span class="nav-dot"></span>My Records
+    </a>
     <details class="nav-settings" <?php echo in_array($activeSidebarItem, ['profile', 'settings'], true) ? 'open' : ''; ?>>
       <summary class="nav-item <?php echo in_array($activeSidebarItem, ['profile', 'settings'], true) ? 'active' : ''; ?>">
         <span class="nav-dot"></span>Settings

@@ -373,6 +373,7 @@ function showModuleUnavailable(): void
     <title>NUCARE | Module Unavailable</title>
     <link rel="stylesheet" href="/NUcare_Health_system/assets/css/app.css">
     <link rel="stylesheet" href="/NUcare_Health_system/assets/css/admin_dashboard_overrides.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
         body, html {
             margin: 0; padding: 0;
@@ -432,7 +433,7 @@ function showModuleUnavailable(): void
 <body>
     <div class="module-unavailable-wrapper">
         <div class="module-unavailable-card">
-            <span class="icon">🔧</span>
+            <span class="icon"><i class="bi bi-tools" style="font-size: 3rem; color: #8b0000;"></i></span>
             <h2>Oops!</h2>
             <p>This module is currently being fixed. Please try again later.</p>
             <a href="/NUcare_Health_system/modules/dashboard/patient_dashboard.php" class="back-link">Back to Dashboard</a>
