@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (quantity <= 0) return 'Out Of Stock';
     if (days < 0) return 'Expired';
     if (days <= 30) return 'Near Expiry';
-    if (quantity <= 50) return 'Low Stock';
+    if (quantity <= 50) return 'Low Stock'; 
     return 'Available';
   };
 
@@ -255,7 +255,12 @@ document.addEventListener('DOMContentLoaded', () => {
     return '';
   };
 
-  const getDisplayStatus = (m) => m.status_display || statusFrom(m.quantity, m.expiry_date);
+const getDisplayStatus = (m) => {
+    return statusFrom(
+        Number(m.quantity || 0),
+        m.expiry_date || ''
+    );
+};
 
   const renderTable = (data) => {
     if (!medTableBody || !medEmpty) return;
