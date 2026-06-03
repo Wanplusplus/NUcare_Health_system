@@ -9,7 +9,6 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Verify session
 if (!isset($_SESSION['UserID'])) {
     http_response_code(401);
     echo json_encode(['ok' => false, 'message' => 'Unauthorized']);
@@ -18,66 +17,93 @@ if (!isset($_SESSION['UserID'])) {
 
 $pdo = require __DIR__ . '/../config/db_pdo.php';
 
-// Verify RBAC access
-require_once __DIR__ . '/../includes/module_guard.php';
-try {
-    requireModule('Admin Panel', 'access');
-} catch (Throwable $e) {
+$hasSuperAdmin = false;
+if (isset($_SESSION['Roles']) && is_array($_SESSION['Roles'])) {
+    $hasSuperAdmin = in_array('Super Admin', $_SESSION['Roles'], true);
+}
+if (!$hasSuperAdmin) {
     http_response_code(403);
-    echo json_encode(['ok' => false, 'message' => 'Access denied']);
+    echo json_encode(['ok' => false, 'message' => 'Access denied. Only Super Administrators can manage RBAC permissions.']);
     exit;
 }
 
 $roleId = (int)($_POST['role_id'] ?? 0);
-
 if ($roleId <= 0) {
     echo json_encode(['ok' => false, 'message' => 'Invalid role ID']);
     exit;
 }
 
 try {
-    // Fetch all modules
-    $modulesSql = "
-        SELECT ModuleID, ModuleName, Description
-        FROM modules
-        ORDER BY ModuleName ASC
-    ";
-    $stmt = $pdo->prepare($modulesSql);
-    $stmt->execute();
-    $modules = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt = $pdo->prepare("SELECT RoleName FROM roles WHERE RoleID = ? LIMIT 1");
+    $stmt->execute([$roleId]);
+    $roleRow = $stmt->fetch(PDO::FETCH_ASSOC);
+    $roleName = $roleRow ? (string)$roleRow['RoleName'] : '';
 
-    // Fetch all permissions
-    $permsSql = "
-        SELECT PermissionID, PermissionName, Description
-        FROM permissions
-        ORDER BY PermissionName ASC
-    ";
-    $stmt = $pdo->prepare($permsSql);
-    $stmt->execute();
-    $permissions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $roleModuleMap = [
+        'Student' => ['Records', 'Schedule'],
+        'Staff'   => ['Records', 'Schedule'],
+        'Faculty' => ['Records', 'Schedule'],
+        'Doctor'  => ['Records', 'Reports', 'Schedule', 'Consultation', 'Medicine'],
+        'Dentist' => ['Records', 'Reports', 'Schedule', 'Consultation', 'Medicine'],
+        'Nurse'   => ['Records', 'Reports', 'Schedule', 'Consultation', 'Medicine'],
+        'Admin'   => ['Records', 'Reports', 'Schedule', 'Consultation', 'Medicine', 'Admin Panel', 'Audit Logs'],
+        'Super Admin' => [],
+    ];
 
-    // Fetch all valid module-permission combinations from ANY role
-    // This shows which module-permission pairs are used in the system
-    $modulePermSql = "
-        SELECT DISTINCT ModuleID, PermissionID
-        FROM role_permissions
-        ORDER BY ModuleID, PermissionID
-    ";
-    $stmt = $pdo->prepare($modulePermSql);
-    $stmt->execute();
-    $modulePermissions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // RBAC simplification: only Access and Manage are shown in the UI.
+    // (Other permissions remain in the DB for future use.)
+    $rolePermissionMap = [
+        'Student'     => ['access'],
+        'Staff'       => ['access'],
+        'Faculty'     => ['access'],
+        'Doctor'      => ['access', 'manage'],
+        'Dentist'     => ['access', 'manage'],
+        'Nurse'       => ['access', 'manage'],
+        'Admin'       => ['access', 'manage'],
+        'Super Admin' => [],
+    ];
 
-    // Fetch current permissions for this role
-    $currentPermsSql = "
-        SELECT rp.ModuleID, rp.PermissionID
-        FROM role_permissions rp
-        WHERE rp.RoleID = ?
-    ";
-    $stmt = $pdo->prepare($currentPermsSql);
+    $allowedModules = $roleModuleMap[$roleName] ?? [];
+    $allowedPermissions = $rolePermissionMap[$roleName] ?? [];
+    $isSuperAdminRole = ($roleName === 'Super Admin');
+
+    $stmt = $pdo->prepare("SELECT ModuleID, ModuleName, Description FROM modules ORDER BY ModuleName ASC");
+    $stmt->execute();
+    $allModuleRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $modules = [];
+    if ($isSuperAdminRole) {
+        $modules = $allModuleRows;
+    } else {
+        $allowedSet = array_flip($allowedModules);
+        foreach ($allModuleRows as $mod) {
+            if (isset($allowedSet[$mod['ModuleName']])) {
+                $modules[] = $mod;
+            }
+        }
+    }
+
+    $stmt = $pdo->prepare("SELECT PermissionID, PermissionName, Description FROM permissions ORDER BY PermissionName ASC");
+    $stmt->execute();
+    $allPermissionsRaw = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $permissions = [];
+    if ($isSuperAdminRole) {
+        $permissions = $allPermissionsRaw;
+    } else {
+        // Case-insensitive match against allowed permission names
+        $allowedPermSetLower = array_map('strtolower', $allowedPermissions);
+        foreach ($allPermissionsRaw as $perm) {
+            if (in_array(strtolower((string)$perm['PermissionName']), $allowedPermSetLower, true)) {
+                $permissions[] = $perm;
+            }
+        }
+    }
+
+    $stmt = $pdo->prepare("SELECT rp.ModuleID, rp.PermissionID FROM role_permissions rp WHERE rp.RoleID = ?");
     $stmt->execute([$roleId]);
     $currentPerms = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Build permission lookup: "moduleId_permissionId" => true
     $permissionsMap = [];
     foreach ($currentPerms as $perm) {
         $key = ((int)$perm['ModuleID']) . '_' . ((int)$perm['PermissionID']);
@@ -88,7 +114,6 @@ try {
         'ok' => true,
         'modules' => $modules,
         'allPermissions' => $permissions,
-        'modulePermissions' => $modulePermissions,
         'permissions' => $permissionsMap,
     ]);
 } catch (Throwable $e) {

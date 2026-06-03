@@ -17,24 +17,38 @@ if (!isset($_SESSION['UserID'])) {
 }
 
 $pdo = require __DIR__ . '/../config/db_pdo.php';
-require_once __DIR__ . '/../includes/module_guard.php';
-require_once __DIR__ . '/../includes/audit.php';
 
-// Verify RBAC access
-try {
-    requireModule('Admin Panel', 'access');
-} catch (Throwable $e) {
+// Verify Super Admin access
+$hasSuperAdmin = false;
+if (isset($_SESSION['Roles']) && is_array($_SESSION['Roles'])) {
+    $hasSuperAdmin = in_array('Super Admin', $_SESSION['Roles'], true);
+}
+if (!$hasSuperAdmin) {
     http_response_code(403);
-    echo json_encode(['ok' => false, 'message' => 'Access denied']);
+    echo json_encode(['ok' => false, 'message' => 'Access denied. Only Super Administrators can save RBAC permissions.']);
     exit;
 }
 
-// Get JSON body
+// Read input: support both JSON and form-encoded requests
 $rawInput = file_get_contents('php://input');
-$data = json_decode($rawInput, true);
+$data = null;
+if (is_string($rawInput) && $rawInput !== '') {
+    $decoded = json_decode($rawInput, true);
+    if (is_array($decoded)) {
+        $data = $decoded;
+    }
+}
 
 if (!is_array($data)) {
-    echo json_encode(['ok' => false, 'message' => 'Invalid JSON']);
+    // Fallback to form-encoded
+    $data = $_POST;
+}
+
+if (!is_array($data) || empty($data)) {
+    echo json_encode([
+        'ok' => false,
+        'message' => 'Invalid or empty request body. Raw input: ' . substr((string)$rawInput, 0, 200),
+    ]);
     exit;
 }
 
@@ -46,7 +60,12 @@ if ($roleId <= 0) {
     exit;
 }
 
-// Check if role is Super Admin (protect it)
+if (!is_array($permissions)) {
+    echo json_encode(['ok' => false, 'message' => 'Invalid permissions format']);
+    exit;
+}
+
+// Verify the role exists and is not Super Admin
 try {
     $roleStmt = $pdo->prepare("SELECT RoleName FROM roles WHERE RoleID = ? LIMIT 1");
     $roleStmt->execute([$roleId]);
@@ -66,48 +85,47 @@ try {
     $roleName = $roleRow['RoleName'];
 } catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode(['ok' => false, 'message' => 'Database error']);
-    exit;
-}
-
-// Validate permissions array
-if (!is_array($permissions)) {
-    echo json_encode(['ok' => false, 'message' => 'Invalid permissions format']);
+    echo json_encode(['ok' => false, 'message' => 'Database error: ' . $e->getMessage()]);
     exit;
 }
 
 try {
     $pdo->beginTransaction();
 
-    // Step 1: Delete all existing permissions for this role
+    // Delete all existing permissions for this role
     $deleteStmt = $pdo->prepare("DELETE FROM role_permissions WHERE RoleID = ?");
     $deleteStmt->execute([$roleId]);
 
-    // Step 2: Insert new permissions
+    // Insert new permissions
     $insertStmt = $pdo->prepare(
         "INSERT INTO role_permissions (RoleID, ModuleID, PermissionID) VALUES (?, ?, ?)"
     );
 
     $insertCount = 0;
+    $skipped = [];
     foreach ($permissions as $perm) {
         $moduleId = (int)($perm['module_id'] ?? 0);
         $permissionId = (int)($perm['permission_id'] ?? 0);
 
         if ($moduleId <= 0 || $permissionId <= 0) {
+            $skipped[] = ['reason' => 'invalid_ids', 'data' => $perm];
             continue;
         }
 
-        // Verify module and permission exist
+        // Verify module exists
         $moduleStmt = $pdo->prepare("SELECT ModuleID FROM modules WHERE ModuleID = ? LIMIT 1");
         $moduleStmt->execute([$moduleId]);
         if (!$moduleStmt->fetch()) {
-            continue; // Skip invalid module
+            $skipped[] = ['reason' => 'module_not_found', 'module_id' => $moduleId];
+            continue;
         }
 
+        // Verify permission exists
         $permStmt = $pdo->prepare("SELECT PermissionID FROM permissions WHERE PermissionID = ? LIMIT 1");
         $permStmt->execute([$permissionId]);
         if (!$permStmt->fetch()) {
-            continue; // Skip invalid permission
+            $skipped[] = ['reason' => 'permission_not_found', 'permission_id' => $permissionId];
+            continue;
         }
 
         $insertStmt->execute([$roleId, $moduleId, $permissionId]);
@@ -116,24 +134,28 @@ try {
 
     $pdo->commit();
 
-    // Step 3: Audit log
+    // Audit log
     $actorUserId = isset($_SESSION['UserID']) ? (int)$_SESSION['UserID'] : null;
     $actorSchoolPersonId = isset($_SESSION['SchoolPersonID']) ? (int)$_SESSION['SchoolPersonID'] : null;
 
-    auditLog(
-        $actorUserId,
-        $actorSchoolPersonId,
-        'rbac_permissions_updated',
-        'roles',
-        $roleId,
-        "Updated permissions for {$roleName} role ({$insertCount} permissions assigned)",
-        $_SERVER['REMOTE_ADDR'] ?? null
-    );
+    if (function_exists('auditLog')) {
+        auditLog(
+            $actorUserId,
+            $actorSchoolPersonId,
+            'rbac_permissions_updated',
+            'roles',
+            (string)$roleId,
+            "Updated permissions for {$roleName} role ({$insertCount} permissions assigned)",
+            $_SERVER['REMOTE_ADDR'] ?? null
+        );
+    }
 
     echo json_encode([
         'ok' => true,
-        'message' => 'Role permissions updated successfully',
-        'permissions_count' => $insertCount,
+        'message' => "Role permissions updated successfully. {$insertCount} permissions assigned.",
+        'role' => $roleName,
+        'inserted' => $insertCount,
+        'skipped' => $skipped,
     ]);
 } catch (Throwable $e) {
     $pdo->rollBack();

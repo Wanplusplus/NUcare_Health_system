@@ -317,31 +317,23 @@ async function openManageAccessModal(roleId, roleName) {
             return;
         }
 
-        // Get all modules
+        // modules and allPermissions are already filtered by the backend
+        // to show only relevant items for this role.
         const allModules = data.modules || [];
+        const allPerms = data.allPermissions || [];
         const currentPermissions = data.permissions || {};
 
-        // Build modal content
         let html = '';
-        
+
         for (const module of allModules) {
             const moduleId = module.ModuleID;
             const moduleName = module.ModuleName;
-            
-            // Get permissions for this module
-            const modulePerms = data.allPermissions.filter(p => 
-                data.modulePermissions.some(mp => 
-                    mp.ModuleID == moduleId && mp.PermissionID == p.PermissionID
-                )
-            );
-
-            if (modulePerms.length === 0) continue;
 
             html += `<div class="rbac-module-section">
                 <h4 class="rbac-module-title">${htmlEscape(moduleName)}</h4>
                 <div class="rbac-permissions-grid">`;
 
-            for (const perm of modulePerms) {
+            for (const perm of allPerms) {
                 const permId = perm.PermissionID;
                 const permName = perm.PermissionName;
                 const key = `${moduleId}_${permId}`;

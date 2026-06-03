@@ -267,7 +267,12 @@ function rbacLoadSessionPermissions(PDO $pdo, int $userId): void
     }
 
     $roles = rbacEnsureDefaultRoleAssignment($pdo, $userId);
-    rbacEnsureRolePermissionsForRoles($pdo, $roles);
+    // FIX #1: Removed automatic permission re-seeding on login.
+    // rbacEnsureRolePermissionsForRoles() was inserting a hardcoded matrix
+    // into role_permissions on every login, overwriting RBAC Management changes.
+    // role_permissions is now the sole source of truth.
+    // rbacEnsureRolePermissionsForRole() / rbacEnsureRolePermissionsForRoles()
+    // are retained in the file but no longer called from this path.
 
     // SchoolPersonID + SchoolID
     $schoolPersonId = rbacGetUserSchoolPersonId($pdo, $userId);
@@ -347,21 +352,95 @@ function requirePermission(string $moduleName, string $permissionName): void
 
 
     if (!hasPermission($userId, $moduleName, $permissionName)) {
-        http_response_code(403);
-
-        $roles = isset($_SESSION['Roles']) && is_array($_SESSION['Roles']) ? $_SESSION['Roles'] : [];
-        $landingKey = rbacGetLandingDashboardKey($roles);
-
-        if ($landingKey === 'admin') {
-            header('Location: ../../modules/dashboard/admin_dashboard.php');
-        } elseif ($landingKey === 'medical') {
-            header('Location: ../../modules/dashboard/medical_staff_dashboard.php');
-        } else {
-            header('Location: ../../modules/dashboard/patient_dashboard.php');
-        }
-
+        showModuleUnavailable();
         exit;
     }
+}
+
+/**
+ * Display a styled "module unavailable" page when access is denied.
+ * Shows instead of redirecting to the dashboard.
+ */
+function showModuleUnavailable(): void
+{
+    http_response_code(403);
+    ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NUCARE | Module Unavailable</title>
+    <link rel="stylesheet" href="/NUcare_Health_system/assets/css/app.css">
+    <link rel="stylesheet" href="/NUcare_Health_system/assets/css/admin_dashboard_overrides.css">
+    <style>
+        body, html {
+            margin: 0; padding: 0;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+        }
+        .module-unavailable-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .module-unavailable-card {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+            padding: 3rem 4rem;
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+        .module-unavailable-card .icon {
+            font-size: 4rem;
+            margin-bottom: 1.25rem;
+            display: block;
+        }
+        .module-unavailable-card h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin: 0 0 0.75rem 0;
+        }
+        .module-unavailable-card p {
+            font-size: 1rem;
+            color: #6b7280;
+            margin: 0 0 1.5rem 0;
+            line-height: 1.6;
+        }
+        .module-unavailable-card .back-link {
+            display: inline-block;
+            padding: 0.6rem 1.5rem;
+            background: #8b0000;
+            color: #fff;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .module-unavailable-card .back-link:hover {
+            background: #6b0000;
+        }
+    </style>
+</head>
+<body>
+    <div class="module-unavailable-wrapper">
+        <div class="module-unavailable-card">
+            <span class="icon">🔧</span>
+            <h2>Oops!</h2>
+            <p>This module is currently being fixed. Please try again later.</p>
+            <a href="/NUcare_Health_system/modules/dashboard/patient_dashboard.php" class="back-link">Back to Dashboard</a>
+        </div>
+    </div>
+</body>
+</html>
+    <?php
 }
 
 function rbacRequireModulePermission(string $moduleName, string $permissionName): void
