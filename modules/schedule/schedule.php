@@ -274,10 +274,10 @@ $activeSidebarItem = 'schedule';
 
 <!-- Reschedule Section - Weekly Calendar Grid -->
 <div id="rescheduleSection" style="display:none; margin-top:15px;">
-    <div style="font-weight:600; margin-bottom:12px; color:var(--blue-600);">
-        <i class="fa-solid fa-calendar-week"></i> Select New Date & Time
+    <div style="font-weight:700; margin-bottom:10px; color:var(--blue-600); font-family:'Poppins',sans-serif; font-size:.82rem; display:flex; align-items:center; gap:7px;">
+        <i class="fa-solid fa-calendar-week"></i> Select New Date &amp; Time
     </div>
-    
+
     <!-- Week navigator -->
     <div class="reschedule-week-nav">
         <button type="button" class="nav-btn" id="reschedulePrevWeek" title="Previous Week">
@@ -288,10 +288,10 @@ $activeSidebarItem = 'schedule';
             <i class="fa-solid fa-chevron-right"></i>
         </button>
     </div>
-    
+
     <!-- Schedule Grid -->
     <div class="reschedule-grid-wrap">
-        <table class="schedule-grid reschedule-grid">
+        <table class="reschedule-grid">
             <thead>
                 <tr>
                     <th class="time-head">TIME</th>
@@ -309,35 +309,39 @@ $activeSidebarItem = 'schedule';
             </tbody>
         </table>
     </div>
-    
-    <!-- Legend - Simple Green/Gray -->
-<div class="legend-row" style="padding:10px 0; gap:16px; border-top:1px solid var(--gray-200); margin-top:10px;">
-    <div class="legend-item">
-        <div class="legend-dot" style="background:#22c55e; border:2px solid #16a34a;"></div>
-        <span>Available</span>
+
+    <!-- Legend -->
+    <div class="reschedule-legend">
+        <div class="legend-item">
+            <div class="legend-dot dot-available"></div>
+            <span>Available (click to select)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot dot-unavailable"></div>
+            <span>Unavailable</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot dot-selected"></div>
+            <span>Selected</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot dot-today"></div>
+            <span>Today</span>
+        </div>
     </div>
-    <div class="legend-item">
-        <div class="legend-dot" style="background:#9ca3af; border:2px solid #6b7280;"></div>
-        <span>Unavailable</span>
-    </div>
-    <div class="legend-item">
-        <div class="legend-dot" style="background:#14532d; border:3px solid #166534;"></div>
-        <span>Selected</span>
-    </div>
-</div>
-    
+
     <!-- Selected slot display -->
     <div id="rescheduleSelectedSlot">
-        <i class="fa-solid fa-circle-check" style="color:var(--success);"></i>
+        <i class="fa-solid fa-circle-check" style="color:#16a34a; flex-shrink:0;"></i>
         <strong>Selected:</strong>
         <span id="rescheduleSelectedText">—</span>
         <button type="button" class="bk-clear-slot" id="rescheduleClearSlot" title="Clear selection">
             <i class="fa-solid fa-xmark"></i>
         </button>
     </div>
-    
-    <div style="margin-top:10px; font-size:0.8rem; color:var(--gray-500);">
-        <i class="fa-solid fa-info-circle" style="color:var(--blue-500);"></i> 
+
+    <div style="margin-top:10px; font-size:.78rem; color:var(--gray-500); display:flex; align-items:center; gap:6px;">
+        <i class="fa-solid fa-info-circle" style="color:var(--blue-500);"></i>
         The patient will be notified and must approve this new time.
     </div>
 </div>

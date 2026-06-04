@@ -442,11 +442,15 @@ function buildChip(booking) {
     const isPending = status === 'pending';
     const isApproved = status === 'approved';
     const isRescheduled = isApproved && rescheduleStatus === 'accepted';
+    const isRequestSent = rescheduleStatus === 'proposed';
 
     let chipClass;
     let statusLabel;
 
-    if (isPending) {
+    if (isRequestSent) {
+        chipClass = 'booking-chip chip-request-sent';
+        statusLabel = '📨 Request Sent';
+    } else if (isPending) {
         chipClass = 'booking-chip chip-pending';
         statusLabel = '⏳ Pending Review';
     } else if (isRescheduled) {
@@ -592,6 +596,7 @@ function renderBookingContent(booking) {
     const typeLabel = VISIT_TYPES[booking.type] || booking.type;
     const isPending = booking.status === 'Pending';
     const isRescheduled = booking.status === 'Approved' && (booking.reschedule_status || '').toLowerCase() === 'accepted';
+    const isRequestSent = (booking.reschedule_status || '').toLowerCase() === 'proposed';
 
     const rescheduleInfo = isRescheduled && booking.reschedule_proposed_date
         ? `<div class="bd-field" style="grid-column:1/-1">
@@ -628,8 +633,8 @@ function renderBookingContent(booking) {
                 <div class="bd-field">
                     <div class="bd-field-label">Booking Status</div>
                     <div class="bd-field-val">
-                        <span class="inline-status-badge status-${(booking.status || '').toLowerCase()}${isRescheduled ? ' status-rescheduled' : ''}">
-                            ${isRescheduled ? '🔁 Rescheduled' : escHtml(booking.status ?? '')}
+                        <span class="inline-status-badge status-${(booking.status || '').toLowerCase()}${isRescheduled ? ' status-rescheduled' : ''}${isRequestSent ? ' status-request-sent' : ''}">
+                            ${isRescheduled ? '🔁 Rescheduled' : isRequestSent ? '📨 Request Sent' : escHtml(booking.status ?? '')}
                         </span>
                     </div>
                 </div>
