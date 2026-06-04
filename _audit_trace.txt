@@ -979,3 +979,58 @@
 [2026-06-03T18:47:34+00:00] auditLog PREP INSERT UserID=9 Action=Logged into the system ModuleName=User Management
 [2026-06-03T18:47:34+00:00] auditLog EXEC INSERT
 [2026-06-03T18:47:34+00:00] auditLog INSERT OK rowCount=1
+[2026-06-04T02:58:31+00:00] auditLog CALLED actionType=reports_generated entityType=Reports entityId=
+[2026-06-04T02:58:31+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-04T02:58:31+00:00] auditLog PREP INSERT UserID=9 Action=reports_generated ModuleName=Reports
+[2026-06-04T02:58:31+00:00] auditLog EXEC INSERT
+[2026-06-04T02:58:31+00:00] auditLog INSERT OK rowCount=1
+[2026-06-04T02:59:27+00:00] auditLog CALLED actionType=reports_generated entityType=Reports entityId=
+[2026-06-04T02:59:27+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-04T02:59:27+00:00] auditLog PREP INSERT UserID=9 Action=reports_generated ModuleName=Reports
+[2026-06-04T02:59:27+00:00] auditLog EXEC INSERT
+[2026-06-04T02:59:27+00:00] auditLog INSERT OK rowCount=1
+[2026-06-04T02:59:49+00:00] auditLog CALLED actionType=reports_generated entityType=Reports entityId=
+[2026-06-04T02:59:49+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-04T02:59:49+00:00] auditLog PREP INSERT UserID=9 Action=reports_generated ModuleName=Reports
+[2026-06-04T02:59:49+00:00] auditLog EXEC INSERT
+[2026-06-04T02:59:49+00:00] auditLog INSERT OK rowCount=1
+[2026-06-04T02:59:49+00:00] auditLog CALLED actionType=reports_generated entityType=Reports entityId=
+[2026-06-04T02:59:49+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-04T02:59:49+00:00] auditLog PREP INSERT UserID=9 Action=reports_generated ModuleName=Reports
+[2026-06-04T02:59:49+00:00] auditLog EXEC INSERT
+[2026-06-04T02:59:49+00:00] auditLog INSERT OK rowCount=1
+[2026-06-04T03:00:04+00:00] auditLog CALLED actionType=reports_generated entityType=Reports entityId=
+[2026-06-04T03:00:04+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-04T03:00:04+00:00] auditLog PREP INSERT UserID=9 Action=reports_generated ModuleName=Reports
+[2026-06-04T03:00:04+00:00] auditLog EXEC INSERT
+[2026-06-04T03:00:04+00:00] auditLog INSERT OK rowCount=1
+[2026-06-04T03:00:46+00:00] auditLog CALLED actionType=reports_generated entityType=Reports entityId=
+[2026-06-04T03:00:46+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-04T03:00:46+00:00] auditLog PREP INSERT UserID=9 Action=reports_generated ModuleName=Reports
+[2026-06-04T03:00:46+00:00] auditLog EXEC INSERT
+[2026-06-04T03:00:46+00:00] auditLog INSERT OK rowCount=1
+[2026-06-04T03:00:57+00:00] auditLog CALLED actionType=reports_generated entityType=Reports entityId=
+[2026-06-04T03:00:57+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-04T03:00:57+00:00] auditLog PREP INSERT UserID=9 Action=reports_generated ModuleName=Reports
+[2026-06-04T03:00:57+00:00] auditLog EXEC INSERT
+[2026-06-04T03:00:57+00:00] auditLog INSERT OK rowCount=1
+[2026-06-04T03:01:43+00:00] auditLog CALLED actionType=reports_generated entityType=Reports entityId=
+[2026-06-04T03:01:43+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-04T03:01:43+00:00] auditLog PREP INSERT UserID=9 Action=reports_generated ModuleName=Reports
+[2026-06-04T03:01:43+00:00] auditLog EXEC INSERT
+[2026-06-04T03:01:43+00:00] auditLog INSERT OK rowCount=1
+[2026-06-04T03:01:47+00:00] auditLog CALLED actionType=reports_generated entityType=Reports entityId=
+[2026-06-04T03:01:47+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-04T03:01:47+00:00] auditLog PREP INSERT UserID=9 Action=reports_generated ModuleName=Reports
+[2026-06-04T03:01:47+00:00] auditLog EXEC INSERT
+[2026-06-04T03:01:47+00:00] auditLog INSERT OK rowCount=1
+[2026-06-04T03:02:17+00:00] auditLog CALLED actionType=reports_generated entityType=Reports entityId=
+[2026-06-04T03:02:17+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-04T03:02:17+00:00] auditLog PREP INSERT UserID=9 Action=reports_generated ModuleName=Reports
+[2026-06-04T03:02:17+00:00] auditLog EXEC INSERT
+[2026-06-04T03:02:17+00:00] auditLog INSERT OK rowCount=1
+[2026-06-04T03:03:22+00:00] auditLog CALLED actionType=reports_generated entityType=Reports entityId=
+[2026-06-04T03:03:22+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-04T03:03:22+00:00] auditLog PREP INSERT UserID=9 Action=reports_generated ModuleName=Reports
+[2026-06-04T03:03:22+00:00] auditLog EXEC INSERT
+[2026-06-04T03:03:22+00:00] auditLog INSERT OK rowCount=1
