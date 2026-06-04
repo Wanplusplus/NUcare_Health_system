@@ -209,6 +209,9 @@ function getSlots(PDO $pdo, array $p): void
         return;
     }
 
+    // Identify the current patient so we can flag their own bookings
+    $currentSchoolPersonId = isset($_SESSION['SchoolPersonID']) ? (int)$_SESSION['SchoolPersonID'] : 0;
+
     $availIndex = [];
     foreach ($availRows as $row) {
         $availIndex[$row['AvailableDate']][substr($row['StartTime'], 0, 5)] = $row;
@@ -218,6 +221,7 @@ function getSlots(PDO $pdo, array $p): void
         $stmtB = $pdo->prepare("
             SELECT
                 b.BookingID,
+                b.SchoolPersonID,
                 b.AppointmentDate,
                 b.AppointmentStart,
                 b.ServiceType,
@@ -320,6 +324,7 @@ function getSlots(PDO $pdo, array $p): void
             if ($bkRow) {
                 $booking = [
                     'booking_id'               => (int) $bkRow['BookingID'],
+                    'is_own_booking'           => ($currentSchoolPersonId > 0 && (int)$bkRow['SchoolPersonID'] === $currentSchoolPersonId),
                     'patient'                  => $bkRow['patient_name'],
                     'id'                       => $bkRow['school_id'],
                     'program'                  => $bkRow['program_or_dept'] ?: $bkRow['person_type'],
