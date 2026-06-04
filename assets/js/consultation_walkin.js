@@ -45,10 +45,7 @@
         var searchInput = document.getElementById('consultSearchInput');
         if (!feedback || !searchInput) return false;
 
-        var notFound = feedback.classList.contains('not-found');
-        var text = (feedback.textContent || '').toLowerCase();
-        var isNoPatient = text.indexOf('no patient') !== -1 || text.indexOf('not found') !== -1;
-        return notFound && isNoPatient && exceptionTypeFromSearch(searchInput.value) !== '';
+        return exceptionTypeFromSearch(searchInput.value) !== '';
     }
 
     /* ── "Register new patient" button ──────────────────────────────── */
@@ -62,12 +59,12 @@
             '<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 14px;' +
             'display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">' +
               '<span style="color:#9a3412;font-weight:600;">' +
-                '<i class="fa-solid fa-user-plus"></i> Patient not found. You may register a new record.' +
+                '<i class="fa-solid fa-user-plus"></i> Register another Guard, Visitor, or ROMAC record.' +
               '</span>' +
               '<button type="button" id="walkinRegisterBtn" ' +
                 'style="border:0;border-radius:8px;padding:9px 14px;font-weight:700;cursor:pointer;' +
                 'background:#ea580c;color:#fff;display:inline-flex;align-items:center;gap:8px;">' +
-                '<i class="fa-solid fa-plus"></i> Register New Patient' +
+                '<i class="fa-solid fa-plus"></i> Register Another' +
               '</button>' +
             '</div>';
 

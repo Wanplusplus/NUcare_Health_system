@@ -45,34 +45,35 @@ $personType = $person ? (string)$person['PersonType'] : '';
             --student-danger:#dc2626;
             --student-success:#16a34a;
         }
-        body { background:#fff; color:var(--student-text); }
-        .profile-wrap { width:100%; max-width:1040px; margin:20px auto; padding:0 18px 32px; }
-        .profile-card { background:#fff; border:1px solid rgba(234,179,8,.28); border-radius:16px; box-shadow:0 10px 25px rgba(250,204,21,.16); padding:18px; margin-bottom:16px; }
-        .profile-head { display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; align-items:flex-start; }
-        .profile-title { margin:0 0 6px; font-size:1.45rem; font-weight:900; }
-        .profile-desc { margin:0; color:var(--student-muted); line-height:1.5; }
-        .account-summary { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px; margin-top:14px; }
-        .summary-item { border:1px solid var(--student-border); border-radius:12px; padding:10px 12px; background:var(--student-bg); }
-        .summary-label { display:block; font-size:.72rem; font-weight:900; color:#854d0e; text-transform:uppercase; letter-spacing:.04em; }
-        .summary-value { display:block; margin-top:4px; font-weight:800; overflow-wrap:anywhere; }
-        .section-title { display:flex; align-items:center; gap:8px; margin:0 0 16px; font-size:1rem; font-weight:900; }
-        .form-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:14px; }
-        .form-field { display:flex; flex-direction:column; gap:7px; }
+        body { background:#f8fafc; color:var(--student-text); }
+        .profile-wrap { width:100%; max-width:980px; margin:18px auto; padding:0 18px 28px; }
+        .profile-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 1px 3px rgba(15,23,42,.05); padding:18px; margin-bottom:14px; }
+        .profile-head { display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; align-items:flex-start; margin-bottom:4px; }
+        .profile-title { margin:0 0 4px; font-size:1.35rem; font-weight:800; color:#0f172a; }
+        .profile-desc { margin:0; color:var(--student-muted); line-height:1.5; font-size:.92rem; }
+        .account-summary { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px; margin-top:12px; }
+        .summary-item { border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px; background:#f9fafb; }
+        .summary-label { display:block; font-size:.7rem; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:.04em; }
+        .summary-value { display:block; margin-top:4px; font-weight:700; overflow-wrap:anywhere; color:#0f172a; }
+        .section-title { display:flex; align-items:center; gap:8px; margin:0 0 14px; font-size:.98rem; font-weight:800; color:#0f172a; }
+        .form-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:12px; }
+        .form-field { display:flex; flex-direction:column; gap:6px; }
         .form-field.full { grid-column:1 / -1; }
-        .form-field label { font-size:.76rem; font-weight:900; text-transform:uppercase; letter-spacing:.04em; }
+        .form-field label { font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:#334155; }
         .required { color:var(--student-danger); }
         input, select, textarea {
-            width:100%; padding:11px 12px; border-radius:12px; border:1.5px solid var(--student-border);
-            font:700 .92rem Arial, sans-serif; color:var(--student-text); background:#fff;
+            width:100%; padding:10px 12px; border-radius:10px; border:1px solid #dbe2ea;
+            font:600 .92rem Arial, sans-serif; color:var(--student-text); background:#fff;
         }
-        textarea { min-height:86px; resize:vertical; }
-        input:focus, select:focus, textarea:focus { outline:none; border-color:#ca8a04; box-shadow:0 0 0 3px rgba(250,204,21,.22); }
-        .actions { display:flex; justify-content:flex-end; margin-top:18px; }
-        .btn-save { border:1px solid rgba(234,179,8,.35); background:var(--student-yellow); color:#1f2937; border-radius:999px; padding:11px 18px; font-weight:900; cursor:pointer; }
-        .profile-toast { position:fixed; right:24px; bottom:24px; padding:12px 18px; border-radius:999px; font-weight:900; opacity:0; transform:translateY(12px); transition:.2s; z-index:20; }
+        textarea { min-height:84px; resize:vertical; }
+        input:focus, select:focus, textarea:focus { outline:none; border-color:#94a3b8; box-shadow:0 0 0 3px rgba(148,163,184,.15); }
+        .actions { display:flex; justify-content:flex-end; margin-top:16px; }
+        .btn-save { border:1px solid #d1d5db; background:#fff; color:#0f172a; border-radius:10px; padding:10px 16px; font-weight:800; cursor:pointer; }
+        .btn-save:hover { background:#f8fafc; }
+        .profile-toast { position:fixed; right:20px; bottom:20px; padding:10px 14px; border-radius:10px; font-weight:800; opacity:0; transform:translateY(12px); transition:.2s; z-index:20; box-shadow:0 10px 20px rgba(15,23,42,.08); }
         .profile-toast.show { opacity:1; transform:translateY(0); }
-        .profile-toast.success { background:#f0fdf4; color:var(--student-success); border:1px solid #bbf7d0; }
-        .profile-toast.error { background:#fef2f2; color:var(--student-danger); border:1px solid #fecaca; }
+        .profile-toast.success { background:#fff; color:#0f766e; border:1px solid #d1fae5; }
+        .profile-toast.error { background:#fff; color:#b91c1c; border:1px solid #fecaca; }
         @media (max-width:900px) { .form-grid, .account-summary { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
         @media (max-width:620px) { .form-grid, .account-summary { grid-template-columns:1fr; } .profile-wrap { padding:0 12px 24px; } }
     </style>

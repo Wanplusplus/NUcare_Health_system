@@ -426,3 +426,13 @@
 [2026-06-04T08:31:56+00:00] auditLog PREP INSERT UserID=6 Action=Approved appointment ModuleName=Schedule
 [2026-06-04T08:31:56+00:00] auditLog EXEC INSERT
 [2026-06-04T08:31:56+00:00] auditLog INSERT OK rowCount=1
+[2026-06-04T10:42:16+00:00] auditLog CALLED actionType=Started consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-04T10:42:16+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-04T10:42:16+00:00] auditLog PREP INSERT UserID=6 Action=Started consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-04T10:42:16+00:00] auditLog EXEC INSERT
+[2026-06-04T10:42:16+00:00] auditLog INSERT OK rowCount=1
+[2026-06-04T12:09:24+00:00] auditLog CALLED actionType=logout entityType=auth entityId=
+[2026-06-04T12:09:24+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-04T12:09:24+00:00] auditLog PREP INSERT UserID=6 Action=Logged out of the system ModuleName=User Management
+[2026-06-04T12:09:24+00:00] auditLog EXEC INSERT
+[2026-06-04T12:09:24+00:00] auditLog INSERT OK rowCount=1

@@ -106,99 +106,74 @@ $activeSidebarItem = 'settings';
         .btn-account:hover  { opacity: .92; }
         .btn-account:active { transform: scale(.98); }
 
-        .modal-overlay {
-            position: fixed; inset: 0;
-            background: rgba(15, 23, 42, .6);
-            backdrop-filter: blur(4px);
-            display: flex; align-items: center; justify-content: center;
-            padding: 24px;
-            z-index: 1000;
-            opacity: 0; pointer-events: none;
-            transition: opacity .25s ease;
+        .settings-form {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
         }
 
-        .modal-overlay.open { opacity: 1; pointer-events: all; }
-
-        .modal {
-            background: #fff;
-            border-radius: var(--radius);
-            width: 100%; max-width: 380px;
-            box-shadow: 0 32px 80px rgba(0,0,0,.35);
-            transform: translateY(18px) scale(.97);
-            transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .25s ease;
-            opacity: 0;
-            overflow: hidden;
+        .field-label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 800;
+            color: var(--text);
         }
 
-        .modal-overlay.open .modal { transform: translateY(0) scale(1); opacity: 1; }
-
-        .modal-header {
-            background: linear-gradient(135deg, var(--primary), #0d9488);
-            padding: 24px 24px 20px;
-            display: flex; align-items: center; justify-content: space-between;
-        }
-
-        .modal-title-group { display: flex; align-items: center; gap: 10px; }
-
-        .modal-icon {
-            width: 38px; height: 38px;
-            background: rgba(255,255,255,.2);
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-        }
-
-        .modal-icon svg { width: 18px; height: 18px; stroke: #fff; }
-
-        .modal-title { font-size: 16px; font-weight: 700; color: #fff; }
-        .modal-sub   { font-size: 12px; color: var(--primary-light); margin-top: 2px; }
-
-        .modal-close {
-            background: rgba(255,255,255,.15);
-            border: none; border-radius: 8px;
-            width: 32px; height: 32px;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; color: #fff;
-            transition: background .2s;
-            flex-shrink: 0;
-        }
-
-        .modal-close:hover { background: rgba(255,255,255,.3); }
-        .modal-close svg   { width: 16px; height: 16px; stroke: currentColor; }
-
-        .modal-body { padding: 24px; display: flex; flex-direction: column; gap: 12px; }
-
-        .modal-btn {
+        .field-input {
             width: 100%;
-            padding: 14px 16px;
-            border-radius: 10px;
-            font-size: 14px; font-weight: 600;
+            padding: 11px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            font-size: 14px;
             font-family: 'Inter', sans-serif;
-            cursor: pointer;
-            display: flex; align-items: center; gap: 12px;
-            text-decoration: none;
-            border: 1.5px solid transparent;
-            transition: all .2s;
         }
 
-        .modal-btn .btn-icon {
-            width: 36px; height: 36px; border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
+        .form-error {
+            display: block;
+            min-height: 16px;
+            color: var(--error);
+            font-size: 12px;
+            font-weight: 700;
+            margin-top: 6px;
         }
 
-        .modal-btn .btn-icon svg { width: 16px; height: 16px; stroke: currentColor; }
-        .modal-btn .btn-label    { flex: 1; text-align: left; }
-        .modal-btn .btn-sublabel { font-size: 11px; font-weight: 400; opacity: .7; margin-top: 1px; }
-
-        .modal-btn.reset {
-            background: var(--primary-light);
-            border-color: rgba(15,118,110,.25);
-            color: var(--primary-dark);
+        .settings-feedback {
+            margin-top: 14px;
+            min-height: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--muted);
         }
-        .modal-btn.reset .btn-icon { background: rgba(15,118,110,.15); color: var(--primary); }
-        .modal-btn.reset:hover     { background: #b2f0e8; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(15,118,110,.12); }
 
-        .modal-divider { height: 1px; background: var(--border); margin: 4px 0; }
+        .settings-feedback.success { color: #0f766e; }
+        .settings-feedback.error { color: var(--error); }
+
+        .toast-stack {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1500;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .settings-toast {
+            min-width: 240px;
+            max-width: 360px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            box-shadow: 0 12px 30px rgba(0,0,0,.18);
+            font-size: 13px;
+            font-weight: 800;
+            opacity: 0;
+            transform: translateY(-8px);
+            transition: opacity .2s, transform .2s;
+        }
+
+        .settings-toast.show { opacity: 1; transform: translateY(0); }
+        .settings-toast.success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+        .settings-toast.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 
         @media (max-width: 500px) {
             .card-body, .card-header { padding: 24px 20px; }
@@ -224,86 +199,25 @@ if (file_exists($sidebarPath)) require_once $sidebarPath;
             </div>
             <div class="card-body">
                 <h2 class="form-title">Settings</h2>
-                <p class="form-desc">Manage your account actions below.</p>
+                <p class="form-desc">Enter your current password, then choose and confirm a new one.</p>
 
-                <button class="btn-account" id="openAccountModal">
-                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
-                    </svg>
-                    Account Actions
-                </button>
-            </div>
-        </div>
-        </div>
-    </main>
-</div>
-
-<!-- Modal -->
-<div class="modal-overlay" id="accountModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-    <div class="modal">
-
-        <div class="modal-header">
-            <div class="modal-title-group">
-                <div class="modal-icon">
-                    <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
-                    </svg>
-                </div>
-                <div>
-                    <div class="modal-title" id="modalTitle">Account Actions</div>
-                    <div class="modal-sub">Choose an action below</div>
-                </div>
-            </div>
-            <button class="modal-close" id="closeAccountModal" aria-label="Close modal">
-                <svg fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
-                </svg>
-            </button>
-        </div>
-
-        <div class="modal-body">
-
-            <!-- Change Password (Current + New + Confirm) -->
-            <button type="button" class="modal-btn reset" id="openChangePassword">
-                <div class="btn-icon">
-                    <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/>
-                    </svg>
-                </div>
-                <div class="btn-label">
-                    <div>Change Password</div>
-                    <div class="btn-sublabel">Update password using your current password</div>
-                </div>
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
-                </svg>
-            </button>
-
-            <div class="modal-divider"></div>
-
-            <!-- Inline Change Password Form (hidden until opened) -->
-            <div id="changePasswordPanel" style="display:none; padding: 0 24px 24px;">
-                <h3 class="form-title" style="margin-top: 10px;">Update Password</h3>
-                <p class="form-desc" style="margin-bottom: 18px;">Enter your current password and choose a new one.</p>
-
-                <form id="settingsChangePasswordForm" autocomplete="off">
-                    <div class="form-group" style="margin-bottom: 14px;">
-                        <label for="current_password" class="form-label" style="display:block; font-weight:700; margin-bottom:8px;">Current Password</label>
-                        <input type="password" id="current_password" name="current_password" class="form-input" style="width:100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border);" />
-                        <span class="form-error" id="currentPasswordError" style="display:block; margin-top:8px; color: var(--error); font-weight:600; font-size:12px;"></span>
+                <form id="settingsChangePasswordForm" class="settings-form" autocomplete="off">
+                    <div>
+                        <label for="current_password" class="field-label">Current Password</label>
+                        <input type="password" id="current_password" name="current_password" class="field-input" />
+                        <span class="form-error" id="currentPasswordError"></span>
                     </div>
 
-                    <div class="form-group" style="margin-bottom: 14px;">
-                        <label for="new_password" class="form-label" style="display:block; font-weight:700; margin-bottom:8px;">New Password</label>
-                        <input type="password" id="new_password" name="new_password" class="form-input" style="width:100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border);" />
-                        <span class="form-error" id="newPasswordError" style="display:block; margin-top:8px; color: var(--error); font-weight:600; font-size:12px;"></span>
+                    <div>
+                        <label for="new_password" class="field-label">New Password</label>
+                        <input type="password" id="new_password" name="new_password" class="field-input" />
+                        <span class="form-error" id="newPasswordError"></span>
                     </div>
 
-                    <div class="form-group" style="margin-bottom: 18px;">
-                        <label for="confirm_password" class="form-label" style="display:block; font-weight:700; margin-bottom:8px;">Confirm Password</label>
-                        <input type="password" id="confirm_password" name="confirm_password" class="form-input" style="width:100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border);" />
-                        <span class="form-error" id="confirmPasswordError" style="display:block; margin-top:8px; color: var(--error); font-weight:600; font-size:12px;"></span>
+                    <div>
+                        <label for="confirm_password" class="field-label">Confirm Password</label>
+                        <input type="password" id="confirm_password" name="confirm_password" class="field-input" />
+                        <span class="form-error" id="confirmPasswordError"></span>
                     </div>
 
                     <button type="submit" class="btn-account" id="changePasswordBtn">
@@ -311,42 +225,17 @@ if (file_exists($sidebarPath)) require_once $sidebarPath;
                         <span class="spinner" id="changePasswordSpinner" style="display:none;"></span>
                     </button>
                 </form>
+
+                <div class="settings-feedback" id="passwordFeedback" aria-live="polite"></div>
             </div>
-
-
         </div>
-    </div>
+        </div>
+    </main>
 </div>
-
-<script>
-    const overlay  = document.getElementById('accountModal');
-    const openBtn  = document.getElementById('openAccountModal');
-    const closeBtn = document.getElementById('closeAccountModal');
-
-    function openModal()  { overlay.classList.add('open');    document.body.style.overflow = 'hidden'; }
-    function closeModal() { overlay.classList.remove('open'); document.body.style.overflow = '';       }
-
-    openBtn.addEventListener('click', openModal);
-    closeBtn.addEventListener('click', closeModal);
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
-
-    // Change password panel
-    const openChangePassword = document.getElementById('openChangePassword');
-    const changePasswordPanel = document.getElementById('changePasswordPanel');
-
-    if (openChangePassword && changePasswordPanel) {
-        openChangePassword.addEventListener('click', (e) => {
-            e.preventDefault();
-            changePasswordPanel.style.display = 'block';
-        });
-    }
-</script>
 
 <script src="../../assets/js/settings_change_password.js?v=1"></script>
 
-<!-- toast container for fallback/modal (modal is injected by JS) -->
-<div id="toastContainer" style="position:fixed;top:20px;right:20px;z-index:1500;"></div>
+<div class="toast-stack" id="toastContainer" aria-live="polite"></div>
 
 </body>
 </html>

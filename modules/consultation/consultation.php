@@ -335,7 +335,7 @@ $activeSidebarItem = 'consultation';
                                 <option>Wound Dressing</option>
                                 <option>Medical Certificate</option>
                                 <option>Physical Examination</option>
-                                <option>Other</option>
+                                <option>Sent Home</option>
                             </select>
                             <span class="err-msg" id="consultServiceErr"></span>
                         </div>
@@ -1071,6 +1071,6 @@ $activeSidebarItem = 'consultation';
 
 <script src="../../assets/js/app.js"></script>
 <script src="../../assets/js/consultation.js?v=7"></script>
-<script src="../../assets/js/consultation_walkin.js?v=4"></script>
+<script src="../../assets/js/consultation_walkin.js?v=5"></script>
 </body>
 </html>

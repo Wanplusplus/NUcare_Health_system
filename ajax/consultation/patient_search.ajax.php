@@ -25,22 +25,50 @@ if ($q === '') {
 
 // Strip "SCH-" / "SCH " prefixes only — don't touch IDs like "2024-116605"
 $normalized = trim((string)preg_replace('/^\s*SCH[-\s]+/i', '', $q));
+$normalizedType = strtolower(trim($normalized));
+$exceptionTypeMap = [
+    'guard'    => 'Guard',
+    'visitor'  => 'Visitor',
+    'visitors' => 'Visitor',
+    'vistors'  => 'Visitor',
+    'romac'    => 'ROMAC',
+    'janitor'  => 'ROMAC',
+];
+$searchType = $exceptionTypeMap[$normalizedType] ?? null;
 
 $like     = '%' . $q . '%';
 $likeNorm = '%' . $normalized . '%';
+$resultLimit = $searchType !== null ? 100 : 10;
 
-$sql = "
-SELECT
-    sp.SchoolPersonID,
-    sp.SchoolID,
-    sp.FirstName,
-    sp.MiddleName,
-    sp.LastName,
-    sp.Sex,
-    sp.PersonType
-FROM school_people sp
-WHERE
-    (
+if ($searchType !== null) {
+    $sql = "
+    SELECT
+        sp.SchoolPersonID,
+        sp.SchoolID,
+        sp.FirstName,
+        sp.MiddleName,
+        sp.LastName,
+        sp.Sex,
+        sp.PersonType
+    FROM school_people sp
+    WHERE sp.PersonType = :search_type
+    ORDER BY sp.LastName ASC, sp.FirstName ASC
+    LIMIT " . (int)$resultLimit;
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([':search_type' => $searchType]);
+} else {
+    $sql = "
+    SELECT
+        sp.SchoolPersonID,
+        sp.SchoolID,
+        sp.FirstName,
+        sp.MiddleName,
+        sp.LastName,
+        sp.Sex,
+        sp.PersonType
+    FROM school_people sp
+    WHERE
         sp.SchoolID IS NOT NULL
         AND sp.PersonType IN ('Student', 'Faculty', 'Staff')
         AND (
@@ -52,45 +80,30 @@ WHERE
             OR CONCAT_WS(' ', sp.FirstName, sp.MiddleName, sp.LastName) LIKE :like2
             OR CONCAT_WS(' ', sp.FirstName, sp.LastName) LIKE :like3
         )
-    )
-    OR
-    (
-        sp.SchoolID IS NULL
-        AND sp.PersonType IN ('Guard', 'Visitor', 'ROMAC')
-        AND (
-            sp.PersonType LIKE :person_type
-            OR CONCAT_WS(' ', sp.FirstName, sp.MiddleName, sp.LastName) LIKE :exception_like1
-            OR CONCAT_WS(' ', sp.FirstName, sp.LastName) LIKE :exception_like2
-        )
-    )
-ORDER BY
-    CASE
-        WHEN sp.SchoolID = :exact2      THEN 0
-        WHEN sp.SchoolID = :exact_norm2 THEN 1
-        WHEN sp.SchoolID LIKE :like4    THEN 2
-        WHEN sp.PersonType IN ('Guard', 'Visitor', 'ROMAC') THEN 3
-        ELSE 3
-    END ASC,
-    sp.LastName ASC
-LIMIT 10
-";
+    ORDER BY
+        CASE
+            WHEN sp.SchoolID = :exact2      THEN 0
+            WHEN sp.SchoolID = :exact_norm2 THEN 1
+            WHEN sp.SchoolID LIKE :like4    THEN 2
+            ELSE 3
+        END ASC,
+        sp.LastName ASC
+    LIMIT " . (int)$resultLimit;
 
-$stmt = $pdo->prepare($sql);
-$stmt->execute([
-    ':exact1'      => $q,
-    ':exact_norm1' => $normalized,
-    ':like1'       => $like,
-    ':like_norm1'  => $likeNorm,
-    ':pid'         => $q,
-    ':like2'       => $like,
-    ':like3'       => $like,
-    ':person_type' => $like,
-    ':exception_like1' => $like,
-    ':exception_like2' => $like,
-    ':exact2'      => $q,
-    ':exact_norm2' => $normalized,
-    ':like4'       => $like,
-]);
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([
+        ':exact1'      => $q,
+        ':exact_norm1' => $normalized,
+        ':like1'       => $like,
+        ':like_norm1'  => $likeNorm,
+        ':pid'         => $q,
+        ':like2'       => $like,
+        ':like3'       => $like,
+        ':exact2'      => $q,
+        ':exact_norm2' => $normalized,
+        ':like4'       => $like,
+    ]);
+}
 
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -150,7 +163,7 @@ if ($exactMatch !== null) {
 }
 
 // Only one result, no exact match — still treat as found
-if (count($rows) === 1) {
+if ($searchType === null && count($rows) === 1) {
     $p = buildPatient($rows[0]);
     echo json_encode([
         'ok'             => true,
@@ -172,5 +185,6 @@ echo json_encode([
     'ok'       => true,
     'found'    => false,
     'multiple' => true,
+    'searchType' => $searchType,
     'results'  => array_map('buildPatient', $rows),
 ]);
