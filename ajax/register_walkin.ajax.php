@@ -4,32 +4,12 @@ declare(strict_types=1);
 /* ════════════════════════════════════════════════════════════════════
    register_walkin.ajax.php   →  PLACE IN:  ajax/consultation/
    ────────────────────────────────────────────────────────────────────
-   Implements spec MODULE 1 (CRITICAL): manual patient registration when
-   no record is found. A walk-in (Guard / Visitor / ROMAC / Staff) can be
-   registered WITHOUT a School ID, then consultation proceeds immediately.
+   Spec MODULE 1 (CRITICAL): manual patient registration when not found.
+   Walk-ins can be registered WITHOUT a School ID.
 
-   Behaviour:
-     • SchoolID is OPTIONAL — stored as NULL when blank.
-     • SchoolPersonID (AUTO_INCREMENT) is the primary identity key.
-     • Duplicate guard: FirstName + LastName + PersonType (case-insensitive).
-       If a match already exists, the EXISTING record is returned instead of
-       creating a second one (prevents duplicate walk-ins).
-     • Returns the patient object in the SAME shape as patient_search.ajax.php
-       so the existing consultation front-end (loadPatient) can consume it
-       directly and auto-start the transaction.
-
-   Expected table (see sql/school_people.sql):
-     school_people(
-       SchoolPersonID INT PK AUTO_INCREMENT,
-       SchoolID VARCHAR(50) NULL UNIQUE,
-       FirstName VARCHAR(100) NOT NULL,
-       LastName  VARCHAR(100) NOT NULL,
-       MiddleName VARCHAR(100) NULL,
-       Email VARCHAR(255) NULL,
-       PersonType ENUM('Staff','Guard','Visitor','ROMAC') ...,
-       Sex ENUM('Male','Female'),
-       CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-     )
+   REQUIRES: Run school_people_migration.sql first to:
+     (a) make SchoolID NULLABLE
+     (b) expand PersonType ENUM to include Guard/Visitor/ROMAC
 ══════════════════════════════════════════════════════════════════════ */
 
 header('Content-Type: application/json; charset=utf-8');
@@ -56,7 +36,7 @@ $middleName = nz(clean($_POST['middle_name'] ?? ''));
 $sex        = clean($_POST['sex']         ?? '');
 $personType = clean($_POST['person_type'] ?? '');
 $email      = nz(clean($_POST['email']    ?? ''));
-$schoolId   = nz(clean($_POST['school_id']?? ''));   // optional → NULL when blank
+$schoolId   = nz(clean($_POST['school_id']?? ''));
 
 /* ── validation ───────────────────────────────────────────────────── */
 $errors = [];
@@ -66,7 +46,8 @@ if ($lastName  === '') $errors['last_name']  = 'Last name is required.';
 $allowedSex = ['Male', 'Female'];
 if (!in_array($sex, $allowedSex, true)) $errors['sex'] = 'Please select a valid sex.';
 
-$allowedTypes = ['Staff', 'Guard', 'Visitor', 'ROMAC'];
+// All 6 person types (matches migrated ENUM)
+$allowedTypes = ['Student', 'Faculty', 'Staff', 'Guard', 'Visitor', 'ROMAC'];
 if (!in_array($personType, $allowedTypes, true)) {
     $errors['person_type'] = 'Please select a valid person type.';
 }
@@ -79,7 +60,7 @@ if ($errors) {
     exit;
 }
 
-/* ── shape a patient object identical to patient_search.ajax.php ─────── */
+/* ── shape a patient object identical to patient_search.ajax.php ── */
 function buildPatient(array $p): array {
     $parts = array_filter([
         $p['FirstName'] ?? '',
@@ -101,7 +82,7 @@ function buildPatient(array $p): array {
 }
 
 try {
-    /* ── duplicate guard: FirstName + LastName + PersonType (case-insensitive) ── */
+    /* ── duplicate guard: FirstName + LastName + PersonType ── */
     $dup = $pdo->prepare("
         SELECT SchoolPersonID, SchoolID, FirstName, MiddleName, LastName, Sex, PersonType
         FROM school_people
@@ -125,7 +106,7 @@ try {
         exit;
     }
 
-    /* ── optional: guard against a clashing non-null SchoolID ── */
+    /* ── guard against clashing non-null SchoolID ── */
     if ($schoolId !== null) {
         $chk = $pdo->prepare("SELECT SchoolPersonID FROM school_people WHERE SchoolID = :sid LIMIT 1");
         $chk->execute([':sid' => $schoolId]);
@@ -166,7 +147,7 @@ try {
         'PersonType'     => $personType,
     ]);
 
-    /* optional audit (non-fatal if helper missing) */
+    /* optional audit */
     $auditPath = __DIR__ . '/../../includes/audit.php';
     if (file_exists($auditPath)) {
         require_once $auditPath;

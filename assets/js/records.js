@@ -226,6 +226,10 @@
         document.body.style.overflow = 'hidden';
         activeModal = userID;
 
+        // Ensure hidden input is always populated before user can submit
+        const spidInput = document.getElementById('editSchoolPersonID');
+        if (spidInput) spidInput.value = String(userID);
+
         // Always hide the edit form when opening a new record (prevents stale state)
         const editForm = document.getElementById('recordsPatientInfoForm');
         if (editForm) editForm.style.display = 'none';
@@ -595,9 +599,19 @@
             saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…'; 
         }
 
-        // Ensure school_person_id is in the form data
+        // Ensure school_person_id is in the form data (use hidden input as source of truth)
         const body = new FormData(form);
-        body.set('school_person_id', String(activeModal));
+        const spidInput = document.getElementById('editSchoolPersonID');
+        const schoolPersonID = (spidInput && String(spidInput.value || '').trim() !== '')
+            ? spidInput.value
+            : (activeModal ?? '');
+
+        if (!schoolPersonID || parseInt(schoolPersonID, 10) <= 0) {
+            showToast('Invalid patient selected. Please close and reopen the record.', 'error');
+            return;
+        }
+
+        body.set('school_person_id', String(schoolPersonID));
         body.set('family_history', JSON.stringify(collectRecordsFamilyHistory()));
 
         fetch('../../ajax/records_patient_info_save.ajax.php', { method: 'POST', body })
@@ -614,7 +628,7 @@
                 }
                 
                 // Re-fetch patient record from server so the modal always reflects DB state
-                const userID = String(activeModal);
+                const userID = String(schoolPersonID);
                 fetch(`../../ajax/get_patient_record.ajax.php?school_person_id=${encodeURIComponent(userID)}`)
                     .then(rr => rr.json())
                     .then(refreshed => {

@@ -1032,3 +1032,34 @@ ALTER TABLE medical_certificates
 
 ALTER TABLE medical_certificates
     MODIFY COLUMN IssuedByMedProfID INT NULL;
+
+
+-- ════════════════════════════════════════════════════════════════════
+-- school_people_migration.sql  →  run in phpMyAdmin (database: nucaredb)
+-- ────────────────────────────────────────────────────────────────────
+-- Your CURRENT table:
+--   SchoolID   varchar(50)  NOT NULL
+--   PersonType ENUM('Student','Faculty','Staff')  NOT NULL
+--
+-- Spec MODULE 1 requires walk-ins WITHOUT a School ID, and person types
+-- Guard / Visitor / ROMAC. This migration:
+--   (a) makes SchoolID NULLABLE (keeps it UNIQUE — MySQL allows many NULLs),
+--   (b) expands PersonType to include the walk-in types WITHOUT dropping the
+--       existing Student / Faculty / Staff values (so current rows are safe).
+-- Run once. Re-running is harmless (it just re-applies the same definition).
+-- ════════════════════════════════════════════════════════════════════
+
+-- (a) SchoolID becomes optional
+ALTER TABLE `school_people`
+    MODIFY `SchoolID` VARCHAR(50) NULL DEFAULT NULL;
+
+-- (b) Expand PersonType ENUM (existing values preserved, new ones added)
+ALTER TABLE `school_people`
+    MODIFY `PersonType`
+    ENUM('Student','Faculty','Staff','Guard','Visitor','ROMAC')
+    NOT NULL DEFAULT 'Visitor';
+
+-- (c) Helpful index for the duplicate check (FirstName + LastName + PersonType)
+--     Ignore an "Duplicate key name" error if it already exists.
+ALTER TABLE `school_people`
+    ADD INDEX `idx_name_type` (`LastName`, `FirstName`, `PersonType`);

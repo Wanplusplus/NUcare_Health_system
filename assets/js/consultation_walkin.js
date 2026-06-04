@@ -1,19 +1,17 @@
 /* ════════════════════════════════════════════════════════════════════
    consultation_walkin.js   →  PLACE IN:  assets/js/
-   Load it AFTER consultation.js, e.g. add to consultation.php:
+   Load AFTER consultation.js in consultation.php:
        <script src="../../assets/js/consultation.js?v=..."></script>
-       <script src="../../assets/js/consultation_walkin.js?v=1"></script>
-   ────────────────────────────────────────────────────────────────────
-   Implements spec MODULE 1 (CRITICAL) front-end:
-     • When a search returns "no patient found", surfaces a clear
-       "Register new patient" action.
-     • Opens a manual registration modal (School ID NOT required).
-     • On success, re-runs the existing search by the new SchoolPersonID,
-       which flows straight into loadPatient() → startTransaction(),
-       i.e. directly into the consultation form.
+       <script src="../../assets/js/consultation_walkin.js?v=2"></script>
 
-   100% additive — it does NOT modify consultation.js. It only reads the
-   #consultSearchInput value, injects UI, and calls window.searchPatient().
+   Spec MODULE 1 (CRITICAL) front-end:
+     • When search returns "no patient found", surfaces
+       "Patient not found. You may register a new record."
+     • Opens a modal with all 6 PersonTypes.
+     • On success, re-runs search by new SchoolPersonID → existing
+       loadPatient() → startTransaction() → consultation form.
+
+   100% additive — does NOT modify consultation.js.
 ══════════════════════════════════════════════════════════════════════ */
 (function () {
     'use strict';
@@ -28,7 +26,6 @@
         injectModal();
         injectRegisterButton(feedback);
 
-        // Auto-reveal the register option whenever a "not found" result appears.
         var observer = new MutationObserver(function () {
             var notFound = feedback.classList.contains('not-found');
             var text = (feedback.textContent || '').toLowerCase();
@@ -38,7 +35,7 @@
         observer.observe(feedback, { childList: true, characterData: true, subtree: true, attributes: true });
     });
 
-    /* ── "Register new patient" button under the search feedback ──────── */
+    /* ── "Register new patient" button ──────────────────────────────── */
     function injectRegisterButton(feedback) {
         if (document.getElementById('walkinRegisterBtn')) return;
 
@@ -67,7 +64,7 @@
         if (wrap) wrap.style.display = show ? 'block' : 'none';
     }
 
-    /* ── Modal markup, injected once ──────────────────────────────────── */
+    /* ── Modal ─────────────────────────────────────────────────────── */
     function injectModal() {
         if (document.getElementById('walkinModal')) return;
 
@@ -78,6 +75,9 @@
         el.style.cssText =
             'position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;' +
             'align-items:center;justify-content:center;padding:20px;z-index:2000;';
+
+        // All 6 PersonTypes per updated spec
+        var personTypes = ['Student', 'Faculty', 'Staff', 'Guard', 'Visitor', 'ROMAC'];
 
         el.innerHTML =
         '<div style="background:#fff;border-radius:16px;width:100%;max-width:560px;max-height:92vh;overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,.35);">' +
@@ -92,7 +92,7 @@
               field('Last Name',  'wk_last_name',  'text', true) +
               field('Middle Name','wk_middle_name','text', false) +
               selectField('Sex', 'wk_sex', ['Male', 'Female'], true) +
-              selectField('Person Type', 'wk_person_type', ['Staff', 'Guard', 'Visitor', 'ROMAC'], true) +
+              selectField('Person Type', 'wk_person_type', personTypes, true) +
               field('Email (optional)', 'wk_email', 'email', false) +
               field('School ID (optional)', 'wk_school_id', 'text', false, true) +
             '</div>' +
@@ -119,7 +119,7 @@
         return '<div style="display:flex;flex-direction:column;gap:6px;' + (full ? 'grid-column:1 / -1;' : '') + '">' +
             '<label for="' + id + '" style="font-size:.74rem;font-weight:800;color:#334155;text-transform:uppercase;letter-spacing:.04em;">' +
               label + (required ? ' <span style="color:#dc2626;">*</span>' : '') + '</label>' +
-            '<input id="' + id + '" name="' + id + '" type="' + type + '" ' + (required ? '' : '') +
+            '<input id="' + id + '" name="' + id + '" type="' + type + '" ' +
               'style="border:1.5px solid #e2e8f0;border-radius:9px;padding:10px 12px;font-weight:600;">' +
           '</div>';
     }
@@ -136,11 +136,10 @@
           '</div>';
     }
 
-    /* ── open/close ───────────────────────────────────────────────────── */
+    /* ── open / close ────────────────────────────────────────────── */
     function openModal() {
         var modal = document.getElementById('walkinModal');
         if (!modal) return;
-        // Prefill School ID with whatever was typed in the search box (if any).
         var typed = (document.getElementById('consultSearchInput') || {}).value || '';
         var schoolField = document.getElementById('wk_school_id');
         if (schoolField && /[a-zA-Z]/.test(typed) === false && typed.trim() !== '') {
@@ -166,7 +165,7 @@
         box.style.display = msg ? 'block' : 'none';
     }
 
-    /* ── submit ───────────────────────────────────────────────────────── */
+    /* ── submit ──────────────────────────────────────────────────── */
     function submitForm(e) {
         e.preventDefault();
         showError('');
@@ -182,7 +181,7 @@
         });
 
         var btn = document.getElementById('walkinSubmit');
-        if (btn) { btn.disabled = true; }
+        if (btn) btn.disabled = true;
 
         fetch(ENDPOINT, {
             method: 'POST',
@@ -196,9 +195,6 @@
                 showError((resp && (resp.message || resp.debug)) || 'Registration failed.');
                 return;
             }
-            // Re-run the existing search by the new numeric SchoolPersonID.
-            // patient_search.ajax.php matches CAST(SchoolPersonID AS CHAR) = :pid,
-            // returns a single "found" patient → loadPatient → startTransaction.
             var spid = resp.SchoolPersonID || (resp.patient && resp.patient.SchoolPersonID);
             closeModal();
             var input = document.getElementById('consultSearchInput');

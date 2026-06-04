@@ -125,8 +125,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Success
-      showToast(data.message || 'Password updated successfully!', 'success');
+      showToast('Updated password saved', 'success');
       form.reset();
+
+
 
     } catch (err) {
       showToast('Something went wrong. Please try again.', 'error');

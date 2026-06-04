@@ -361,7 +361,7 @@ $activeSidebarItem = 'records';
                         </div>
 
                         <form id="recordsPatientInfoForm" class="records-edit-form" style="display:none;">
-                            <input type="hidden" name="school_person_id" id="editSchoolPersonID">
+<input type="hidden" name="school_person_id" id="editSchoolPersonID" value="">
                             <div class="info-block info-block--full">
                                 <div class="info-section-title">
                                     <i class="fa-solid fa-user-pen"></i>
