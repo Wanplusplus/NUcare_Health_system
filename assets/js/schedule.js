@@ -112,7 +112,7 @@ function bindUI() {
         refreshGrid();
         loadPendingBookings();
     });
-    $('btnExport').addEventListener('click', exportSchedule);
+    const _btnExport = $('btnExport'); if (_btnExport) _btnExport.addEventListener('click', exportSchedule);
 
     /* Slot Modal */
     $('modalCloseBtn').addEventListener('click',  closeModal);

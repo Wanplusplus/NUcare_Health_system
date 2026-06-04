@@ -47,10 +47,6 @@ $activeSidebarItem = 'schedule';
                 <p class="page-desc">Manage weekly availability and appointment slots for clinic medical professionals.</p>
             </div>
             <div class="page-header-right">
-                <button class="btn-outline" id="btnExport">
-                    <i class="fa-solid fa-file-export"></i>
-                    Export
-                </button>
             </div>
         </div>
 
@@ -396,6 +392,6 @@ $activeSidebarItem = 'schedule';
 </div>
 
 <script src="../../assets/js/app.js"></script>
-<script src="../../assets/js/schedule.js?v=3"></script>
+<script src="../../assets/js/schedule.js?v=2"></script>
 </body>
 </html>
