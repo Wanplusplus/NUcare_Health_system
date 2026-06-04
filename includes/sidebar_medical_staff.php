@@ -70,8 +70,8 @@ $activeSidebarItem = $activeSidebarItem ?? 'dashboard';
       <span class="nav-icon"><i class="fa-solid fa-calendar-days"></i></span>
       Schedule
     </a>
-    <details class="nav-settings" <?php echo in_array($activeSidebarItem, ['my_profile', 'settings'], true) ? 'open' : ''; ?>>
-      <summary class="nav-item <?php echo in_array($activeSidebarItem, ['my_profile', 'settings'], true) ? 'active' : ''; ?>">
+    <details class="nav-settings" <?php echo in_array($activeSidebarItem, ['my_profile', 'settings', 'simulate_lifecycle_audit'], true) ? 'open' : ''; ?>>
+      <summary class="nav-item <?php echo in_array($activeSidebarItem, ['my_profile', 'settings', 'simulate_lifecycle_audit'], true) ? 'active' : ''; ?>">
         <span class="nav-icon"><i class="fa-solid fa-gear"></i></span>
         Settings
       </summary>
@@ -83,6 +83,10 @@ $activeSidebarItem = $activeSidebarItem ?? 'dashboard';
         <a class="nav-item nav-subitem <?php echo $activeSidebarItem === 'settings' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/settings/settings.php">
           <span class="nav-icon"><i class="fa-solid fa-key"></i></span>
           Update Password
+        </a>
+        <a class="nav-item nav-subitem <?php echo $activeSidebarItem === 'simulate_lifecycle_audit' ? 'active' : ''; ?>" href="/NUcare_Health_system/medical/simulate_lifecycle_audit.php">
+          <span class="nav-icon"><i class="fa-solid fa-flask"></i></span>
+          Simulate Term Audit
         </a>
         <a class="nav-item nav-subitem" href="/NUcare_Health_system/auth/logout.php">
           <span class="nav-icon"><i class="fa-solid fa-right-from-bracket"></i></span>
