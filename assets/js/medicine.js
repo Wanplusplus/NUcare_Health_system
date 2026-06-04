@@ -190,6 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const pillFor = (status) => {
     const map = {
+      Emergency: ['warn', 'fa-triangle-exclamation'],
       Available: ['ok', 'fa-circle-check'],
       'Low Stock': ['low', 'fa-triangle-exclamation'],
       'Near Expiry': ['low', 'fa-clock'],
@@ -256,6 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
 const getDisplayStatus = (m) => {
+    if ((m.status || '') === 'Emergency') return 'Emergency';
     return statusFrom(
         Number(m.quantity || 0),
         m.expiry_date || ''

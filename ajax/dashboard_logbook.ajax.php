@@ -27,25 +27,18 @@ function bucketPersonCategory(array $row): string
     $personType = strtolower(trim((string)($row['PersonType'] ?? '')));
 
     if ($personType === 'student') {
-        $programBits = strtolower(trim(
-            (string)($row['ProgramName'] ?? '') . ' ' .
-            (string)($row['StudentDepartment'] ?? '') . ' ' .
-            (string)($row['AcademicYear'] ?? '') . ' ' .
-            (string)($row['Semester'] ?? '')
-        ));
-
-        if ($programBits !== '' && (str_contains($programBits, 'shs') || str_contains($programBits, 'senior high'))) {
-            return 'SHS';
-        }
-
-        return 'College';
+        return 'Student';
     }
 
     if ($personType === 'faculty') {
         return 'Faculty';
     }
 
-    // Guards, visitors, ROMAC, staff, and any other allowed non-student
+    if ($personType === 'staff') {
+        return 'Staff';
+    }
+
+    // Guards, visitors, ROMAC, and any other allowed non-student
     // consults are grouped under ASP for the logbook.
     return 'ASP';
 }
@@ -67,10 +60,6 @@ function classifyConsultationRow(array $row): ?string
 
     if (str_contains($service, 'dental')) {
         return '__DENTAL__';
-    }
-
-    if (str_contains($service, 'online')) {
-        return '__ONLINE__';
     }
 
     if (preg_match('/viral|flu|fever|cold|influenza|cough with fever/i', $haystack)) {
@@ -105,13 +94,13 @@ function classifyConsultationRow(array $row): ?string
         return 'Minor Accidents / Trauma';
     }
 
-    return null;
+    return '__DAILY__';
 }
 
 function addBucket(array &$matrix, string $rowName, string $bucket, int $qty = 1): void
 {
     if (!isset($matrix[$rowName])) {
-        $matrix[$rowName] = ['SHS' => 0, 'College' => 0, 'Faculty' => 0, 'ASP' => 0];
+        $matrix[$rowName] = ['Student' => 0, 'Faculty' => 0, 'Staff' => 0, 'ASP' => 0];
     }
 
     if (!isset($matrix[$rowName][$bucket])) {
@@ -166,7 +155,7 @@ $medicineRows = [
     'Ventolin Nebules',
     'Prednisone',
     'Benadryl',
-    'Diphenhydramine Amp',
+    'Diphenhydramine',
     'Norgesic Forte',
 ];
 
@@ -250,11 +239,11 @@ try {
 
 $serviceMatrix = [];
 foreach ($serviceRows as $rowName) {
-    $serviceMatrix[$rowName] = ['SHS' => 0, 'College' => 0, 'Faculty' => 0, 'ASP' => 0];
+    $serviceMatrix[$rowName] = ['Student' => 0, 'Faculty' => 0, 'Staff' => 0, 'ASP' => 0];
 }
 
-$dentalMatrix = ['SHS' => 0, 'College' => 0, 'Faculty' => 0, 'ASP' => 0];
-$onlineMatrix = ['SHS' => 0, 'College' => 0, 'Faculty' => 0, 'ASP' => 0];
+$dentalMatrix = ['Student' => 0, 'Faculty' => 0, 'Staff' => 0, 'ASP' => 0];
+$dailyMatrix = ['Student' => 0, 'Faculty' => 0, 'Staff' => 0, 'ASP' => 0];
 
 $medicineTotals = array_fill_keys($medicineRows, 0);
 $supplyTotals = array_fill_keys($supplyRows, 0);
@@ -262,6 +251,7 @@ $medicineLookup = [];
 foreach ($medicineRows as $label) {
     $medicineLookup[normalizeKey($label)] = $label;
 }
+$medicineLookup[normalizeKey('Diphenhydramine Amp')] = 'Diphenhydramine';
 $supplyLookup = [];
 foreach ($supplyRows as $label) {
     $supplyLookup[normalizeKey($label)] = $label;
@@ -276,7 +266,7 @@ foreach ($consultations as $row) {
     $bucket = bucketPersonCategory($row);
     $serviceRow = classifyConsultationRow($row);
 
-    if ($serviceRow !== null && $serviceRow !== '__DENTAL__' && $serviceRow !== '__ONLINE__') {
+    if ($serviceRow !== null && $serviceRow !== '__DENTAL__' && $serviceRow !== '__DAILY__') {
         addBucket($serviceMatrix, $serviceRow, $bucket, 1);
         continue;
     }
@@ -286,8 +276,8 @@ foreach ($consultations as $row) {
         continue;
     }
 
-    if ($serviceRow === '__ONLINE__') {
-        $onlineMatrix[$bucket]++;
+    if ($serviceRow === '__DAILY__') {
+        $dailyMatrix[$bucket]++;
         continue;
     }
 
@@ -335,19 +325,19 @@ foreach ($dispenses as $row) {
 
 $values = [];
 foreach ($serviceRows as $rowName) {
-    foreach (['SHS', 'College', 'Faculty', 'ASP'] as $bucket) {
+    foreach (['Student', 'Faculty', 'Staff', 'ASP'] as $bucket) {
         $values[] = $serviceMatrix[$rowName][$bucket] ?? 0;
     }
 }
 
 // Dental consult row
-foreach (['SHS', 'College', 'Faculty', 'ASP'] as $bucket) {
+foreach (['Student', 'Faculty', 'Staff', 'ASP'] as $bucket) {
     $values[] = $dentalMatrix[$bucket] ?? 0;
 }
 
-// Online consult row
-foreach (['SHS', 'College', 'Faculty', 'ASP'] as $bucket) {
-    $values[] = $onlineMatrix[$bucket] ?? 0;
+// Daily consult row
+foreach (['Student', 'Faculty', 'Staff', 'ASP'] as $bucket) {
+    $values[] = $dailyMatrix[$bucket] ?? 0;
 }
 
 foreach ($medicineRows as $label) {

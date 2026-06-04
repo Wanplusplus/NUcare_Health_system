@@ -221,6 +221,7 @@
         'Dental':               ['physical-exam', 'firstaid'],
         'First Aid':            ['physical-exam', 'attachment'],
         'Wound Dressing':       ['physical-exam', 'attachment'],
+        'Sent Home':            ['physical-exam', 'firstaid'],
         'Medical Certificate':  ['vitals', 'physical-exam', 'medicines', 'firstaid'],
         'Physical Examination': ['vitals', 'firstaid'],
         'Other':                [],

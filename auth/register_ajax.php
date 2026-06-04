@@ -28,6 +28,9 @@ $password = (string)($_POST['password'] ?? '');
 
 
 $confirm_password = (string)($_POST['confirm_password'] ?? '');
+if ($confirm_password === '') {
+    $confirm_password = $password;
+}
 
 // 2) Validate required fields
 if ($first_name === '' || $last_name === '' || $sex === '' || $school_id === '' || $email === '' || $password === '' || $confirm_password === '') {

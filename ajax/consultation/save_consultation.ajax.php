@@ -361,6 +361,84 @@ try {
         ]);
     }
 
+    /* â”€â”€ 8. Emergency record â€” only for emergency / first aid services â”€â”€ */
+    if (preg_match('/emergency|first aid/i', $serviceType)) {
+        $emergencyInventoryID = null;
+        $emergencyMedicineID = null;
+        $emergencyDispensingID = null;
+
+        foreach ($medInventoryIDs as $invID) {
+            if ($invID <= 0) continue;
+
+            $matchStmt = $pdo->prepare("
+                SELECT
+                    md.DispensingID,
+                    mi.InventoryID,
+                    mi.MedicineID,
+                    m.MedicineName,
+                    m.GenericName
+                FROM medicine_dispensing md
+                INNER JOIN medicine_inventory mi
+                    ON mi.InventoryID = md.InventoryID
+                INNER JOIN medicines m
+                    ON m.MedicineID = mi.MedicineID
+                WHERE md.ClinicTransactionID = :ctid
+                  AND md.InventoryID = :inv
+                ORDER BY md.DispensedAt DESC, md.DispensingID DESC
+                LIMIT 1
+            ");
+            $matchStmt->execute([':ctid' => $ctid, ':inv' => $invID]);
+            $match = $matchStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$match) {
+                continue;
+            }
+
+            $name = strtolower(trim((string)($match['MedicineName'] ?? '')));
+            $generic = strtolower(trim((string)($match['GenericName'] ?? '')));
+            $isDiphenhydramine = str_contains($name, 'diphenhydramine') || str_contains($generic, 'diphenhydramine');
+
+            if ($isDiphenhydramine || $emergencyInventoryID === null) {
+                $emergencyInventoryID = (int)($match['InventoryID'] ?? 0);
+                $emergencyMedicineID = (int)($match['MedicineID'] ?? 0);
+                $emergencyDispensingID = (int)($match['DispensingID'] ?? 0);
+
+                if ($isDiphenhydramine) {
+                    break;
+                }
+            }
+        }
+
+        if ($emergencyInventoryID !== null && $emergencyMedicineID !== null && $emergencyDispensingID !== null) {
+            $spRow = $pdo->prepare("
+                SELECT SchoolPersonID
+                FROM clinic_transactions
+                WHERE ClinicTransactionID = :ctid
+                LIMIT 1
+            ");
+            $spRow->execute([':ctid' => $ctid]);
+            $clinicSchoolPersonID = (int)($spRow->fetchColumn() ?: 0);
+
+            if ($clinicSchoolPersonID > 0) {
+                $treatmentGiven = $notes !== '' ? $notes : ($complaint !== '' ? $complaint : $resolvedService);
+
+                $pdo->prepare("
+                    INSERT INTO emergencies
+                        (SchoolPersonID, InventoryID, MedicineID, DispensingID, ClinicTransactionID, TreatmentGiven)
+                    VALUES
+                        (:spid, :inv, :med, :disp, :ctid, :treat)
+                ")->execute([
+                    ':spid'  => $clinicSchoolPersonID,
+                    ':inv'   => $emergencyInventoryID,
+                    ':med'   => $emergencyMedicineID,
+                    ':disp'  => $emergencyDispensingID,
+                    ':ctid'  => $ctid,
+                    ':treat' => $treatmentGiven,
+                ]);
+            }
+        }
+    }
+
     $pdo->commit();
 
     // Audit: saved/updated + completed (based on final ConsultationStatus)
@@ -418,6 +496,7 @@ try {
 }
 
 function computeStatus(int $qty, string $current): string {
+    if (str_contains($current, 'Emergency')) return 'Emergency';
     if (str_contains($current, 'Expired')) return 'Expired';
     if ($qty <= 0)  return 'Out Of Stock';
     if ($qty <= 10) return 'Low Stock';

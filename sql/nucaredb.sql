@@ -532,32 +532,25 @@ CREATE TABLE user_diseases (
 
 CREATE TABLE emergencies (
     EmergencyID INT AUTO_INCREMENT PRIMARY KEY,
-
     SchoolPersonID INT NOT NULL,
-
-    IncidentDate DATE,
-    IncidentTime TIME,
-
-    IncidentLocation VARCHAR(255),
-
-    BP VARCHAR(20),
-    RR INT,
-    HR INT,
-
-    Temperature DECIMAL(5,2),
-
-    TreatmentGiven VARCHAR(255),
-
-    AmbulanceNo VARCHAR(20),
-
-    TimeDispatched TIME,
-    TimeArrived TIME,
-
+    InventoryID INT NULL,
+    MedicineID INT NULL,
+    DispensingID INT NULL,
+    ClinicTransactionID INT NOT NULL,
+    TreatmentGiven VARCHAR(255) NULL,
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT fk_emergency_person
-        FOREIGN KEY (SchoolPersonID)
-        REFERENCES school_people(SchoolPersonID)
+    CONSTRAINT fk_emergency_inventory
+        FOREIGN KEY (InventoryID)
+        REFERENCES medicine_inventory(InventoryID)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
+
+    CONSTRAINT fk_emergency_medicine
+        FOREIGN KEY (MedicineID)
+        REFERENCES medicines(MedicineID)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE
 );
 
 -- =========================================================
@@ -602,6 +595,7 @@ CREATE TABLE medicine_inventory (
     ReorderLevel INT DEFAULT 10,
 
     Status ENUM(
+        'Emergency',
         'Available',
         'Low Stock',
         'Out Of Stock',
@@ -616,6 +610,24 @@ CREATE TABLE medicine_inventory (
         FOREIGN KEY (MedicineID)
         REFERENCES medicines(MedicineID)
 );
+
+INSERT INTO medicines (MedicineName, GenericName, MedicineType, Dosage, Unit, Description)
+SELECT 'Diphenhydramine', 'Diphenhydramine', 'Emergency Medicine', '50 mg/mL', 'ampule', 'Emergency medicine for allergic reactions'
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM medicines
+    WHERE LOWER(MedicineName) = LOWER('Diphenhydramine')
+);
+
+INSERT INTO medicine_inventory (MedicineID, BatchNumber, Quantity, ExpiryDate, DateReceived, ReorderLevel, Status)
+SELECT m.MedicineID, 'EMERGENCY-STOCK', 10, NULL, CURDATE(), 10, 'Emergency'
+FROM medicines m
+WHERE LOWER(m.MedicineName) = LOWER('Diphenhydramine')
+  AND NOT EXISTS (
+      SELECT 1
+      FROM medicine_inventory mi
+      WHERE mi.MedicineID = m.MedicineID
+  );
 
 -- =========================================================
 -- MEDICINE DISPENSING

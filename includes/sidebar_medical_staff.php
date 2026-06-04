@@ -31,15 +31,24 @@ $activeSidebarItem = $activeSidebarItem ?? 'dashboard';
     color: #f0f4ff;
   }
 
+  .sidebar-medical .nav-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: #f0f4ff;
+    box-shadow: 0 0 0 3px rgba(240, 244, 255, 0.12);
+    color: #06285e;
+    font-size: .72rem;
+  }
+
   .sidebar-medical .nav-item:hover,
   .sidebar-medical .nav-item.active {
     background: rgba(255, 255, 255, 0.20);
     border-color: rgba(255, 255, 255, 0.28);
-  }
-
-  .sidebar-medical .nav-dot {
-    background: #f0f4ff;
-    box-shadow: 0 0 0 6px rgba(240, 244, 255, 0.12);
   }
 
   .sidebar-medical .status-pill {
@@ -103,33 +112,42 @@ $activeSidebarItem = $activeSidebarItem ?? 'dashboard';
 
   <nav class="nav-menu">
     <a class="nav-item <?php echo $activeSidebarItem === 'dashboard' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/dashboard/medical_staff_dashboard.php">
-      <span class="nav-dot"></span>Dashboard
+      <span class="nav-icon"><i class="fa-solid fa-gauge-high"></i></span>
+      Dashboard
     </a>
     <a class="nav-item <?php echo $activeSidebarItem === 'consultation' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/consultation/consultation.php">
-      <span class="nav-dot"></span>Consultation
+      <span class="nav-icon"><i class="fa-solid fa-stethoscope"></i></span>
+      Consultation
     </a>
     <a class="nav-item <?php echo $activeSidebarItem === 'records' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/records/records.php">
-      <span class="nav-dot"></span>Records
+      <span class="nav-icon"><i class="fa-solid fa-folder-open"></i></span>
+      Records
     </a>
     <a class="nav-item <?php echo $activeSidebarItem === 'medicine' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/medicine/medicine.php">
-      <span class="nav-dot"></span>Medicine
+      <span class="nav-icon"><i class="fa-solid fa-pills"></i></span>
+      Medicine
     </a>
     <a class="nav-item <?php echo $activeSidebarItem === 'schedule' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/schedule/schedule.php">
-      <span class="nav-dot"></span>Schedule
+      <span class="nav-icon"><i class="fa-solid fa-calendar-days"></i></span>
+      Schedule
     </a>
     <details class="nav-settings" <?php echo in_array($activeSidebarItem, ['my_profile', 'settings'], true) ? 'open' : ''; ?>>
       <summary class="nav-item <?php echo in_array($activeSidebarItem, ['my_profile', 'settings'], true) ? 'active' : ''; ?>">
-        <span class="nav-dot"></span>Settings
+        <span class="nav-icon"><i class="fa-solid fa-gear"></i></span>
+        Settings
       </summary>
       <div class="nav-submenu">
         <a class="nav-item nav-subitem <?php echo $activeSidebarItem === 'my_profile' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/settings/my_profile.php">
-          <span class="nav-dot"></span>My Profile
+          <span class="nav-icon"><i class="fa-solid fa-user"></i></span>
+          My Profile
         </a>
         <a class="nav-item nav-subitem <?php echo $activeSidebarItem === 'settings' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/settings/settings.php">
-          <span class="nav-dot"></span>Update Password
+          <span class="nav-icon"><i class="fa-solid fa-key"></i></span>
+          Update Password
         </a>
         <a class="nav-item nav-subitem" href="/NUcare_Health_system/auth/logout.php">
-          <span class="nav-dot"></span>Logout
+          <span class="nav-icon"><i class="fa-solid fa-right-from-bracket"></i></span>
+          Logout
         </a>
       </div>
     </details>

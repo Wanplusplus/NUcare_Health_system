@@ -245,34 +245,40 @@ try {
     $diseases = [];
 }
 
-/* Emergencies (derived from clinic_transactions; read-only) */
+/* Emergencies */
 $emergencies = [];
 try {
     $eStmt = $pdo->prepare("
         SELECT
-            ct.ClinicTransactionID AS EmergencyID,
+            e.EmergencyID,
+            e.SchoolPersonID,
+            e.InventoryID,
+            e.MedicineID,
+            e.DispensingID,
+            e.ClinicTransactionID,
+            e.TreatmentGiven,
             ct.VisitDate AS IncidentDate,
+            ct.CreatedAt AS CreatedAt,
             NULL AS IncidentTime,
             NULL AS IncidentLocation,
-            pe.BloodPressure AS BP,
+            NULL AS BP,
             NULL AS RR,
-            pe.PulseRate AS HR,
-            pe.Temperature AS Temperature,
-            ct.Notes AS TreatmentGiven,
+            NULL AS HR,
+            NULL AS Temperature,
             NULL AS AmbulanceNo,
             NULL AS TimeDispatched,
             NULL AS TimeArrived,
-            ct.CreatedAt AS CreatedAt
-        FROM clinic_transactions ct
-        LEFT JOIN physical_examinations pe ON pe.ClinicTransactionID = ct.ClinicTransactionID
-        WHERE ct.SchoolPersonID = :id
-          AND (
-            LOWER(ct.ServiceType) LIKE '%emergency%'
-            OR LOWER(ct.ServiceType) LIKE '%first aid%'
-            OR LOWER(ct.Complaint) LIKE '%emergency%'
-            OR LOWER(ct.Complaint) LIKE '%first aid%'
-          )
-        ORDER BY ct.VisitDate DESC, ct.ClinicTransactionID DESC
+            m.MedicineName,
+            m.MedicineType
+        FROM emergencies e
+        INNER JOIN clinic_transactions ct
+            ON ct.ClinicTransactionID = e.ClinicTransactionID
+        LEFT JOIN medicine_inventory mi
+            ON mi.InventoryID = e.InventoryID
+        LEFT JOIN medicines m
+            ON m.MedicineID = COALESCE(e.MedicineID, mi.MedicineID)
+        WHERE e.SchoolPersonID = :id
+        ORDER BY ct.VisitDate DESC, e.EmergencyID DESC
         LIMIT 20
     ");
     $eStmt->execute([':id' => $schoolPersonID]);
@@ -280,6 +286,11 @@ try {
     foreach (($eStmt->fetchAll(PDO::FETCH_ASSOC) ?: []) as $row) {
         $emergencies[] = [
             'emergencyID' => (int)($row['EmergencyID'] ?? 0),
+            'schoolPersonID' => (int)($row['SchoolPersonID'] ?? 0),
+            'inventoryID' => isset($row['InventoryID']) ? (int)$row['InventoryID'] : null,
+            'medicineID' => isset($row['MedicineID']) ? (int)$row['MedicineID'] : null,
+            'dispensingID' => isset($row['DispensingID']) ? (int)$row['DispensingID'] : null,
+            'clinicTransactionID' => isset($row['ClinicTransactionID']) ? (int)$row['ClinicTransactionID'] : null,
             'incidentDate' => $row['IncidentDate'] ?? null,
             'incidentTime' => $row['IncidentTime'] ?? null,
             'incidentLocation' => $row['IncidentLocation'] ?? null,
@@ -291,11 +302,66 @@ try {
             'ambulanceNo' => $row['AmbulanceNo'] ?? null,
             'timeDispatched' => $row['TimeDispatched'] ?? null,
             'timeArrived' => $row['TimeArrived'] ?? null,
+            'medicineName' => $row['MedicineName'] ?? null,
+            'medicineType' => $row['MedicineType'] ?? null,
             'createdAt' => $row['CreatedAt'] ?? null,
         ];
     }
 } catch (Throwable $e) {
     $emergencies = [];
+}
+
+if (empty($emergencies)) {
+    try {
+        $eStmt = $pdo->prepare("
+            SELECT
+                ct.ClinicTransactionID AS EmergencyID,
+                ct.VisitDate AS IncidentDate,
+                NULL AS IncidentTime,
+                NULL AS IncidentLocation,
+                pe.BloodPressure AS BP,
+                NULL AS RR,
+                pe.PulseRate AS HR,
+                pe.Temperature AS Temperature,
+                ct.Notes AS TreatmentGiven,
+                NULL AS AmbulanceNo,
+                NULL AS TimeDispatched,
+                NULL AS TimeArrived,
+                ct.CreatedAt AS CreatedAt
+            FROM clinic_transactions ct
+            LEFT JOIN physical_examinations pe ON pe.ClinicTransactionID = ct.ClinicTransactionID
+            WHERE ct.SchoolPersonID = :id
+              AND (
+                LOWER(ct.ServiceType) LIKE '%emergency%'
+                OR LOWER(ct.ServiceType) LIKE '%first aid%'
+                OR LOWER(ct.Complaint) LIKE '%emergency%'
+                OR LOWER(ct.Complaint) LIKE '%first aid%'
+              )
+            ORDER BY ct.VisitDate DESC, ct.ClinicTransactionID DESC
+            LIMIT 20
+        ");
+        $eStmt->execute([':id' => $schoolPersonID]);
+
+        foreach (($eStmt->fetchAll(PDO::FETCH_ASSOC) ?: []) as $row) {
+            $emergencies[] = [
+                'emergencyID' => (int)($row['EmergencyID'] ?? 0),
+                'incidentDate' => $row['IncidentDate'] ?? null,
+                'incidentTime' => $row['IncidentTime'] ?? null,
+                'incidentLocation' => $row['IncidentLocation'] ?? null,
+                'bp' => $row['BP'] ?? null,
+                'rr' => $row['RR'] ?? null,
+                'hr' => $row['HR'] ?? null,
+                'temperature' => $row['Temperature'] ?? null,
+                'treatmentGiven' => $row['TreatmentGiven'] ?? null,
+                'ambulanceNo' => $row['AmbulanceNo'] ?? null,
+                'timeDispatched' => $row['TimeDispatched'] ?? null,
+                'timeArrived' => $row['TimeArrived'] ?? null,
+                'createdAt' => $row['CreatedAt'] ?? null,
+            ];
+        }
+    } catch (Throwable $e) {
+        $emergencies = [];
+    }
 }
 
 

@@ -332,7 +332,7 @@ $activeSidebarItem = 'consultation';
                                 <option value="">— Select service —</option>
                                 <option>General Consultation</option>
                                 <option>Dental</option>
-                                <option>Wound Dressing</option>
+                                <option>Wound Care</option>
                                 <option>Medical Certificate</option>
                                 <option>Physical Examination</option>
                                 <option>Sent Home</option>
@@ -402,7 +402,7 @@ $activeSidebarItem = 'consultation';
 
                 <!-- ════════════════════════════════════════
                      SECTION: WOUND DRESSING (Service-specific)
-                     Shown only when Service Type = Wound Dressing
+                     Shown only when Service Type = Wound Dressing / hidden for Sent Home
                 ════════════════════════════════════════ -->
                 <div class="consult-card hidden" id="section-firstaid" data-section="firstaid">
                     <div class="card-section-label">

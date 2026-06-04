@@ -49,8 +49,11 @@ function parse_date(?string $value): ?string
     return date('Y-m-d', $timestamp);
 }
 
-function compute_inventory_status(int $quantity, ?string $expiryDate, int $reorderLevel): string
+function compute_inventory_status(int $quantity, ?string $expiryDate, int $reorderLevel, string $medicineType = ''): string
 {
+    if (stripos($medicineType, 'emergency') !== false) {
+        return 'Emergency';
+    }
     if ($quantity <= 0) return 'Out Of Stock';
     if ($expiryDate === null) return $quantity <= $reorderLevel ? 'Low Stock' : 'Available';
 
@@ -62,8 +65,9 @@ function compute_inventory_status(int $quantity, ?string $expiryDate, int $reord
     return 'Available';
 }
 
-function compute_display_status(int $quantity, ?string $expiryDate, int $reorderLevel): string
+function compute_display_status(int $quantity, ?string $expiryDate, int $reorderLevel, string $storedStatus = ''): string
 {
+    if ($storedStatus === 'Emergency') return 'Emergency';
     if ($quantity <= 0) return 'Out Of Stock';
     if ($expiryDate === null) return $quantity <= $reorderLevel ? 'Low Stock' : 'Available';
 
@@ -151,7 +155,8 @@ function fetch_medicine_rows(mysqli $conn): array
         $row['status_display'] = compute_display_status(
             (int)($row['quantity']      ?? 0),
             isset($row['expiry_date'])  ? (string)$row['expiry_date'] : null,
-            (int)($row['reorder_level'] ?? 10)
+            (int)($row['reorder_level'] ?? 10),
+            (string)($row['status'] ?? '')
         );
     }
     unset($row);
@@ -223,7 +228,7 @@ try {
         $medicineId = (int)$conn->insert_id;
         $mStmt->close();
 
-        $status = compute_inventory_status($quantity, $expiryDate, $reorderLevel);
+        $status = compute_inventory_status($quantity, $expiryDate, $reorderLevel, $medicineType);
 
         $iStmt = $conn->prepare('INSERT INTO medicine_inventory (MedicineID, BatchNumber, Quantity, ExpiryDate, DateReceived, ReorderLevel, Status, CreatedAt, UpdatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())');
         $iStmt->bind_param('isissis', $medicineId, $batchNumber, $quantity, $expiryDate, $dateReceived, $reorderLevel, $status);
@@ -264,7 +269,7 @@ try {
         $quantity     = (int)$payload['quantity'];
         $expiryDate   = $payload['expiry_date'];
         $reorderLevel = (int)$payload['reorder_level'];
-        $status       = compute_inventory_status($quantity, $expiryDate, $reorderLevel);
+        $status       = compute_inventory_status($quantity, $expiryDate, $reorderLevel, $medicineType);
 
         $conn->begin_transaction();
 

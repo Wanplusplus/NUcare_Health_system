@@ -694,15 +694,18 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
                 <div class="logbook-savebar">
                     <div class="logbook-savebar-hint">
                         <span class="sparkle">✦</span>
-                        Live counts sync from consultations and medicine dispensing. Notes stay in this browser.
+                        Live counts sync from consultations and medicine dispensing. You can edit the counts before export. Notes stay in this browser.
                     </div>
                         <div style="display:flex;align-items:center;gap:10px;">
+                            <button class="lb-save-btn" id="lbEditBtn" type="button" onclick="toggleLogbookEdit()">
+                                <i class="fa-solid fa-pen-to-square"></i> Edit Counts
+                            </button>
                             <button class="lb-export-btn" id="lbExportBtn" onclick="exportLogbookPDF()" type="button">
                                 <span class="lb-export-spinner"></span>
                                 <i class="fa-solid fa-file-pdf lb-export-icon"></i>
                                 <span class="lb-export-label">Export PDF</span>
                             </button>
-                            <button class="lb-save-btn" id="lbSaveBtn" onclick="saveLogbook()">
+                            <button class="lb-save-btn" id="lbSaveBtn" onclick="saveLogbook()" type="button">
                                 <i class="fa-solid fa-floppy-disk"></i> Save Notes
                             </button>
                         </div>
@@ -755,9 +758,9 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
                             <thead>
                                 <tr>
                                     <th class="lb-col-name"></th>
-                                    <th>SHS</th>
-                                    <th>College</th>
+                                    <th>Student</th>
                                     <th>Faculty</th>
+                                    <th>Staff</th>
                                     <th>ASP</th>
                                     <th class="lb-col-total">Total</th>
                                 </tr>
@@ -849,7 +852,7 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
                             <thead>
                                 <tr>
                                     <th class="lb-col-name"></th>
-                                    <th>SHS</th><th>College</th><th>Faculty</th><th>ASP</th>
+                                    <th>Student</th><th>Faculty</th><th>Staff</th><th>ASP</th>
                                     <th class="lb-col-total">Total</th>
                                 </tr>
                             </thead>
@@ -866,17 +869,17 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
                         </table>
                     </div>
 
-                    <!-- 5. Online Consult -->
+                    <!-- 5. Daily Consult -->
                     <div class="logbook-row-item logbook-row-item--heading">
                         <span class="logbook-row-num">5.</span>
-                        <span class="logbook-row-name">💻 Online Consult</span>
+                        <span class="logbook-row-name">💻 Daily Consult</span>
                     </div>
                     <div class="logbook-table-wrap">
                         <table class="logbook-table" data-autototal="true">
                             <thead>
                                 <tr>
                                     <th class="lb-col-name"></th>
-                                    <th>SHS</th><th>College</th><th>Faculty</th><th>ASP</th>
+                                    <th>Student</th><th>Faculty</th><th>Staff</th><th>ASP</th>
                                     <th class="lb-col-total">Total</th>
                                 </tr>
                             </thead>
@@ -924,7 +927,7 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
                                     <tr><td>Ventolin Nebules</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
                                     <tr><td>Prednisone</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
                                     <tr><td>Benadryl</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
-                                    <tr><td>Diphenhydramine Amp</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
+                                    <tr><td>Diphenhydramine</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
                                     <tr><td>Norgesic Forte</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
                                 </tbody>
                             </table>
@@ -1020,6 +1023,30 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
             });
         }
 
+        function getCountsKey() {
+            const m = document.getElementById('lbPickerMonth');
+            const y = document.getElementById('lbPickerYear');
+            if (!m || !y) return 'nucare_logbook_counts';
+            const pad = String(m.value).padStart(2, '0');
+            return 'nucare_logbook_counts_' + y.value + '_' + pad;
+        }
+
+        function loadCountOverrides() {
+            try {
+                const raw = localStorage.getItem(getCountsKey());
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function saveCountOverrides() {
+            try {
+                const values = Array.from(document.querySelectorAll('.lb-edit')).map(inp => inp.value || '0');
+                localStorage.setItem(getCountsKey(), JSON.stringify(values));
+            } catch (e) {}
+        }
+
         function fillLogbookInputs(values) {
             const inputs = document.querySelectorAll('.lb-edit');
             inputs.forEach((inp, i) => {
@@ -1028,6 +1055,24 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
                 inp.value = Number.isFinite(numeric) ? String(numeric) : '0';
                 inp.dispatchEvent(new Event('input', { bubbles: true }));
             });
+
+            const overrides = loadCountOverrides();
+            if (Array.isArray(overrides) && overrides.length) {
+                inputs.forEach((inp, i) => {
+                    if (overrides[i] !== undefined) {
+                        inp.value = String(overrides[i] ?? '0');
+                        inp.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                });
+            }
+        }
+
+        function setEditButtonLabel(isLocked) {
+            const btn = document.getElementById('lbEditBtn');
+            if (!btn) return;
+            btn.innerHTML = isLocked
+                ? '<i class="fa-solid fa-pen-to-square"></i> Edit Counts'
+                : '<i class="fa-solid fa-lock"></i> Lock Counts';
         }
 
         /* ── Load logbook for the selected period ── */
@@ -1052,7 +1097,8 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
                 }
 
                 fillLogbookInputs(payload.values || []);
-                setReadonlyInputs(true);
+                setReadonlyInputs(false);
+                setEditButtonLabel(false);
                 setLiveSummary(payload.summary || {});
 
                 if (notes) {
@@ -1062,7 +1108,8 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
             } catch(e) {
                 console.error('Logbook load failed:', e);
                 fillLogbookInputs([]);
-                setReadonlyInputs(true);
+                setReadonlyInputs(false);
+                setEditButtonLabel(false);
                 setLiveSummary({ consultations_total: 0, medicine_units_total: 0 });
                 const notes = document.getElementById('lbNotes');
                 if (notes) notes.value = localStorage.getItem(getNotesKey()) || '';
@@ -1077,6 +1124,17 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
             if (mPicker) mPicker.addEventListener('change', loadLogbookForPeriod);
             if (yPicker) yPicker.addEventListener('change', loadLogbookForPeriod);
         })();
+
+        function toggleLogbookEdit() {
+            const inputs = document.querySelectorAll('.lb-edit');
+            const locked = Array.from(inputs).some(inp => inp.readOnly);
+            const nextLocked = !locked;
+            setReadonlyInputs(nextLocked);
+            setEditButtonLabel(nextLocked);
+            if (nextLocked) {
+                saveCountOverrides();
+            }
+        }
 
         /* ── Auto-total for tables with data-autototal ── */
         document.querySelectorAll('table[data-autototal="true"]').forEach(table => {
@@ -1093,6 +1151,7 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
 
                 inputs.forEach(inp => {
                     inp.addEventListener('input', recalc);
+                    inp.addEventListener('input', saveCountOverrides);
                 });
             });
         });
