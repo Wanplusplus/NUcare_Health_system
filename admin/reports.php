@@ -225,7 +225,7 @@ try {
 
         <!-- Filter Bar -->
         <div class="admin-filterbar" style="margin-top: 12px;">
-            <div class="admin-filter" style="min-width: 240px;">
+            <div class="admin-filter" style="min-width: 240px; max-width: 300px; flex: 0 1 auto;">
                 <label>Report Type</label>
                 <select id="reportType" name="report_type">
                     <option value="">Select Report</option>
@@ -238,7 +238,7 @@ try {
                 </select>
             </div>
 
-            <div class="admin-filter" style="min-width: 200px;">
+            <div class="admin-filter" style="min-width: 180px; max-width: 220px; flex: 0 1 auto;">
                 <label>Date Range</label>
                 <select id="dateRange" name="date_range">
                     <option value="">All Time</option>
@@ -250,17 +250,17 @@ try {
             </div>
 
             <div class="custom-range-fields" id="customRangeFields">
-                <div class="admin-filter" style="min-width: 170px; flex: 0 0 auto;">
+                <div class="admin-filter" style="min-width: 160px; flex: 0 0 auto;">
                     <label>From</label>
                     <input type="date" id="dateFrom" name="date_from">
                 </div>
-                <div class="admin-filter" style="min-width: 170px; flex: 0 0 auto;">
+                <div class="admin-filter" style="min-width: 160px; flex: 0 0 auto;">
                     <label>To</label>
                     <input type="date" id="dateTo" name="date_to">
                 </div>
             </div>
 
-            <div class="admin-filter" id="roleFilterWrap" style="min-width: 200px; display: none;">
+            <div class="admin-filter" id="roleFilterWrap" style="min-width: 200px; max-width: 240px; flex: 0 1 auto; display: none;">
                 <label>Role Filter</label>
                 <select id="roleFilter" name="role_filter">
                     <option value="">All Roles</option>
@@ -270,7 +270,7 @@ try {
                 </select>
             </div>
 
-            <div style="display: flex; gap: 12px; align-items: center;">
+            <div style="display: flex; gap: 10px; align-items: center; flex: 0 0 auto; align-self: flex-end; white-space: nowrap;">
                 <button type="button" id="btnGenerate" class="btn admin-btn-primary" onclick="generateReport()">
                     <i class="bi bi-file-earmark-bar-graph" style="margin-right: 6px;"></i> Generate Report
                 </button>

@@ -25,10 +25,12 @@ $qCustomTo = trim((string)($_GET['to'] ?? ''));
 $schoolId = (string)($_GET['school_id'] ?? '');
 
 // Never show technical/debug/internal actions.
+// NOTE: 'failed_login' is intentionally NOT suppressed here so that the
+// Audit Logs page and the Reports module both surface failed authentication
+// attempts (mapped to "Failed login attempt" by audit.php).
 $neverShowActions = [
     'login_debug_rbac_loaded',
     'login_debug_school_match',
-    'failed_login',
     'failed_signup',
     'login_hash_debug',
 ];
@@ -81,13 +83,26 @@ if (!empty($neverShowActions)) {
 
 $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 
-// Modules dropdown from modules table.
+// Modules dropdown from modules table, plus any module names actually present
+// in audit_logs (so dynamically-emitted modules like "Authentication" are
+// always available to filter by).
 $modules = [];
 try {
     $mStmt = $pdo->query("SELECT ModuleName FROM modules ORDER BY ModuleName ASC");
     $modules = $mStmt->fetchAll(PDO::FETCH_COLUMN);
 } catch (Throwable $e) {
     $modules = [];
+}
+try {
+    $extraStmt = $pdo->query("SELECT DISTINCT ModuleName FROM audit_logs WHERE ModuleName IS NOT NULL AND ModuleName <> '' ORDER BY ModuleName ASC");
+    foreach ($extraStmt->fetchAll(PDO::FETCH_COLUMN) as $extraModule) {
+        if (!in_array($extraModule, $modules, true)) {
+            $modules[] = $extraModule;
+        }
+    }
+    sort($modules);
+} catch (Throwable $e) {
+    // ignore
 }
 
 $sql = "

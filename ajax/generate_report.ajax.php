@@ -481,24 +481,31 @@ try {
             $blockedAccounts = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE IsActive = 0")->fetchColumn();
 
             // Account listing
+            // FIX: MySQL 8+ with ONLY_FULL_GROUP_BY rejects ORDER BY on columns
+            // not in the SELECT list when DISTINCT is used. We wrap in a subquery
+            // to apply ORDER BY safely outside the DISTINCT context.
             $acctSql = "
-                SELECT DISTINCT
-                    u.UserID,
-                    sp.SchoolID,
-                    CONCAT(sp.FirstName, ' ', COALESCE(NULLIF(sp.MiddleName, ''), ''), CASE WHEN sp.MiddleName IS NULL OR sp.MiddleName = '' THEN '' ELSE ' ' END, sp.LastName) AS FullName,
-                    COALESCE(
-                        (SELECT GROUP_CONCAT(r.RoleName SEPARATOR ', ')
-                         FROM user_roles ur2
-                         INNER JOIN roles r ON r.RoleID = ur2.RoleID
-                         WHERE ur2.UserID = u.UserID),
-                        '—'
-                    ) AS RoleName,
-                    u.IsActive,
-                    u.LastLogin
-                FROM users u
-                INNER JOIN school_people sp ON sp.SchoolPersonID = u.SchoolPersonID
-                {$whereSql}
-                ORDER BY u.IsActive ASC, sp.LastName ASC
+                SELECT *
+                FROM (
+                    SELECT DISTINCT
+                        u.UserID,
+                        sp.SchoolID,
+                        sp.LastName AS _LastName,
+                        CONCAT(sp.FirstName, ' ', COALESCE(NULLIF(sp.MiddleName, ''), ''), CASE WHEN sp.MiddleName IS NULL OR sp.MiddleName = '' THEN '' ELSE ' ' END, sp.LastName) AS FullName,
+                        COALESCE(
+                            (SELECT GROUP_CONCAT(r.RoleName SEPARATOR ', ')
+                             FROM user_roles ur2
+                             INNER JOIN roles r ON r.RoleID = ur2.RoleID
+                             WHERE ur2.UserID = u.UserID),
+                            '—'
+                        ) AS RoleName,
+                        u.IsActive,
+                        u.LastLogin
+                    FROM users u
+                    INNER JOIN school_people sp ON sp.SchoolPersonID = u.SchoolPersonID
+                    {$whereSql}
+                ) AS _acct
+                ORDER BY IsActive ASC, _LastName ASC
             ";
             $acctStmt = $pdo->prepare($acctSql);
             $acctStmt->execute($qParams);
