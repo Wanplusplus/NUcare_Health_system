@@ -366,43 +366,34 @@
                     cellClass += ' cell-blocked';
                     if (isPast && !isWeekend) cellClass += ' cell-past';
                     inner = `<div class="cell-dot dot-blocked"></div>${isPast && !isWeekend ? '<div class="cell-chip chip-past" title="Past date">Past</div>' : ''}`;
-                // FIND THIS SECTION AND REPLACE:
-} else if (slot.booking) {
+                } else if (slot.booking) {
+    const isOwn  = slot.booking.is_own_booking === true;
     const status = (slot.booking.status || '').toLowerCase();
-    const patient = slot.booking.patient || 'Unknown';
-    const type = slot.booking.type || '';
-    const purpose = slot.booking.purpose || '';
-    
-    const tooltip = `${patient}${type ? ' - ' + type : ''}${purpose ? ' - ' + purpose : ''}`;
-    
-    if (status === 'approved') {
-        // APPROVED - green, show patient name
-        cellClass += ' cell-booked cell-approved-booking';
-        inner = `<div class="cell-dot dot-booked"></div>
-                 <div class="cell-chip chip-approved" title="${tooltip}">
-            ${patient.split(' ')[0]}
-        </div>`;
-    } else if (status === 'pending') {
-        // PENDING - orange, show "Pending"
-        cellClass += ' cell-booked cell-pending-booking';
-        inner = `<div class="cell-dot dot-booked"></div>
-                <div class="cell-chip chip-pending" title="${tooltip}">
-            Pending
-        </div>`;
-    } else if (status === 'completed') {
-        // COMPLETED - blue, show "Done"
-        cellClass += ' cell-booked cell-completed-booking';
-        inner = `<div class="cell-dot dot-booked"></div>
-                <div class="cell-chip chip-completed" title="${tooltip}">
-            Done
-        </div>`;
+
+    if (isOwn) {
+        // This patient's own booking — show their real status
+        if (status === 'approved') {
+            cellClass += ' cell-booked cell-approved-booking';
+            inner = `<div class="cell-dot dot-booked"></div>
+                     <div class="cell-chip chip-approved">Approved</div>`;
+        } else if (status === 'pending') {
+            cellClass += ' cell-booked cell-pending-booking';
+            inner = `<div class="cell-dot dot-booked"></div>
+                     <div class="cell-chip chip-pending">Pending</div>`;
+        } else if (status === 'completed') {
+            cellClass += ' cell-booked cell-completed-booking';
+            inner = `<div class="cell-dot dot-booked"></div>
+                     <div class="cell-chip chip-completed">Done</div>`;
+        } else {
+            cellClass += ' cell-booked';
+            inner = `<div class="cell-dot dot-booked"></div>
+                     <div class="cell-chip chip-booked">${status.charAt(0).toUpperCase() + status.slice(1)}</div>`;
+        }
     } else {
-        // Other status - default booked
+        // Another patient's booking — show nothing identifiable
         cellClass += ' cell-booked';
         inner = `<div class="cell-dot dot-booked"></div>
-                <div class="cell-chip chip-general" title="${tooltip}">
-            ${patient.split(' ')[0]}
-        </div>`;
+                 <div class="cell-chip chip-booked">Booked</div>`;
     }
                 } else if (slot.disabled) {
                     cellClass += ' cell-blocked';
