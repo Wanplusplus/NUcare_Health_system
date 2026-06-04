@@ -16,7 +16,7 @@
 (function () {
     'use strict';
 
-    var ENDPOINT = '../../ajax/consultation/register_walkin.ajax.php';
+    var ENDPOINT = '../../ajax/register_walkin.ajax.php';
 
     document.addEventListener('DOMContentLoaded', function () {
         var feedback = document.getElementById('searchFeedback');
@@ -27,13 +27,29 @@
         injectRegisterButton(feedback);
 
         var observer = new MutationObserver(function () {
-            var notFound = feedback.classList.contains('not-found');
-            var text = (feedback.textContent || '').toLowerCase();
-            var isNoPatient = notFound && (text.indexOf('no patient') !== -1 || text.indexOf('not found') !== -1);
-            toggleRegisterButton(isNoPatient);
+            toggleRegisterButton(shouldOfferRegistration());
         });
         observer.observe(feedback, { childList: true, characterData: true, subtree: true, attributes: true });
     });
+
+    function exceptionTypeFromSearch(value) {
+        var normalized = String(value || '').trim().toLowerCase();
+        if (normalized === 'guard') return 'Guard';
+        if (normalized === 'visitor' || normalized === 'visitors' || normalized === 'vistors') return 'Visitor';
+        if (normalized === 'romac' || normalized === 'janitor') return 'ROMAC';
+        return '';
+    }
+
+    function shouldOfferRegistration() {
+        var feedback = document.getElementById('searchFeedback');
+        var searchInput = document.getElementById('consultSearchInput');
+        if (!feedback || !searchInput) return false;
+
+        var notFound = feedback.classList.contains('not-found');
+        var text = (feedback.textContent || '').toLowerCase();
+        var isNoPatient = text.indexOf('no patient') !== -1 || text.indexOf('not found') !== -1;
+        return notFound && isNoPatient && exceptionTypeFromSearch(searchInput.value) !== '';
+    }
 
     /* ── "Register new patient" button ──────────────────────────────── */
     function injectRegisterButton(feedback) {
@@ -76,8 +92,7 @@
             'position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;' +
             'align-items:center;justify-content:center;padding:20px;z-index:2000;';
 
-        // All 6 PersonTypes per updated spec
-        var personTypes = ['Student', 'Faculty', 'Staff', 'Guard', 'Visitor', 'ROMAC'];
+        var personTypes = ['Guard', 'Visitor', 'ROMAC'];
 
         el.innerHTML =
         '<div style="background:#fff;border-radius:16px;width:100%;max-width:560px;max-height:92vh;overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,.35);">' +
@@ -94,7 +109,7 @@
               selectField('Sex', 'wk_sex', ['Male', 'Female'], true) +
               selectField('Person Type', 'wk_person_type', personTypes, true) +
               field('Email (optional)', 'wk_email', 'email', false) +
-              field('School ID (optional)', 'wk_school_id', 'text', false, true) +
+              '<input id="wk_school_id" name="wk_school_id" type="hidden" value="">' +
             '</div>' +
             '<div id="walkinFormError" style="display:none;margin-top:14px;color:#dc2626;font-weight:600;font-size:.85rem;"></div>' +
             '<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">' +
@@ -137,20 +152,27 @@
     }
 
     /* ── open / close ────────────────────────────────────────────── */
-    function openModal() {
+    function openModal(prefillType) {
         var modal = document.getElementById('walkinModal');
         if (!modal) return;
         var typed = (document.getElementById('consultSearchInput') || {}).value || '';
+        var exceptionType = prefillType || exceptionTypeFromSearch(typed);
+        var typeField = document.getElementById('wk_person_type');
+        if (typeField && exceptionType) typeField.value = exceptionType;
         var schoolField = document.getElementById('wk_school_id');
-        if (schoolField && /[a-zA-Z]/.test(typed) === false && typed.trim() !== '') {
-            schoolField.value = typed.trim();
-        }
+        if (schoolField) schoolField.value = '';
         showError('');
         modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
         var first = document.getElementById('wk_first_name');
         if (first) first.focus();
     }
+
+    window.openWalkinRegistrationModal = function (searchValue) {
+        var exceptionType = exceptionTypeFromSearch(searchValue);
+        if (!exceptionType) return;
+        openModal(exceptionType);
+    };
 
     function closeModal() {
         var modal = document.getElementById('walkinModal');
@@ -189,7 +211,16 @@
             credentials: 'same-origin',
             body: payload
         })
-        .then(function (r) { return r.json(); })
+        .then(function (r) {
+            return r.text().then(function (raw) {
+                try {
+                    return JSON.parse(raw);
+                } catch (e) {
+                    console.error('Walk-in registration raw response:', raw);
+                    return { ok: false, message: 'Server returned invalid response while registering.' };
+                }
+            });
+        })
         .then(function (resp) {
             if (!resp || !resp.ok) {
                 showError((resp && (resp.message || resp.debug)) || 'Registration failed.');

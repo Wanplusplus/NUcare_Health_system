@@ -635,12 +635,21 @@ echo json_encode([
     'emergencies' => $emergencies,
     'certificates' => $attachmentsFlat,
     'medicalProfile' => array_values(array_filter(array_map(
-        static fn(array $tx): ?array => !empty($tx['physicalExam']) ? array_merge($tx['physicalExam'], [
-            'clinicTransactionID' => $tx['clinicTransactionID'],
-            'visitDate' => $tx['visitDate'],
-            'serviceType' => $tx['serviceType'],
-            'status' => $tx['status'],
-        ]) : null,
+        static function (array $tx): ?array {
+            $serviceType = trim((string)($tx['serviceType'] ?? ''));
+            $isPhysicalExam = stripos($serviceType, 'physical') !== false;
+
+            if (!$isPhysicalExam || empty($tx['physicalExam'])) {
+                return null;
+            }
+
+            return array_merge($tx['physicalExam'], [
+                'clinicTransactionID' => $tx['clinicTransactionID'],
+                'visitDate' => $tx['visitDate'],
+                'serviceType' => $tx['serviceType'],
+                'status' => $tx['status'],
+            ]);
+        },
         $transactions
     ))),
     'familyHistory' => $personUserID > 0 ? familyHistoryLoad($pdo, $personUserID) : [],

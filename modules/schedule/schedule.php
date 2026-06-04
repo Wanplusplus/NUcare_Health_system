@@ -392,6 +392,6 @@ $activeSidebarItem = 'schedule';
 </div>
 
 <script src="../../assets/js/app.js"></script>
-<script src="../../assets/js/schedule.js?v=2"></script>
+<script src="../../assets/js/schedule.js?v=3"></script>
 </body>
 </html>

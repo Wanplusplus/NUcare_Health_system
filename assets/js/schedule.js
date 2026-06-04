@@ -45,6 +45,15 @@ let professionals = [];
 let slotsData     = {};
 let activeSlot    = null;
 let pendingAvail  = null;
+let deepLinkTarget = {
+    bookingId: null,
+    focus: '',
+    professionalId: null,
+    bookingDate: '',
+    bookingStart: '',
+    targetWeekOffset: null,
+    handled: false,
+};
 
 /* ── DOM helpers ────────────────────────────── */
 const $  = id => document.getElementById(id);
@@ -59,9 +68,40 @@ const el = (tag, cls, html) => {
    INIT
    ════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
+    initDeepLinkTarget();
     bindUI();
     loadProfessionals();
 });
+
+function initDeepLinkTarget() {
+    const params = new URLSearchParams(window.location.search);
+    const bookingId = parseInt(params.get('booking_id') || '0', 10);
+    const professionalId = parseInt(params.get('professional_id') || '0', 10);
+    const bookingDate = (params.get('booking_date') || '').trim();
+    const bookingStart = (params.get('booking_start') || '').trim();
+
+    deepLinkTarget = {
+        bookingId: bookingId > 0 ? bookingId : null,
+        focus: (params.get('focus') || '').toLowerCase(),
+        professionalId: professionalId > 0 ? professionalId : null,
+        bookingDate,
+        bookingStart,
+        targetWeekOffset: bookingDate ? computeWeekOffsetForDate(bookingDate) : null,
+        handled: false,
+    };
+}
+
+function computeWeekOffsetForDate(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return null;
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const currentWeekStart = getWeekStart(0);
+    const targetWeekStart = new Date(d);
+    targetWeekStart.setDate(targetWeekStart.getDate() - targetWeekStart.getDay());
+    targetWeekStart.setHours(0, 0, 0, 0);
+    return Math.round((targetWeekStart.getTime() - currentWeekStart.getTime()) / (7 * 24 * 60 * 60 * 1000));
+}
 
 function bindUI() {
     /* Week navigation */
@@ -275,9 +315,17 @@ function populateProfessionalSelect() {
         });
     }
 
-    currentProfId = professionals[0]?.id ?? null;
+    const preferredId = deepLinkTarget.professionalId;
+    const preferred = preferredId !== null
+        ? professionals.find(p => String(p.id) === String(preferredId))
+        : null;
+
+    currentProfId = preferred?.id ?? professionals[0]?.id ?? null;
     if (currentProfId !== null) {
         sel.value = String(currentProfId);
+    }
+    if (deepLinkTarget.targetWeekOffset !== null) {
+        weekOffset = deepLinkTarget.targetWeekOffset;
     }
     refreshGrid();
     loadPendingBookings();
@@ -332,6 +380,7 @@ async function refreshGrid() {
     await loadSlots();
     buildGrid();
     await updateStats();
+    applyDeepLinkToGrid();
 }
 
 /* ════════════════════════════════════════════
@@ -461,11 +510,45 @@ function buildChip(booking) {
     }
 
     const chip = el('div', chipClass);
+    if (booking.booking_id) {
+        chip.dataset.bookingId = booking.booking_id;
+    }
     chip.innerHTML = `
         <div class="chip-name">${escHtml(booking.patient)}</div>
         <div class="chip-type">${escHtml(statusLabel)}</div>
     `;
     return chip;
+}
+
+function findSlotByBookingId(bookingId) {
+    const target = String(bookingId);
+    for (const [key, slot] of Object.entries(slotsData || {})) {
+        if (slot && slot.booking && String(slot.booking.booking_id) === target) {
+            const [dayIdx, timeLabel] = key.split('-');
+            return {
+                dayIdx: parseInt(dayIdx, 10),
+                timeLabel,
+                slot,
+            };
+        }
+    }
+    return null;
+}
+
+function openDeepLinkBooking() {
+    if (!deepLinkTarget.bookingId || deepLinkTarget.handled) return false;
+
+    const match = findSlotByBookingId(deepLinkTarget.bookingId);
+    if (!match) return false;
+
+    openModal(match.dayIdx, match.timeLabel);
+    deepLinkTarget.handled = true;
+    return true;
+}
+
+function applyDeepLinkToGrid() {
+    if (!deepLinkTarget.bookingId || deepLinkTarget.handled) return;
+    openDeepLinkBooking();
 }
 
 /* ════════════════════════════════════════════
@@ -829,6 +912,16 @@ function renderPendingList(bookings) {
 
         list.appendChild(card);
     });
+
+    if (deepLinkTarget.bookingId && !deepLinkTarget.handled && deepLinkTarget.focus === 'pending') {
+        const target = bookings.find(b => String(b.BookingID) === String(deepLinkTarget.bookingId));
+        if (target) {
+            setTimeout(() => {
+                openRespondModal(target.BookingID);
+                deepLinkTarget.handled = true;
+            }, 0);
+        }
+    }
 }
 
 /* helper: format "HH:MM:SS" or "HH:MM" → "h:MM AM/PM" */

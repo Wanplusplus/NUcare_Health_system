@@ -23,7 +23,7 @@ if (!isset($_SESSION['UserID'])) {
     exit;
 }
 
-$pdo = require __DIR__ . '/../../config/db_pdo.php';
+$pdo = require __DIR__ . '/../config/db_pdo.php';
 
 /* ── helpers ──────────────────────────────────────────────────────── */
 function clean(mixed $v): string { return trim((string)($v ?? '')); }

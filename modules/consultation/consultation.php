@@ -65,7 +65,7 @@ $activeSidebarItem = 'consultation';
                 <i class="fa-solid fa-magnifying-glass"></i>
                 Find Patient
             </div>
-            <p class="card-section-desc">Enter a School ID or patient name to begin a consultation.</p>
+            <p class="card-section-desc">Enter a School ID, patient name, or an exception type: Guard, Visitor, or ROMAC.</p>
 
             <div class="search-row">
                 <div class="search-input-wrap" style="position:relative;">
@@ -73,7 +73,7 @@ $activeSidebarItem = 'consultation';
                     <input
                         type="text"
                         id="consultSearchInput"
-                        placeholder="Search School ID or name…"
+                        placeholder="Search School ID, name, or Guard / Visitor / ROMAC…"
                         autocomplete="off"
                         onkeydown="if(event.key==='Enter'){ event.preventDefault(); searchPatient(); }"
                         oninput="onSearchInput(this.value)"
@@ -327,7 +327,7 @@ $activeSidebarItem = 'consultation';
                         </div>
 
                         <div class="form-group">
-                            <label for="consultService">Service Type <span class="req">*</span></label>
+                            <label for="consultService">Service Sought <span class="req">*</span></label>
                             <select id="consultService" name="service_type" onchange="onServiceTypeChange(this.value)">
                                 <option value="">— Select service —</option>
                                 <option>General Consultation</option>
@@ -1070,6 +1070,7 @@ $activeSidebarItem = 'consultation';
 </div>
 
 <script src="../../assets/js/app.js"></script>
-<script src="../../assets/js/consultation.js?v=5"></script>
+<script src="../../assets/js/consultation.js?v=7"></script>
+<script src="../../assets/js/consultation_walkin.js?v=4"></script>
 </body>
 </html>

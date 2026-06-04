@@ -77,18 +77,35 @@ function handleSearchPatients(PDO $pdo): void
         FROM school_people sp
         LEFT JOIN patients_info pi ON pi.SchoolPersonID = sp.SchoolPersonID
         WHERE
-            sp.SchoolID = :exact1
-            OR sp.SchoolID = :exact_norm
-            OR sp.SchoolID LIKE :like1
-            OR sp.SchoolID LIKE :like_norm
-            OR CAST(sp.SchoolPersonID AS CHAR) = :pid
-            OR CONCAT_WS(' ', sp.FirstName, sp.MiddleName, sp.LastName) LIKE :like2
-            OR CONCAT_WS(' ', sp.FirstName, sp.LastName) LIKE :like3
+            (
+                sp.SchoolID IS NOT NULL
+                AND sp.PersonType IN ('Student', 'Faculty', 'Staff')
+                AND (
+                    sp.SchoolID = :exact1
+                    OR sp.SchoolID = :exact_norm
+                    OR sp.SchoolID LIKE :like1
+                    OR sp.SchoolID LIKE :like_norm
+                    OR CAST(sp.SchoolPersonID AS CHAR) = :pid
+                    OR CONCAT_WS(' ', sp.FirstName, sp.MiddleName, sp.LastName) LIKE :like2
+                    OR CONCAT_WS(' ', sp.FirstName, sp.LastName) LIKE :like3
+                )
+            )
+            OR
+            (
+                sp.SchoolID IS NULL
+                AND sp.PersonType IN ('Guard', 'Visitor', 'ROMAC')
+                AND (
+                    sp.PersonType LIKE :person_type
+                    OR CONCAT_WS(' ', sp.FirstName, sp.MiddleName, sp.LastName) LIKE :exception_like1
+                    OR CONCAT_WS(' ', sp.FirstName, sp.LastName) LIKE :exception_like2
+                )
+            )
         ORDER BY
             CASE
                 WHEN sp.SchoolID = :exact2 THEN 0
                 WHEN sp.SchoolID = :exact_norm2 THEN 1
                 WHEN sp.SchoolID LIKE :like4 THEN 2
+                WHEN sp.PersonType IN ('Guard', 'Visitor', 'ROMAC') THEN 3
                 ELSE 3
             END ASC,
             sp.LastName ASC
@@ -105,6 +122,9 @@ function handleSearchPatients(PDO $pdo): void
             ':pid'         => $q,
             ':like2'       => $like,
             ':like3'       => $like,
+            ':person_type' => $like,
+            ':exception_like1' => $like,
+            ':exception_like2' => $like,
             ':exact2'      => $q,
             ':exact_norm2' => $normalized,
             ':like4'       => $like,

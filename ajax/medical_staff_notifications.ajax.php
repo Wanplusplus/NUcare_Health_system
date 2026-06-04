@@ -5,8 +5,6 @@ if (session_status() === PHP_SESSION_NONE) {
 
 header('Content-Type: application/json; charset=utf-8');
 
-// For medical staff, allow notifications as long as the session exists.
-// Some parts of the app use `UserID`, others use `patient_id`, so we just avoid hard-failing.
 $userId = null;
 if (isset($_SESSION['UserID']) && is_numeric($_SESSION['UserID'])) {
     $userId = (int)$_SESSION['UserID'];
@@ -15,12 +13,10 @@ if (isset($_SESSION['UserID']) && is_numeric($_SESSION['UserID'])) {
 }
 
 if ($userId === null) {
-    // Still return medicine notifications; do not block UI.
     $userId = 0;
 }
 
 require_once __DIR__ . '/../config/db.php';
-
 
 function respond(array $payload, int $httpCode = 200): void {
     http_response_code($httpCode);
@@ -29,8 +25,7 @@ function respond(array $payload, int $httpCode = 200): void {
 }
 
 function getUserId(): ?int {
-    $keys = ['UserID', 'user_id', 'userId', 'patient_id', 'patientId'];
-    foreach ($keys as $k) {
+    foreach (['UserID', 'user_id', 'userId', 'patient_id', 'patientId'] as $k) {
         if (isset($_SESSION[$k]) && is_numeric($_SESSION[$k])) {
             return (int)$_SESSION[$k];
         }
@@ -39,12 +34,10 @@ function getUserId(): ?int {
 }
 
 function getMedProfIdFromSessionOrUser(): ?int {
-    // 1) Explicit MedProfID (best)
     if (isset($_SESSION['MedProfID']) && is_numeric($_SESSION['MedProfID'])) {
         return (int)$_SESSION['MedProfID'];
     }
 
-    // 2) Derive MedProfID from UserID (common)
     $userId = getUserId();
     if ($userId !== null && $userId > 0) {
         global $conn;
@@ -52,8 +45,7 @@ function getMedProfIdFromSessionOrUser(): ?int {
             $stmt = $conn->prepare("SELECT MedProfID FROM medical_professionals WHERE UserID = ? LIMIT 1");
             $stmt->bind_param('i', $userId);
             $stmt->execute();
-            $res = $stmt->get_result();
-            $row = $res->fetch_assoc();
+            $row = $stmt->get_result()->fetch_assoc();
             if ($row && isset($row['MedProfID']) && is_numeric($row['MedProfID'])) {
                 return (int)$row['MedProfID'];
             }
@@ -62,10 +54,8 @@ function getMedProfIdFromSessionOrUser(): ?int {
         }
     }
 
-    // 3) No mapping found
     return null;
 }
-
 
 function safeStr(mixed $v): string {
     return is_string($v) ? trim($v) : (string)$v;
@@ -79,154 +69,199 @@ function computePriorityForStatus(string $status): string {
     return 'Low';
 }
 
+function scheduleLink(int $bookingId, string $focus = 'booking', int $professionalId = 0, string $bookingDate = '', string $bookingStart = ''): string {
+    $params = [
+        'booking_id' => $bookingId,
+        'focus' => $focus,
+    ];
+    if ($professionalId > 0) {
+        $params['professional_id'] = $professionalId;
+    }
+    if ($bookingDate !== '') {
+        $params['booking_date'] = $bookingDate;
+    }
+    if ($bookingStart !== '') {
+        $params['booking_start'] = $bookingStart;
+    }
+    return '../../modules/schedule/schedule.php?' . http_build_query($params);
+}
+
+function medicineLink(int $medicineId = 0, int $inventoryId = 0, string $status = ''): string {
+    $params = [];
+    if ($medicineId > 0) $params['medicine_id'] = $medicineId;
+    if ($inventoryId > 0) $params['inventory_id'] = $inventoryId;
+    if ($status !== '') $params['alert'] = $status;
+    return '../../modules/medicine/medicine.php' . ($params ? ('?' . http_build_query($params)) : '');
+}
+
 try {
-    $userId = getUserId();
-
     $notifications = [];
-
-    // 1) Booking-based alerts: New appointment + reschedule events
-    // Schema (see sql/nucaredb.sql):
-    //   bookings.BookingStatus: Pending, Approved, Completed, Cancelled
-    //   bookings.RequestDate: timestamp
-    //   bookings.RescheduleStatus: Proposed, Accepted, Rejected (used in schedule.ajax.php)
-    //   bookings.MedProfID links to medical_professionals.MedProfID
-    //
-    // For medical staff, we try to filter by the logged-in user. If session does not map,
-    // we still return medicine alerts below.
-    $medProfId = null;
+    // Booking notifications
     try {
-        $medProfId = getMedProfIdFromSessionOrUser();
+        $sqlBk = "
+            SELECT
+                b.BookingID,
+                b.BookingStatus,
+                b.MedProfID,
+                b.RequestDate,
+                b.AppointmentDate,
+                b.AppointmentStart,
+                sp.FirstName,
+                sp.LastName,
+                b.ServiceType
+            FROM bookings b
+            INNER JOIN school_people sp ON sp.SchoolPersonID = b.SchoolPersonID
+            WHERE b.BookingStatus = 'Pending'
+            ORDER BY b.RequestDate DESC
+            LIMIT 10
+        ";
+
+        $stmt = $conn->prepare($sqlBk);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+        foreach ($rows as $r) {
+            $patientName = trim(safeStr(($r['FirstName'] ?? '') . ' ' . ($r['LastName'] ?? '')));
+            if ($patientName === '') $patientName = 'Student';
+
+            $when = '';
+            if (!empty($r['AppointmentDate']) && !empty($r['AppointmentStart'])) {
+                $when = ' - ' . safeStr($r['AppointmentDate']) . ' at ' . safeStr(substr((string)$r['AppointmentStart'], 0, 5));
+            }
+
+            $notifications[] = [
+                'title' => 'New appointment booked',
+                'message' => $patientName . $when,
+                'timestamp' => $r['RequestDate'] ?: date('c'),
+                'priority' => 'Medium',
+                'status' => 'Pending',
+                'type' => 'booking_pending',
+                'booking_id' => (int)$r['BookingID'],
+                'target_url' => scheduleLink(
+                    (int)$r['BookingID'],
+                    'pending',
+                    (int)($r['MedProfID'] ?? 0),
+                    (string)($r['AppointmentDate'] ?? ''),
+                    (string)($r['AppointmentStart'] ?? '')
+                ),
+                'target_label' => 'Open schedule',
+            ];
+        }
     } catch (Throwable $e) {
-        $medProfId = null;
+        // non-fatal
     }
 
+    // Reschedule notifications
+    try {
+        $sqlRs = "
+            SELECT
+                b.BookingID,
+                b.MedProfID,
+                b.RescheduleStatus,
+                b.RequestDate,
+                b.RescheduleProposedDate,
+                b.RescheduleProposedStart,
+                sp.FirstName,
+                sp.LastName
+            FROM bookings b
+            INNER JOIN school_people sp ON sp.SchoolPersonID = b.SchoolPersonID
+            WHERE b.RescheduleStatus IN ('Proposed','Accepted','Rejected')
+            ORDER BY b.RequestDate DESC
+            LIMIT 10
+        ";
 
+        $stmt = $conn->prepare($sqlRs);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-    if ($medProfId !== null) {
-        // New appointment booked (Pending)
-        try {
-            $sqlBk = "
-                SELECT
-                    b.BookingID,
-                    b.BookingType,
-                    b.BookingStatus,
-                    b.RequestDate,
-                    b.AppointmentDate,
-                    b.AppointmentStart,
-                    sp.FirstName,
-                    sp.LastName,
-                    sp.SchoolID,
-                    b.ServiceType,
-                    b.ReasonForVisit
-                FROM bookings b
-                INNER JOIN school_people sp ON sp.SchoolPersonID = b.SchoolPersonID
-                WHERE b.MedProfID = ?
-                  AND b.BookingStatus = 'Pending'
-                ORDER BY b.RequestDate DESC
-                LIMIT 10
-            ";
-            $stmt = $conn->prepare($sqlBk);
-            $stmt->bind_param('i', $medProfId);
-            $stmt->execute();
-            $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        foreach ($rows as $r) {
+            $patientName = trim(safeStr(($r['FirstName'] ?? '') . ' ' . ($r['LastName'] ?? '')));
+            if ($patientName === '') $patientName = 'Student';
 
-            foreach ($rows as $r) {
-                $patientName = trim(safeStr(($r['FirstName'] ?? '') . ' ' . ($r['LastName'] ?? '')));
-                if ($patientName === '') $patientName = 'Student';
-
-                $when = '';
-                if (!empty($r['AppointmentDate']) && !empty($r['AppointmentStart'])) {
-                    $when = ' — ' . safeStr($r['AppointmentDate']) . ' at ' . safeStr(substr((string)$r['AppointmentStart'], 0, 5));
+            $status = safeStr($r['RescheduleStatus'] ?? '');
+            $newWhen = '';
+            if (!empty($r['RescheduleProposedDate'])) {
+                $t = '';
+                if (!empty($r['RescheduleProposedStart'])) {
+                    $t = safeStr(substr((string)$r['RescheduleProposedStart'], 0, 5));
                 }
+                $newWhen = ' - ' . safeStr($r['RescheduleProposedDate']) . ($t ? (' at ' . $t) : '');
+            }
 
+            if ($status === 'Proposed') {
                 $notifications[] = [
-                    'title' => 'New appointment booked',
-                    'message' => $patientName . $when,
+                    'title' => 'Reschedule requested',
+                    'message' => $patientName . $newWhen,
                     'timestamp' => $r['RequestDate'] ?: date('c'),
                     'priority' => 'Medium',
-                    'status' => 'Pending',
+                    'status' => 'Proposed',
+                    'type' => 'reschedule_proposed',
+                    'booking_id' => (int)$r['BookingID'],
+                    'target_url' => scheduleLink(
+                        (int)$r['BookingID'],
+                        'pending',
+                        (int)($r['MedProfID'] ?? 0),
+                        (string)($r['AppointmentDate'] ?? ''),
+                        (string)($r['AppointmentStart'] ?? '')
+                    ),
+                    'target_label' => 'Open schedule',
+                ];
+            } elseif ($status === 'Accepted') {
+                $notifications[] = [
+                    'title' => 'Student accepted reschedule',
+                    'message' => $patientName . ' accepted the booking' . $newWhen,
+                    'timestamp' => $r['RequestDate'] ?: date('c'),
+                    'priority' => 'Low',
+                    'status' => 'Accepted',
+                    'type' => 'reschedule_accepted',
+                    'booking_id' => (int)$r['BookingID'],
+                    'target_url' => scheduleLink(
+                        (int)$r['BookingID'],
+                        'booking',
+                        (int)($r['MedProfID'] ?? 0),
+                        (string)($r['RescheduleProposedDate'] ?? ''),
+                        (string)($r['RescheduleProposedStart'] ?? '')
+                    ),
+                    'target_label' => 'Open schedule',
+                ];
+            } elseif ($status === 'Rejected') {
+                $notifications[] = [
+                    'title' => 'Student declined reschedule',
+                    'message' => $patientName . ' declined the proposed reschedule' . $newWhen,
+                    'timestamp' => $r['RequestDate'] ?: date('c'),
+                    'priority' => 'Medium',
+                    'status' => 'Rejected',
+                    'type' => 'reschedule_rejected',
+                    'booking_id' => (int)$r['BookingID'],
+                    'target_url' => scheduleLink(
+                        (int)$r['BookingID'],
+                        'pending',
+                        (int)($r['MedProfID'] ?? 0),
+                        (string)($r['AppointmentDate'] ?? ''),
+                        (string)($r['AppointmentStart'] ?? '')
+                    ),
+                    'target_label' => 'Open schedule',
                 ];
             }
-        } catch (Throwable $e) {
-            // non-fatal
         }
-
-        // Reschedule events
-        try {
-            $sqlRs = "
-                SELECT
-                    b.BookingID,
-                    b.RescheduleStatus,
-                    b.RequestDate,
-                    b.RescheduleProposedDate,
-                    b.RescheduleProposedStart,
-                    sp.FirstName,
-                    sp.LastName
-                FROM bookings b
-                INNER JOIN school_people sp ON sp.SchoolPersonID = b.SchoolPersonID
-                WHERE b.MedProfID = ?
-                  AND b.RescheduleStatus IN ('Proposed','Accepted')
-                ORDER BY b.RequestDate DESC
-                LIMIT 10
-            ";
-            $stmt = $conn->prepare($sqlRs);
-            $stmt->bind_param('i', $medProfId);
-            $stmt->execute();
-            $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-
-            foreach ($rows as $r) {
-                $patientName = trim(safeStr(($r['FirstName'] ?? '') . ' ' . ($r['LastName'] ?? '')));
-                if ($patientName === '') $patientName = 'Student';
-
-                $status = safeStr($r['RescheduleStatus'] ?? '');
-                $newWhen = '';
-                if (!empty($r['RescheduleProposedDate'])) {
-                    $t = '';
-                    if (!empty($r['RescheduleProposedStart'])) {
-                        $t = safeStr(substr((string)$r['RescheduleProposedStart'], 0, 5));
-                    }
-                    $newWhen = ' — ' . safeStr($r['RescheduleProposedDate']) . ($t ? (' at ' . $t) : '');
-                }
-
-                if ($status === 'Proposed') {
-                    $notifications[] = [
-                        'title' => 'Reschedule requested',
-                        'message' => $patientName . $newWhen,
-                        'timestamp' => $r['RequestDate'] ?: date('c'),
-                        'priority' => 'Medium',
-                        'status' => 'Proposed',
-                    ];
-                } elseif ($status === 'Accepted') {
-                    $notifications[] = [
-                        'title' => 'Reschedule confirmed',
-                        'message' => $patientName . $newWhen,
-                        'timestamp' => $r['RequestDate'] ?: date('c'),
-                        'priority' => 'Low',
-                        'status' => 'Accepted',
-                    ];
-                }
-            }
-        } catch (Throwable $e) {
-            // non-fatal
-        }
+    } catch (Throwable $e) {
+        // non-fatal
     }
 
-    // 2) Medicine-based alerts: Low Stock, Near Expiry, Expired
-    // Assumptions based on existing medicine implementation:
-    // - medicines table: MedicineName
-    // - medicine_inventory table: Quantity, ExpiryDate, ReorderLevel
-    // - We can derive inventory status with the same logic used in ajax/medicine_ajax.php
+    // Medicine alerts including zero-stock / no inventory medicines
     $sql = "
         SELECT
             m.MedicineID,
             m.MedicineName,
-            i.Quantity,
-            i.ExpiryDate,
-            i.ReorderLevel,
-            i.UpdatedAt
+            COALESCE(SUM(i.Quantity), 0) AS TotalQuantity,
+            MIN(i.ExpiryDate) AS EarliestExpiry,
+            COALESCE(MAX(i.ReorderLevel), 10) AS ReorderLevel,
+            MAX(i.UpdatedAt) AS UpdatedAt,
+            COUNT(i.InventoryID) AS InventoryCount
         FROM medicines m
-        INNER JOIN medicine_inventory i ON i.MedicineID = m.MedicineID
-        WHERE 1=1
+        LEFT JOIN medicine_inventory i ON i.MedicineID = m.MedicineID
+        GROUP BY m.MedicineID, m.MedicineName
+        ORDER BY m.MedicineName ASC
     ";
 
     $stmt = $conn->prepare($sql);
@@ -236,17 +271,16 @@ try {
     $today = new DateTimeImmutable('today');
     foreach ($rows as $r) {
         $medicineName = safeStr($r['MedicineName'] ?? 'Medicine');
-        $qty = (int)($r['Quantity'] ?? 0);
-        $expiry = $r['ExpiryDate'] ?? null;
+        $qty = (int)($r['TotalQuantity'] ?? 0);
+        $expiry = $r['EarliestExpiry'] ?? null;
         $reorder = (int)($r['ReorderLevel'] ?? 10);
         $updatedAt = $r['UpdatedAt'] ?? null;
+        $inventoryCount = (int)($r['InventoryCount'] ?? 0);
 
         $status = null;
-
-        if ($qty <= 0) {
-            // Treat out-of-stock as low stock alert
+        if ($qty <= 0 || $inventoryCount === 0) {
             $status = 'Low Stock';
-        } else if ($expiry === null || $expiry === '' || $expiry === '0000-00-00') {
+        } elseif ($expiry === null || $expiry === '' || $expiry === '0000-00-00') {
             $status = ($qty <= $reorder) ? 'Low Stock' : 'Available';
         } else {
             $expDate = DateTimeImmutable::createFromFormat('Y-m-d', (string)$expiry);
@@ -259,7 +293,7 @@ try {
                 }
                 if ($expDate instanceof DateTimeImmutable && $days <= 30) {
                     $status = 'Near Expiry';
-                } else if ($qty <= $reorder) {
+                } elseif ($qty <= $reorder) {
                     $status = 'Low Stock';
                 } else {
                     $status = 'Available';
@@ -271,29 +305,28 @@ try {
             continue;
         }
 
-        $priority = computePriorityForStatus($status);
-
         if ($status === 'Expired') {
             $title = 'Expired Medicines Alert';
-            $message = $medicineName;
         } elseif ($status === 'Near Expiry') {
             $title = 'Near Expiry Medicines Alert';
-            $message = $medicineName;
         } else {
             $title = 'Low Stock Alert';
-            $message = $medicineName;
         }
 
         $notifications[] = [
             'title' => $title,
-            'message' => $message,
+            'message' => $medicineName,
             'timestamp' => $updatedAt ?: date('c'),
-            'priority' => $priority,
+            'priority' => computePriorityForStatus($status),
             'status' => $status,
+            'type' => 'medicine_alert',
+            'medicine_id' => (int)($r['MedicineID'] ?? 0),
+            'inventory_id' => 0,
+            'target_url' => medicineLink((int)($r['MedicineID'] ?? 0), 0, $status),
+            'target_label' => 'Open medicine',
         ];
     }
 
-    // Sort: Critical(High) first, then medium
     $prioScore = ['High' => 3, 'Medium' => 2, 'Low' => 1];
     usort($notifications, function($a, $b) use ($prioScore) {
         $pa = $prioScore[$a['priority'] ?? 'Low'] ?? 1;
@@ -302,19 +335,12 @@ try {
         return strcmp((string)($b['timestamp'] ?? ''), (string)($a['timestamp'] ?? ''));
     });
 
-    // If there are still no notifications (e.g., medicine query returned none),
-    // return an empty list gracefully so the UI can show "No alerts right now".
-    // Limit to a reasonable dropdown size
-    $notifications = array_slice($notifications, 0, 15);
-
     respond([
         'success' => true,
         'last_updated' => date('c'),
-        'notifications' => $notifications,
+        'notifications' => array_slice($notifications, 0, 15),
         'user_id' => $userId,
     ]);
-
 } catch (Throwable $e) {
     respond(['success' => false, 'message' => 'Failed to fetch notifications', 'error' => $e->getMessage()], 500);
 }
-

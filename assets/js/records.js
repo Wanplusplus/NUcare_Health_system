@@ -519,18 +519,33 @@
 
         if (!items.length) {
             container.innerHTML = `<div class="no-history">
-                <i class="fa-solid fa-clipboard-list"></i>
-                <p>No physical examination data found.</p>
-                <span>Physical examination records entered in Consultation will appear here.</span>
+                <i class="fa-solid fa-notes-medical"></i>
+                <p>No record</p>
+                <span>No physical examination has been saved yet.</span>
             </div>`;
             return;
         }
 
-        container.innerHTML = items.map(item => `
-            <div class="medical-profile-card">
+        container.innerHTML = items.map(item => {
+            const summary = [
+                item.height ? `${item.height} cm` : null,
+                item.weight ? `${item.weight} kg` : null,
+                item.bloodPressure || null,
+                item.pulseRate ? `${item.pulseRate} bpm` : null,
+            ].filter(Boolean).join(' · ');
+
+            const serviceLabel = item.serviceType || 'Physical Examination';
+            const statusLabel = item.cardioClearance || item.status || serviceLabel;
+
+            return `
+            <div class="medical-profile-card medical-profile-card--clickable"
+                 role="button"
+                 tabindex="0"
+                 onclick="openTransactionDetail(${item.clinicTransactionID})"
+                 onkeydown="if(event.key==='Enter'||event.key===' ')openTransactionDetail(${item.clinicTransactionID})">
                 <div class="medical-profile-head">
-                    <span><i class="fa-solid fa-calendar-check"></i> ${escHtml(formatDate(item.examDate || item.visitDate))}</span>
-                    <span>${escHtml(item.cardioClearance || item.status || '—')}</span>
+                    <span><i class="fa-solid fa-stethoscope"></i> ${escHtml(serviceLabel)}</span>
+                    <span>${escHtml(formatDate(item.examDate || item.visitDate))}</span>
                 </div>
                 <div class="info-fields">
                     ${item.height ? detailField('Height', item.height + ' cm') : ''}
@@ -549,8 +564,9 @@
                     ${item.deformities ? detailField('Deformities', item.deformities) : ''}
                     ${item.cardioClearance ? detailField('Cardio Clearance', item.cardioClearance) : ''}
                 </div>
-            </div>
-        `).join('');
+                ${statusLabel ? `<div class="medical-profile-footer">${escHtml(statusLabel)}</div>` : ''}
+            </div>`;
+        }).join('');
     }
 
     function addRecordsFamilyRow(item = {}) {
@@ -605,6 +621,7 @@
         const schoolPersonID = (spidInput && String(spidInput.value || '').trim() !== '')
             ? spidInput.value
             : (activeModal ?? '');
+        const schoolID = activeRecordData?.patient?.schoolID || '';
 
         if (!schoolPersonID || parseInt(schoolPersonID, 10) <= 0) {
             showToast('Invalid patient selected. Please close and reopen the record.', 'error');
@@ -612,6 +629,7 @@
         }
 
         body.set('school_person_id', String(schoolPersonID));
+        if (schoolID) body.set('school_id', String(schoolID));
         body.set('family_history', JSON.stringify(collectRecordsFamilyHistory()));
 
         fetch('../../ajax/records_patient_info_save.ajax.php', { method: 'POST', body })
@@ -660,6 +678,9 @@
 
         const body = new FormData();
         body.set('school_person_id', String(activeModal));
+        if (activeRecordData?.patient?.schoolID) {
+            body.set('school_id', String(activeRecordData.patient.schoolID));
+        }
         body.set('mode', 'family_only');
         body.set('family_history', JSON.stringify(collectRecordsFamilyHistory()));
 

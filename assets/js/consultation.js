@@ -69,6 +69,17 @@
         if (spidInput) spidInput.value = _currentSpid;
 
         unlockForm();
+
+        // Guard, Visitor, and ROMAC can consult without a School ID.
+        // Default them into the normal general consultation flow.
+        if (!p.SchoolID && ['Guard', 'Visitor', 'ROMAC'].includes(p.PersonType || '')) {
+            const serviceSelect = document.getElementById('consultService');
+            if (serviceSelect) {
+                serviceSelect.value = 'General Consultation';
+                window.onServiceTypeChange?.('General Consultation');
+            }
+        }
+
         loadHistory(_currentSpid);
         startTransaction(_currentSpid);
     }
@@ -110,6 +121,9 @@
 
                 if (!data || !data.ok || !data.found) {
                     setFeedback('<i class="fa-solid fa-circle-exclamation"></i> No patient found. Check the ID and try again.', 'not-found');
+                    if (typeof window.openWalkinRegistrationModal === 'function') {
+                        window.openWalkinRegistrationModal(query);
+                    }
                     return;
                 }
 
@@ -156,13 +170,14 @@
             const li = document.createElement('li');
             li.className = 'ac-item';
             li.setAttribute('tabindex', '0');
+            const displayId = p.SchoolID || 'No School ID';
             li.innerHTML = `
                 <span class="ac-name">${p.FullName || p.LastName}</span>
-                <span class="ac-id">${p.SchoolID}</span>
+                <span class="ac-id">${displayId}</span>
                 <span class="ac-meta">${p.PersonType || ''}</span>
             `;
             li.addEventListener('click', () => {
-                if (qInput) qInput.value = p.SchoolID;
+                if (qInput) qInput.value = p.SchoolID || p.FullName || p.PersonType || '';
                 closeAutocomplete();
                 setFeedback('<i class="fa-solid fa-circle-check"></i> Patient loaded.', 'found');
                 loadPatient(p);

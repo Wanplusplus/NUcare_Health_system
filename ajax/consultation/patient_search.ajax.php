@@ -40,18 +40,35 @@ SELECT
     sp.PersonType
 FROM school_people sp
 WHERE
-    sp.SchoolID = :exact1
-    OR sp.SchoolID = :exact_norm1
-    OR sp.SchoolID LIKE :like1
-    OR sp.SchoolID LIKE :like_norm1
-    OR CAST(sp.SchoolPersonID AS CHAR) = :pid
-    OR CONCAT_WS(' ', sp.FirstName, sp.MiddleName, sp.LastName) LIKE :like2
-    OR CONCAT_WS(' ', sp.FirstName, sp.LastName) LIKE :like3
+    (
+        sp.SchoolID IS NOT NULL
+        AND sp.PersonType IN ('Student', 'Faculty', 'Staff')
+        AND (
+            sp.SchoolID = :exact1
+            OR sp.SchoolID = :exact_norm1
+            OR sp.SchoolID LIKE :like1
+            OR sp.SchoolID LIKE :like_norm1
+            OR CAST(sp.SchoolPersonID AS CHAR) = :pid
+            OR CONCAT_WS(' ', sp.FirstName, sp.MiddleName, sp.LastName) LIKE :like2
+            OR CONCAT_WS(' ', sp.FirstName, sp.LastName) LIKE :like3
+        )
+    )
+    OR
+    (
+        sp.SchoolID IS NULL
+        AND sp.PersonType IN ('Guard', 'Visitor', 'ROMAC')
+        AND (
+            sp.PersonType LIKE :person_type
+            OR CONCAT_WS(' ', sp.FirstName, sp.MiddleName, sp.LastName) LIKE :exception_like1
+            OR CONCAT_WS(' ', sp.FirstName, sp.LastName) LIKE :exception_like2
+        )
+    )
 ORDER BY
     CASE
         WHEN sp.SchoolID = :exact2      THEN 0
         WHEN sp.SchoolID = :exact_norm2 THEN 1
         WHEN sp.SchoolID LIKE :like4    THEN 2
+        WHEN sp.PersonType IN ('Guard', 'Visitor', 'ROMAC') THEN 3
         ELSE 3
     END ASC,
     sp.LastName ASC
@@ -67,6 +84,9 @@ $stmt->execute([
     ':pid'         => $q,
     ':like2'       => $like,
     ':like3'       => $like,
+    ':person_type' => $like,
+    ':exception_like1' => $like,
+    ':exception_like2' => $like,
     ':exact2'      => $q,
     ':exact_norm2' => $normalized,
     ':like4'       => $like,

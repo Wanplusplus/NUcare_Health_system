@@ -1319,6 +1319,29 @@
     margin-bottom: 12px;
 }
 
+.medical-profile-card--clickable {
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+
+.medical-profile-card--clickable:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0,0,0,.06);
+    border-color: var(--blue-200);
+}
+
+.medical-profile-card--clickable:focus-visible {
+    outline: 3px solid rgba(37,99,235,.18);
+    outline-offset: 2px;
+}
+
+.medical-profile-footer {
+    margin-top: 10px;
+    font-size: .78rem;
+    color: var(--gray-500);
+    font-weight: 600;
+}
+
 .medical-profile-head {
     display: flex;
     justify-content: space-between;

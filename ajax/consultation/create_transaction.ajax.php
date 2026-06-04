@@ -21,6 +21,34 @@ if ($spid <= 0) {
     exit;
 }
 
+$personStmt = $pdo->prepare("
+    SELECT SchoolPersonID, SchoolID, FirstName, LastName, PersonType
+    FROM school_people
+    WHERE SchoolPersonID = :id
+    LIMIT 1
+");
+$personStmt->execute([':id' => $spid]);
+$person = $personStmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$person) {
+    echo json_encode(['ok' => false, 'message' => 'Patient not found']);
+    exit;
+}
+
+$schoolId = trim((string)($person['SchoolID'] ?? ''));
+$personType = trim((string)($person['PersonType'] ?? ''));
+$isEligible =
+    ($schoolId !== '' && in_array($personType, ['Student', 'Faculty', 'Staff'], true))
+    || ($schoolId === '' && in_array($personType, ['Guard', 'Visitor', 'ROMAC'], true));
+
+if (!$isEligible) {
+    echo json_encode([
+        'ok' => false,
+        'message' => 'Consultation blocked: this person type requires a School ID or is not allowed for clinic consultation.',
+    ]);
+    exit;
+}
+
 $actorUserId = isset($_SESSION['UserID']) ? (int)$_SESSION['UserID'] : null;
 $actorSchoolPersonId = isset($_SESSION['SchoolPersonID']) ? (int)$_SESSION['SchoolPersonID'] : null;
 $patientName = (string)($_SESSION['patient_name'] ?? 'Patient');

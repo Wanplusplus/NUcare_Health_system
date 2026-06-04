@@ -34,6 +34,30 @@ if ($schoolPersonID <= 0 && isset($_POST['id']) && is_numeric($_POST['id'])) {
     $schoolPersonID = (int)$_POST['id'];
 }
 
+// Fallback: allow edits to be resolved from SchoolID / student number.
+if ($schoolPersonID <= 0) {
+    $schoolIdRaw = $_POST['school_id']
+        ?? $_POST['schoolID']
+        ?? $_POST['SchoolID']
+        ?? $_POST['student_number']
+        ?? $_POST['studentNo']
+        ?? null;
+
+    if ($schoolIdRaw !== null && trim((string)$schoolIdRaw) !== '') {
+        $sidStmt = $pdo->prepare('
+            SELECT SchoolPersonID
+            FROM school_people
+            WHERE SchoolID = :sid
+            LIMIT 1
+        ');
+        $sidStmt->execute([':sid' => trim((string)$schoolIdRaw)]);
+        $resolvedSpid = (int)($sidStmt->fetchColumn() ?: 0);
+        if ($resolvedSpid > 0) {
+            $schoolPersonID = $resolvedSpid;
+        }
+    }
+}
+
 
 if ($schoolPersonID <= 0) {
     // Do NOT fail with a misleading message; include what the client actually sent.
@@ -81,7 +105,7 @@ try {
                 LastName,
                 Email,
                 PersonType
-            FROM school_persons
+            FROM school_people
             WHERE SchoolPersonID = :spid
             LIMIT 1
         ');
@@ -89,28 +113,24 @@ try {
         $spRow = $spStmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$spRow) {
-            echo json_encode(['ok' => false, 'message' => 'Patient record not found in school_persons.']);
+            echo json_encode(['ok' => false, 'message' => 'Patient record not found in school_people.']);
             exit;
         }
 
-        // Insert a linked users row.
-        // Extend or trim columns to match your exact users table schema.
-        // IMPORTANT (core identity rule): Never use SchoolID as an identity anchor.
-        // SchoolID may be stored as nullable metadata; it must not participate in lookups/foreign-key anchors.
-        // Here we only copy it as nullable field if your `users` table supports it.
+        // Insert a minimal linked users row.
+        // The users table in this project only requires SchoolPersonID + PasswordHash.
+        // We create an inactive placeholder account so patients_info can be saved even
+        // when the person does not yet have a login account.
+        $tempHash = password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT);
         $insStmt = $pdo->prepare('
             INSERT INTO users
-                (SchoolPersonID, SchoolID, FirstName, LastName, Email, Role, CreatedAt)
+                (SchoolPersonID, PasswordHash, IsActive)
             VALUES
-                (:spid, NULLIF(:school_id, \"\"), :fname, :lname, :email, :role, NOW())
+                (:spid, :password_hash, 0)
         ');
         $insStmt->execute([
-            ':spid'      => $schoolPersonID,
-            ':school_id' => (string)($spRow['SchoolID'] ?? ''),
-            ':fname'     => (string)($spRow['FirstName']  ?? ''),
-            ':lname'     => (string)($spRow['LastName']   ?? ''),
-            ':email'     => (string)($spRow['Email']      ?? ''),
-            ':role'      => (string)($spRow['PersonType'] ?? 'Student'),
+            ':spid' => $schoolPersonID,
+            ':password_hash' => $tempHash,
         ]);
 
         $targetUserID = (int)$pdo->lastInsertId();

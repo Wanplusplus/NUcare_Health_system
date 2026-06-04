@@ -249,6 +249,46 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
             font-family: 'Nunito', sans-serif;
         }
 
+        .logbook-live-summary {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+        .logbook-live-card {
+            border: 1px solid #dbeafe;
+            border-radius: 14px;
+            background: #f8fbff;
+            padding: 12px 14px;
+            min-height: 72px;
+        }
+        .logbook-live-card .live-label {
+            display: block;
+            font-size: .72rem;
+            font-weight: 800;
+            letter-spacing: .02em;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        .logbook-live-card .live-value {
+            display: block;
+            font-size: 1.25rem;
+            font-weight: 900;
+            color: #1e293b;
+        }
+        .logbook-live-card .live-subtext {
+            display: block;
+            margin-top: 3px;
+            font-size: .72rem;
+            color: #64748b;
+        }
+        .lb-edit[readonly] {
+            background: #f8fafc;
+            color: #0f172a;
+            cursor: default;
+        }
+
         .logbook-section-label {
             font-size: .77rem;
             font-weight: 900;
@@ -456,6 +496,7 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
         }
 
         @media (max-width: 640px) {
+            .logbook-live-summary { grid-template-columns: 1fr; }
             .logbook-two-col { grid-template-columns: 1fr; }
             .logbook-header { flex-direction: column; align-items: flex-start; }
             .logbook-wrapper { padding: 0 12px 24px; }
@@ -653,7 +694,7 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
                 <div class="logbook-savebar">
                     <div class="logbook-savebar-hint">
                         <span class="sparkle">✦</span>
-                        Click any number to edit · Changes are saved locally until submitted
+                        Live counts sync from consultations and medicine dispensing. Notes stay in this browser.
                     </div>
                         <div style="display:flex;align-items:center;gap:10px;">
                             <button class="lb-export-btn" id="lbExportBtn" onclick="exportLogbookPDF()" type="button">
@@ -662,13 +703,30 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
                                 <span class="lb-export-label">Export PDF</span>
                             </button>
                             <button class="lb-save-btn" id="lbSaveBtn" onclick="saveLogbook()">
-                                <i class="fa-solid fa-floppy-disk"></i> Save Logbook
+                                <i class="fa-solid fa-floppy-disk"></i> Save Notes
                             </button>
                         </div>
                 </div>
                     
                 <!-- Body -->
                 <div class="logbook-body">
+                    <div class="logbook-live-summary" aria-live="polite">
+                        <div class="logbook-live-card">
+                            <span class="live-label">Consultations this period</span>
+                            <span class="live-value" id="lbConsultationTotal">0</span>
+                            <span class="live-subtext">From clinic_transactions</span>
+                        </div>
+                        <div class="logbook-live-card">
+                            <span class="live-label">Medicines dispensed</span>
+                            <span class="live-value" id="lbMedicineTotal">0</span>
+                            <span class="live-subtext">From medicine_dispensing</span>
+                        </div>
+                        <div class="logbook-live-card">
+                            <span class="live-label">Auto-record source</span>
+                            <span class="live-value" style="font-size:.98rem;">Live database</span>
+                            <span class="live-subtext">Consultations + released medicines</span>
+                        </div>
+                    </div>
 
                     <!-- ── A. SERVICES ── -->
                     <div class="logbook-section-label">
@@ -905,17 +963,17 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
 
         <!-- Toast -->
         <div class="lb-toast" id="lbToast">
-            <i class="fa-solid fa-circle-check"></i> Logbook saved successfully! ✨
+            <i class="fa-solid fa-circle-check"></i> Notes saved successfully! ✨
         </div>
 
         <script>
         /* ── Period helpers ── */
-        function getLbKey() {
+        function getNotesKey() {
             const m = document.getElementById('lbPickerMonth');
             const y = document.getElementById('lbPickerYear');
-            if (!m || !y) return 'nucare_logbook';
+            if (!m || !y) return 'nucare_logbook_notes';
             const pad = String(m.value).padStart(2,'0');
-            return 'nucare_logbook_' + y.value + '_' + pad;
+            return 'nucare_logbook_notes_' + y.value + '_' + pad;
         }
 
         function getPeriodLabel() {
@@ -934,8 +992,13 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
         function updatePeriodBadge(state) {
             const badge = document.getElementById('lbPeriodBadge');
             if (!badge) return;
+            if (state === 'loading') {
+                badge.textContent = '… Syncing live data';
+                badge.className = 'lb-period-badge new';
+                return;
+            }
             if (state === 'loaded') {
-                badge.textContent = '✔ Record loaded';
+                badge.textContent = '✔ Live record loaded';
                 badge.className = 'lb-period-badge loaded';
             } else {
                 badge.textContent = '✦ New record';
@@ -943,30 +1006,68 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
             }
         }
 
-        /* ── Load logbook for the selected period ── */
-        function loadLogbookForPeriod() {
-            updateMonthDisplay();
-            const key = getLbKey();
-            try {
-                const raw = localStorage.getItem(key);
-                const allInputs = document.querySelectorAll('.lb-edit');
-                const notes = document.getElementById('lbNotes');
+        function setLiveSummary(summary) {
+            const consultEl = document.getElementById('lbConsultationTotal');
+            const medEl = document.getElementById('lbMedicineTotal');
+            if (consultEl) consultEl.textContent = String(summary?.consultations_total ?? 0);
+            if (medEl) medEl.textContent = String(summary?.medicine_units_total ?? 0);
+        }
 
-                if (raw) {
-                    const data = JSON.parse(raw);
-                    allInputs.forEach((inp, i) => {
-                        inp.value = (data['lb_input_' + i] !== undefined) ? data['lb_input_' + i] : 0;
-                        inp.dispatchEvent(new Event('input'));
-                    });
-                    if (notes && data['lb_notes'] !== undefined) notes.value = data['lb_notes'];
-                    updatePeriodBadge('loaded');
-                } else {
-                    // blank slate for a new period
-                    allInputs.forEach(inp => { inp.value = 0; inp.dispatchEvent(new Event('input')); });
-                    if (notes) notes.value = '';
-                    updatePeriodBadge('new');
+        function setReadonlyInputs(isReadonly) {
+            document.querySelectorAll('.lb-edit').forEach(inp => {
+                inp.readOnly = !!isReadonly;
+                inp.title = isReadonly ? 'Auto-recorded from live clinic data' : '';
+            });
+        }
+
+        function fillLogbookInputs(values) {
+            const inputs = document.querySelectorAll('.lb-edit');
+            inputs.forEach((inp, i) => {
+                const raw = Array.isArray(values) ? values[i] : 0;
+                const numeric = Number(raw);
+                inp.value = Number.isFinite(numeric) ? String(numeric) : '0';
+                inp.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+        }
+
+        /* ── Load logbook for the selected period ── */
+        async function loadLogbookForPeriod() {
+            updateMonthDisplay();
+            updatePeriodBadge('loading');
+            try {
+                const m = document.getElementById('lbPickerMonth');
+                const y = document.getElementById('lbPickerYear');
+                const notes = document.getElementById('lbNotes');
+                const month = m ? String(m.value).padStart(2, '0') : '';
+                const year = y ? y.value : '';
+                const endpoint = '../../ajax/dashboard_logbook.ajax.php?year=' + encodeURIComponent(year) + '&month=' + encodeURIComponent(month);
+
+                const response = await fetch(endpoint, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                const payload = await response.json();
+
+                if (!payload.ok) {
+                    throw new Error(payload.message || 'Failed to load logbook.');
                 }
-            } catch(e) { updatePeriodBadge('new'); }
+
+                fillLogbookInputs(payload.values || []);
+                setReadonlyInputs(true);
+                setLiveSummary(payload.summary || {});
+
+                if (notes) {
+                    notes.value = localStorage.getItem(getNotesKey()) || '';
+                }
+                updatePeriodBadge('loaded');
+            } catch(e) {
+                console.error('Logbook load failed:', e);
+                fillLogbookInputs([]);
+                setReadonlyInputs(true);
+                setLiveSummary({ consultations_total: 0, medicine_units_total: 0 });
+                const notes = document.getElementById('lbNotes');
+                if (notes) notes.value = localStorage.getItem(getNotesKey()) || '';
+                updatePeriodBadge('new');
+            }
         }
 
         /* ── Wire up picker changes ── */
@@ -1009,24 +1110,17 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
                     + ' ' + now.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             }
 
-            // Save all inputs to localStorage under the period key
-            const key = getLbKey();
-            const data = {};
-            document.querySelectorAll('.lb-edit').forEach((inp, i) => {
-                data['lb_input_' + i] = inp.value;
-            });
             const notes = document.getElementById('lbNotes');
-            if (notes) data['lb_notes'] = notes.value;
-            try { localStorage.setItem(key, JSON.stringify(data)); } catch(e){}
+            try { localStorage.setItem(getNotesKey(), notes ? notes.value : ''); } catch(e){}
 
             updatePeriodBadge('loaded');
 
             // Button feedback
             btn.classList.add('saved');
-            btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Saved!';
+            btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Notes Saved!';
             setTimeout(() => {
                 btn.classList.remove('saved');
-                btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Logbook';
+                btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Notes';
             }, 2500);
 
             // Toast
@@ -1218,6 +1312,6 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
 
 </div>
 <script src="../../assets/js/app.js"></script>
-<script src="../../assets/js/medical_staff_notifications.js?v=1"></script>
+<script src="../../assets/js/medical_staff_notifications.js?v=3"></script>
 </body>
 </html>
