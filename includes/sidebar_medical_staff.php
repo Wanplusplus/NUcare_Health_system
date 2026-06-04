@@ -1,7 +1,6 @@
 <?php
 $activeSidebarItem = $activeSidebarItem ?? 'dashboard';
 ?>
-
 <!-- Medical Staff Sidebar UI (NUCARE) -->
 <!-- Required by assets/js/app.js: #hamburgerBtn, #sidebar, #sidebarOverlay -->
 <style>
@@ -9,93 +8,33 @@ $activeSidebarItem = $activeSidebarItem ?? 'dashboard';
     background: linear-gradient(180deg, #0b3d91 0%, #06285e 100%);
     color: #f0f4ff;
   }
-
   .sidebar-medical .sidebar-brand h1,
   .sidebar-medical .sidebar-brand p,
-  .sidebar-medical .footer-title {
-    color: #f0f4ff;
-  }
-
+  .sidebar-medical .footer-title { color: #f0f4ff; }
   .sidebar-medical .sidebar-brand p,
-  .sidebar-medical .footer-title {
-    opacity: 0.85;
-  }
-
-  .sidebar-medical .brand-mark {
-    background: #f0f4ff;
-    color: #06285e;
-  }
-
-  .sidebar-medical .nav-item {
-    background: rgba(255, 255, 255, 0.10);
-    color: #f0f4ff;
-  }
-
-  .sidebar-medical .nav-icon {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    background: #f0f4ff;
-    box-shadow: 0 0 0 3px rgba(240, 244, 255, 0.12);
-    color: #06285e;
-    font-size: .72rem;
-  }
-
+  .sidebar-medical .footer-title { opacity: 0.85; }
+  .sidebar-medical .brand-mark { background: #f0f4ff; color: #06285e; }
+  .sidebar-medical .nav-item { background: rgba(255, 255, 255, 0.10); color: #f0f4ff; }
   .sidebar-medical .nav-item:hover,
   .sidebar-medical .nav-item.active {
     background: rgba(255, 255, 255, 0.20);
     border-color: rgba(255, 255, 255, 0.28);
   }
-
-  .sidebar-medical .status-pill {
+  .sidebar-medical .nav-dot {
     background: #f0f4ff;
-    color: #06285e;
+    box-shadow: 0 0 0 6px rgba(240, 244, 255, 0.12);
   }
-
-  .sidebar-medical .nav-settings {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .sidebar-medical .nav-settings summary {
-    list-style: none;
-    cursor: pointer;
-  }
-
-  .sidebar-medical .nav-settings summary::-webkit-details-marker {
-    display: none;
-  }
-
+  .sidebar-medical .status-pill { background: #f0f4ff; color: #06285e; }
+  .sidebar-medical .nav-settings { display: flex; flex-direction: column; gap: 6px; }
+  .sidebar-medical .nav-settings summary { list-style: none; cursor: pointer; }
+  .sidebar-medical .nav-settings summary::-webkit-details-marker { display: none; }
   .sidebar-medical .nav-settings summary::after {
-    content: '\f078';
-    font-family: 'Font Awesome 6 Free';
-    font-weight: 900;
-    margin-left: auto;
-    font-size: .7rem;
-    transition: transform .15s ease;
+    content: '\f078'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
+    margin-left: auto; font-size: .7rem; transition: transform .15s ease;
   }
-
-  .sidebar-medical .nav-settings[open] summary::after {
-    transform: rotate(180deg);
-  }
-
-  .sidebar-medical .nav-submenu {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding-left: 14px;
-  }
-
-  .sidebar-medical .nav-subitem {
-    font-size: .88rem;
-    padding-top: 9px;
-    padding-bottom: 9px;
-  }
+  .sidebar-medical .nav-settings[open] summary::after { transform: rotate(180deg); }
+  .sidebar-medical .nav-submenu { display: flex; flex-direction: column; gap: 6px; padding-left: 14px; }
+  .sidebar-medical .nav-subitem { font-size: .88rem; padding-top: 9px; padding-bottom: 9px; }
 </style>
 
 <button class="hamburger-btn" id="hamburgerBtn" type="button" aria-label="Toggle menu"></button>
@@ -158,4 +97,3 @@ $activeSidebarItem = $activeSidebarItem ?? 'dashboard';
     <div class="status-pill">Staff / Clinical</div>
   </div>
 </aside>
-

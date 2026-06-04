@@ -75,7 +75,37 @@ try {
     }
 
     if (!$person) {
-        auditLog(null, null, 'failed_login', 'auth', $schoolId, 'SchoolID not found in school_people', $ip);
+        // SchoolID was not found in school_people. Try to attribute this failed
+        // attempt to a known UserID by doing a SchoolID lookup, so the audit_logs
+        // row can satisfy the NOT NULL UserID constraint and be reported later.
+        // If no such user exists, no audit log is created (cannot be attributed).
+        $flUserId = null;
+        try {
+            $flLookup = $pdo->prepare("
+                SELECT u.UserID
+                FROM users u
+                INNER JOIN school_people sp ON sp.SchoolPersonID = u.SchoolPersonID
+                WHERE sp.SchoolID = ? OR LOWER(TRIM(sp.SchoolID)) = LOWER(TRIM(?))
+                LIMIT 1
+            ");
+            $flLookup->execute([$schoolId, $schoolId]);
+            $flRow = $flLookup->fetch();
+            if ($flRow) {
+                $flUserId = (int)$flRow['UserID'];
+            }
+        } catch (Throwable $e) { /* ignore */ }
+
+        if ($flUserId !== null) {
+            auditLog(
+                $flUserId,
+                null,
+                'failed_login',
+                'Authentication',
+                null,
+                'Failed login attempt for School ID: ' . $schoolId . ' (SchoolID not found in school_people)',
+                $ip
+            );
+        }
         echo json_encode([
             'status' => 'error',
             'message' => 'Invalid School ID or password.',
@@ -95,7 +125,8 @@ try {
     $user = $userStmt->fetch();
 
     if (!$user) {
-        auditLog(null, (int)$person['SchoolPersonID'], 'failed_login', 'auth', $schoolId, 'User record not found', $ip);
+        // No users row exists for this person. We cannot satisfy the NOT NULL
+        // UserID constraint on audit_logs, so this attempt is not logged.
         echo json_encode([
             'status' => 'error',
             'message' => 'Invalid School ID or password.',
@@ -118,7 +149,15 @@ try {
     );
 
     if ($storedHash === '' || !hash_equals($storedHash, $computedHash)) {
-        auditLog((int)$user['UserID'], (int)$person['SchoolPersonID'], 'failed_login', 'auth', $schoolId, 'Password mismatch (hash debug logged)', $ip);
+        auditLog(
+            (int)$user['UserID'],
+            (int)$person['SchoolPersonID'],
+            'failed_login',
+            'Authentication',
+            null,
+            'Failed login attempt for School ID: ' . $schoolId . ' (Password mismatch)',
+            $ip
+        );
         echo json_encode([
             'status' => 'error',
             'message' => 'Invalid School ID or password.',
@@ -128,7 +167,15 @@ try {
 
     // Password is correct - now check account status
     if ((int)$user['IsActive'] !== 1) {
-        auditLog((int)$user['UserID'], (int)$person['SchoolPersonID'], 'failed_login', 'auth', $schoolId, 'Account inactive - login blocked', $ip);
+        auditLog(
+            (int)$user['UserID'],
+            (int)$person['SchoolPersonID'],
+            'failed_login',
+            'Authentication',
+            null,
+            'Failed login attempt for School ID: ' . $schoolId . ' (Account inactive - login blocked)',
+            $ip
+        );
         echo json_encode([
             'status' => 'error',
             'message' => 'Your account is currently blocked. Please contact an administrator.',
@@ -188,7 +235,37 @@ rbacLoadSessionPermissions($pdo, $userId);
         'session_schoolpersonid_debug' => $_SESSION['SchoolPersonID'] ?? null,
     ]);
 } catch (Throwable $e) {
-    auditLog(null, null, 'failed_login', 'auth', $schoolId, 'Exception during login: ' . $e->getMessage(), $ip);
+    // Best-effort attribution for system exceptions. We try to map the typed
+    // SchoolID to a known UserID; if found we record a failed_login audit row
+    // in the Authentication module. If no user can be attributed, the event is
+    // skipped (audit_logs.UserID is NOT NULL by schema).
+    $flUserId = null;
+    try {
+        $flLookup = $pdo->prepare("
+            SELECT u.UserID
+            FROM users u
+            INNER JOIN school_people sp ON sp.SchoolPersonID = u.SchoolPersonID
+            WHERE sp.SchoolID = ? OR LOWER(TRIM(sp.SchoolID)) = LOWER(TRIM(?))
+            LIMIT 1
+        ");
+        $flLookup->execute([$schoolId, $schoolId]);
+        $flRow = $flLookup->fetch();
+        if ($flRow) {
+            $flUserId = (int)$flRow['UserID'];
+        }
+    } catch (Throwable $e2) { /* ignore */ }
+
+    if ($flUserId !== null) {
+        auditLog(
+            $flUserId,
+            null,
+            'failed_login',
+            'Authentication',
+            null,
+            'Failed login attempt for School ID: ' . $schoolId . ' (Exception during login: ' . $e->getMessage() . ')',
+            $ip
+        );
+    }
     echo json_encode([
         'status' => 'error',
         'message' => 'Login failed: ' . $e->getMessage(),

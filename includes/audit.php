@@ -41,15 +41,18 @@ function auditLog(
 
         // If we can reliably convert a stored "raw action" code into a readable phrase, do it here.
         // If the action is purely technical/debug, we suppress it.
+        // NOTE: 'failed_login' was previously suppressed here to keep the admin feed
+        // clean. It has now been intentionally allowed through so failed authentication
+        // attempts appear in the Reports module. Mapped to a human-readable
+        // "Failed login attempt" string below in $actionMap.
         $suppressed = [
-            // authentication debug/noise
+            // authentication debug/noise (do not log in admin feed)
             'login_debug_rbac_loaded',
             'login_debug_school_match',
             'login_hash_debug',
-            // authentication failures (do not clutter admin feed)
-            'failed_login',
+            // signup failures (still noise; only failed_logins reach the feed now)
             'failed_signup',
-            // schedule technical/noise (we will map them too, but suppress anything unknown here)
+            // schedule technical/noise
             'save_slot',
             'respond_booking',
             // user/rbac technical codes (we will map the specific ones below; suppress generic ones)
@@ -67,6 +70,10 @@ function auditLog(
             // auth/login/logout (no dedicated Authentication module in UI)
             'login' => 'Logged into the system',
             'logout' => 'Logged out of the system',
+            // Failed login is intentionally recorded so the Reports module can
+            // surface failed authentication attempts. The $details parameter from
+            // callers carries the attempted School ID, e.g. "Failed login attempt for School ID: 2024-12345".
+            'failed_login' => 'Failed login attempt',
             'password_reset' => 'Requested password reset',
 
             // admin/user management
@@ -123,11 +130,23 @@ function auditLog(
             'RBAC Management',
             'User Management',
             'Audit Logs',
+            // Authentication module is required for failed-login reporting.
+            'Authentication',
         ];
 
-        // Remap legacy "auth" module to "User Management".
-        if (is_string($entityType) && strtolower(trim($entityType)) === 'auth') {
-            $moduleName = 'User Management';
+        // Map raw module names to the canonical allowed list.
+        if (is_string($entityType)) {
+            $etLower = strtolower(trim($entityType));
+            if ($etLower === 'auth') {
+                // Successful logins / logouts stay grouped with user management.
+                // Failed logins (called with actionType 'failed_login') are routed
+                // to the dedicated "Authentication" module for cleaner reporting.
+                $moduleName = ($rawAction === 'failed_login') ? 'Authentication' : 'User Management';
+            } elseif ($etLower === 'authentication') {
+                $moduleName = 'Authentication';
+            } else {
+                $moduleName = (string)$entityType;
+            }
         } else {
             $moduleName = (string)$entityType;
         }

@@ -179,95 +179,86 @@ VALUES
 -- =========================================================
 -- ROLE PERMISSIONS
 -- =========================================================
+-- ModuleID reference:
+--   1=Consultation, 2=Records, 3=Reports, 4=Medicine, 5=Schedule,
+--   6=Admin Panel, 7=RBAC Management, 8=User Management, 9=Audit Logs
+-- PermissionID reference: 1=access, 7=manage
+-- =========================================================
 
 -- =========================================================
 -- STUDENT / FACULTY / STAFF
--- PATIENT DASHBOARD ONLY
+-- Records/access + Schedule/access only
 -- =========================================================
 
 INSERT INTO role_permissions
 (RoleID, ModuleID, PermissionID)
 VALUES
-
--- STUDENT
-(1, 5, 1),
+-- STUDENT: Records/access, Schedule/access
 (1, 2, 1),
-
--- FACULTY
-(2, 5, 1),
+(1, 5, 1),
+-- FACULTY: Records/access, Schedule/access
 (2, 2, 1),
-
--- STAFF
-(3, 5, 1),
-(3, 2, 1);
-
--- =========================================================
--- DOCTOR
--- =========================================================
-
-INSERT INTO role_permissions
-(RoleID, ModuleID, PermissionID)
-VALUES
-(4, 1, 7),
-(4, 2, 7),
-(4, 3, 7),
-(4, 4, 7),
-(4, 5, 7);
+(2, 5, 1),
+-- STAFF: Records/access, Schedule/access
+(3, 2, 1),
+(3, 5, 1);
 
 -- =========================================================
--- DENTIST
+-- DOCTOR / DENTIST / NURSE
+-- Consultation + Records + Reports + Medicine + Schedule
+-- Each with BOTH access AND manage
 -- =========================================================
 
 INSERT INTO role_permissions
 (RoleID, ModuleID, PermissionID)
 VALUES
-(5, 1, 7),
-(5, 2, 7),
-(5, 3, 7),
-(5, 4, 7),
-(5, 5, 7);
-
--- =========================================================
--- NURSE
--- =========================================================
-
-INSERT INTO role_permissions
-(RoleID, ModuleID, PermissionID)
-VALUES
-(6, 1, 7),
-(6, 2, 7),
-(6, 3, 7),
-(6, 4, 7),
-(6, 5, 7);
+-- DOCTOR: 5 modules × (access + manage) = 10 rows
+(4, 1, 1), (4, 1, 7),
+(4, 2, 1), (4, 2, 7),
+(4, 3, 1), (4, 3, 7),
+(4, 4, 1), (4, 4, 7),
+(4, 5, 1), (4, 5, 7),
+-- DENTIST: 5 modules × (access + manage) = 10 rows
+(5, 1, 1), (5, 1, 7),
+(5, 2, 1), (5, 2, 7),
+(5, 3, 1), (5, 3, 7),
+(5, 4, 1), (5, 4, 7),
+(5, 5, 1), (5, 5, 7),
+-- NURSE: 5 modules × (access + manage) = 10 rows
+(6, 1, 1), (6, 1, 7),
+(6, 2, 1), (6, 2, 7),
+(6, 3, 1), (6, 3, 7),
+(6, 4, 1), (6, 4, 7),
+(6, 5, 1), (6, 5, 7);
 
 -- =========================================================
 -- ADMIN
+-- Admin Panel/access + User Management/access + Reports/access + Audit Logs/access
+-- Must NOT have Consultation, Records, Medicine, Schedule, RBAC Management
 -- =========================================================
 
 INSERT INTO role_permissions
 (RoleID, ModuleID, PermissionID)
 VALUES
-(7, 6, 7),
-(7, 7, 7),
-(7, 8, 7),
-(7, 9, 7);
+(7, 6, 1),   -- Admin Panel → access
+(7, 8, 1),   -- User Management → access
+(7, 3, 1),   -- Reports → access
+(7, 9, 1);   -- Audit Logs → access
 
 -- =========================================================
 -- SUPER ADMIN
+-- Admin Panel/access + User Management/access + RBAC Management/access + Reports/access + Audit Logs/access
+-- Must NOT have Consultation, Records, Medicine, Schedule
 -- =========================================================
 
 INSERT INTO role_permissions
 (RoleID, ModuleID, PermissionID)
 VALUES
-(8, 1, 7),
-(8, 2, 7),
-(8, 3, 7),
-(8, 4, 7),
-(8, 5, 7),
-(8, 6, 7),
-(8, 7, 7),
-(8, 8, 7),
-(8, 9, 7);
+(8, 6, 1),   -- Admin Panel → access
+(8, 8, 1),   -- User Management → access
+(8, 7, 1),   -- RBAC Management → access
+(8, 3, 1),   -- Reports → access
+(8, 9, 1);   -- Audit Logs → access
 
 -- =========================================================
 -- UNREGISTERED SCHOOL PEOPLE

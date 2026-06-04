@@ -8,94 +8,37 @@ $activeSidebarItem = $activeSidebarItem ?? 'dashboard';
     background: linear-gradient(180deg, #ffd84d 0%, #f2c300 100%);
     color: #1d1d1d;
   }
-
   .sidebar-student .sidebar-brand h1,
   .sidebar-student .sidebar-brand p,
-  .sidebar-student .footer-title {
-    color: #1d1d1d;
-  }
-
+  .sidebar-student .footer-title { color: #1d1d1d; }
   .sidebar-student .sidebar-brand p,
-  .sidebar-student .footer-title {
-    opacity: 0.78;
-  }
-
-  .sidebar-student .brand-mark {
-    background: #1d1d1d;
-    color: #ffd84d;
-  }
-
+  .sidebar-student .footer-title { opacity: 0.78; }
+  .sidebar-student .brand-mark { background: #1d1d1d; color: #ffd84d; }
   .sidebar-student .nav-item {
     background: rgba(255, 255, 255, 0.38);
     color: #1d1d1d;
     border-color: rgba(29, 29, 29, 0.10);
   }
-
-  .sidebar-student .nav-icon {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    background: #fff;
-    box-shadow: 0 0 0 3px rgba(29, 29, 29, 0.10);
-    color: #1d1d1d;
-    font-size: .72rem;
-  }
-
   .sidebar-student .nav-item:hover,
   .sidebar-student .nav-item.active {
     background: rgba(255, 255, 255, 0.74);
     border-color: rgba(29, 29, 29, 0.18);
   }
-
-  .sidebar-student .status-pill {
+  .sidebar-student .nav-dot {
     background: #1d1d1d;
-    color: #ffd84d;
+    box-shadow: 0 0 0 6px rgba(29, 29, 29, 0.12);
   }
-
-  .sidebar-student .nav-settings {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .sidebar-student .nav-settings summary {
-    list-style: none;
-    cursor: pointer;
-  }
-
-  .sidebar-student .nav-settings summary::-webkit-details-marker {
-    display: none;
-  }
-
+  .sidebar-student .status-pill { background: #1d1d1d; color: #ffd84d; }
+  .sidebar-student .nav-settings { display: flex; flex-direction: column; gap: 6px; }
+  .sidebar-student .nav-settings summary { list-style: none; cursor: pointer; }
+  .sidebar-student .nav-settings summary::-webkit-details-marker { display: none; }
   .sidebar-student .nav-settings summary::after {
-    content: '\f078';
-    font-family: 'Font Awesome 6 Free';
-    font-weight: 900;
-    margin-left: auto;
-    font-size: .7rem;
-    transition: transform .15s ease;
+    content: '\f078'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
+    margin-left: auto; font-size: .7rem; transition: transform .15s ease;
   }
-
-  .sidebar-student .nav-settings[open] summary::after {
-    transform: rotate(180deg);
-  }
-
-  .sidebar-student .nav-submenu {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding-left: 14px;
-  }
-
-  .sidebar-student .nav-subitem {
-    font-size: .88rem;
-    padding-top: 9px;
-    padding-bottom: 9px;
-  }
+  .sidebar-student .nav-settings[open] summary::after { transform: rotate(180deg); }
+  .sidebar-student .nav-submenu { display: flex; flex-direction: column; gap: 6px; padding-left: 14px; }
+  .sidebar-student .nav-subitem { font-size: .88rem; padding-top: 9px; padding-bottom: 9px; }
 </style>
 
 <button class="hamburger-btn" id="hamburgerBtn" type="button" aria-label="Toggle menu"></button>
@@ -143,7 +86,6 @@ $activeSidebarItem = $activeSidebarItem ?? 'dashboard';
         </a>
       </div>
     </details>
-
   </nav>
 
   <div class="sidebar-footer">
