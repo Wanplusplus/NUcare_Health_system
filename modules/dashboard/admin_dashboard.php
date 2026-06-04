@@ -32,26 +32,8 @@ $activePage = 'dashboard';
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
-        /* Bootstrap's CSS reset may override some app.css sidebar defaults.
-           Ensure the sidebar font and spacing always match the other admin
-           modules by explicitly resetting the few affected properties. */
-        .sidebar .sidebar-brand h1 {
-            font-size: 20px !important;
-            margin-bottom: 4px !important;
-            font-weight: 700 !important;
-        }
-        .sidebar .sidebar-brand p {
-            font-size: 13px !important;
-            margin-bottom: 0 !important;
-        }
-        .sidebar .sidebar-footer .footer-title {
-            font-size: 13px !important;
-            margin-bottom: 10px !important;
-        }
-        .sidebar .sidebar-footer .status-pill {
-            padding: 10px 14px !important;
-            font-size: 13px !important;
-        }
+        /* Sidebar styles come exclusively from app.css + sidebar_admin.php + bootstrap.
+           No sidebar overrides here — the CSS cascade is identical to user_management. */
 
         /* ================================================================
            ADMIN DASHBOARD — Enterprise Design System
