@@ -16,7 +16,7 @@ require_once __DIR__ . '/../includes/module_guard.php';
 require_once __DIR__ . '/../includes/audit.php';
 
 // RBAC: enforce that the user can access this admin module.
-requireModule('Admin Panel', 'access');
+requireModule('User Management', 'access');
 
 $pdo = require __DIR__ . '/../config/db_pdo.php';
 
@@ -385,43 +385,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
                                 ensureMedicalProfessional($pdo, $targetUserId, $roleToProfessionMap[$chosenRole]);
                             }
 
-                            // Ensure RBAC permissions exist for promoted medical roles.
-                            // This prevents promoted users from being blocked by module_guard.php.
-                            if (in_array($chosenRole, ['Doctor', 'Dentist', 'Nurse'], true)) {
-                                $requiredModules = ['Consultation', 'Records', 'Schedule', 'Medicine'];
-                                $requiredPermissions = ['access', 'View', 'Create', 'Edit', 'Approve'];
-
-                                // Remove existing entries for this role+module+permission set, then insert fresh.
-                                // This avoids duplicate-key failures when the role is changed multiple times.
-
-                                $deleteSql = "
-                                    DELETE rp
-                                    FROM role_permissions rp
-                                    INNER JOIN roles rr ON rr.RoleID = rp.RoleID
-                                    INNER JOIN modules mm ON mm.ModuleID = rp.ModuleID
-                                    INNER JOIN permissions p ON p.PermissionID = rp.PermissionID
-                                    WHERE rr.RoleName = ?
-                                      AND mm.ModuleName IN ('" . implode("','", $requiredModules) . "')
-                                      AND p.PermissionName IN ('" . implode("','", $requiredPermissions) . "')
-                                ";
-
-                                $delStmt = $pdo->prepare($deleteSql);
-                                $delStmt->execute([$chosenRole]);
-
-                                $insertSql = "
-                                    INSERT INTO role_permissions (RoleID, ModuleID, PermissionID)
-                                    SELECT rr.RoleID, mm.ModuleID, p.PermissionID
-                                    FROM roles rr
-                                    CROSS JOIN modules mm
-                                    CROSS JOIN permissions p
-                                    WHERE rr.RoleName = ?
-                                      AND mm.ModuleName IN ('" . implode("','", $requiredModules) . "')
-                                      AND p.PermissionName IN ('" . implode("','", $requiredPermissions) . "')
-                                ";
-
-                                $stmt = $pdo->prepare($insertSql);
-                                $stmt->execute([$chosenRole]);
-                            }
+                            // role_permissions is the SOLE source of truth.
+                            // Permission management must be done via RBAC Management UI only.
+                            // No automatic permission seeding on role assignment.
                         }
                     }
 

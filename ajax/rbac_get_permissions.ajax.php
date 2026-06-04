@@ -46,8 +46,8 @@ try {
         'Doctor'  => ['Records', 'Reports', 'Schedule', 'Consultation', 'Medicine'],
         'Dentist' => ['Records', 'Reports', 'Schedule', 'Consultation', 'Medicine'],
         'Nurse'   => ['Records', 'Reports', 'Schedule', 'Consultation', 'Medicine'],
-        'Admin'   => ['Records', 'Reports', 'Schedule', 'Consultation', 'Medicine', 'Admin Panel', 'Audit Logs'],
-        'Super Admin' => [],
+        'Admin'   => ['Admin Panel', 'User Management', 'Reports', 'Audit Logs'],
+        'Super Admin' => ['Admin Panel', 'User Management', 'RBAC Management', 'Reports', 'Audit Logs'],
     ];
 
     // RBAC simplification: only Access and Manage are shown in the UI.
@@ -59,8 +59,8 @@ try {
         'Doctor'      => ['access', 'manage'],
         'Dentist'     => ['access', 'manage'],
         'Nurse'       => ['access', 'manage'],
-        'Admin'       => ['access', 'manage'],
-        'Super Admin' => [],
+        'Admin'       => ['access'],
+        'Super Admin' => ['access'],
     ];
 
     $allowedModules = $roleModuleMap[$roleName] ?? [];

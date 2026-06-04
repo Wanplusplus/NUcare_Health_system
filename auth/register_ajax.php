@@ -116,9 +116,11 @@ try {
     $userInsert->execute([(int)$sp['SchoolPersonID'], $hashedPassword]);
     $userId = (int)$pdo->lastInsertId();
 
-    // 9) Assign RBAC role
+    // 9) Assign RBAC role only — role_permissions is the sole source of truth.
+    // Permissions must NOT be auto-seeded here.
     rbacInsertRoleByName($pdo, $userId, $roleName);
-    rbacEnsureRolePermissionsForRole($pdo, $roleName);
+    // rbacEnsureRolePermissionsForRole() intentionally removed.
+    // role_permissions is managed through RBAC Management UI or seed SQL only.
 
     $pdo->commit();
 

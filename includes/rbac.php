@@ -177,36 +177,36 @@ function rbacEnsureRolePermissionsForRole(PDO $pdo, string $roleName): void
 
     $matrix = [
         'Student' => [
-            'modules' => ['Consultation', 'Records', 'Schedule'],
-            'permissions' => ['access', 'View'],
+            'modules' => ['Records', 'Schedule'],
+            'permissions' => ['access'],
         ],
         'Faculty' => [
-            'modules' => ['Consultation', 'Records', 'Schedule', 'Medicine'],
-            'permissions' => ['access', 'View', 'Create', 'Edit'],
+            'modules' => ['Records', 'Schedule'],
+            'permissions' => ['access'],
         ],
         'Staff' => [
-            'modules' => ['Consultation', 'Records', 'Schedule', 'Medicine'],
-            'permissions' => ['access', 'View', 'Create', 'Edit'],
+            'modules' => ['Records', 'Schedule'],
+            'permissions' => ['access'],
         ],
         'Doctor' => [
-            'modules' => ['Consultation', 'Records', 'Schedule', 'Medicine'],
-            'permissions' => ['access', 'View', 'Create', 'Edit', 'Approve'],
+            'modules' => ['Consultation', 'Records', 'Reports', 'Medicine', 'Schedule'],
+            'permissions' => ['access', 'manage'],
         ],
         'Dentist' => [
-            'modules' => ['Consultation', 'Records', 'Schedule', 'Medicine'],
-            'permissions' => ['access', 'View', 'Create', 'Edit', 'Approve'],
+            'modules' => ['Consultation', 'Records', 'Reports', 'Medicine', 'Schedule'],
+            'permissions' => ['access', 'manage'],
         ],
         'Nurse' => [
-            'modules' => ['Consultation', 'Records', 'Schedule', 'Medicine'],
-            'permissions' => ['access', 'View', 'Create', 'Edit', 'Approve'],
+            'modules' => ['Consultation', 'Records', 'Reports', 'Medicine', 'Schedule'],
+            'permissions' => ['access', 'manage'],
         ],
         'Admin' => [
-            'modules' => ['Reports', 'Admin Panel', 'RBAC Management', 'Consultation', 'Records', 'Medicine', 'Schedule'],
-            'permissions' => ['access', 'View', 'Create', 'Edit', 'Delete', 'Manage', 'Approve'],
+            'modules' => ['Admin Panel', 'User Management', 'Reports', 'Audit Logs'],
+            'permissions' => ['access'],
         ],
         'Super Admin' => [
-            'modules' => ['Consultation', 'Records', 'Reports', 'Medicine', 'Schedule', 'Admin Panel', 'RBAC Management'],
-            'permissions' => ['access', 'View', 'Create', 'Edit', 'Delete', 'Manage', 'Approve'],
+            'modules' => ['Admin Panel', 'User Management', 'RBAC Management', 'Reports', 'Audit Logs'],
+            'permissions' => ['access'],
         ],
     ];
 
@@ -435,7 +435,7 @@ function showModuleUnavailable(): void
         <div class="module-unavailable-card">
             <span class="icon"><i class="bi bi-tools" style="font-size: 3rem; color: #8b0000;"></i></span>
             <h2>Oops!</h2>
-            <p>This module is currently being fixed. Please try again later.</p>
+            <p>This module is currently being reworked. Please come back later.</p>
             <a href="/NUcare_Health_system/modules/dashboard/patient_dashboard.php" class="back-link">Back to Dashboard</a>
         </div>
     </div>

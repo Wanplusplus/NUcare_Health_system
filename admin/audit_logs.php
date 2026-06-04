@@ -9,7 +9,7 @@ if (!isset($_SESSION['patient_id']) && !isset($_SESSION['UserID'])) {
 }
 
 require_once __DIR__ . '/../includes/module_guard.php';
-requireModule('Admin Panel', 'access');
+requireModule('Audit Logs', 'access');
 
 $activeSidebarItem = 'audit_logs';
 $active = 'audit_logs';
