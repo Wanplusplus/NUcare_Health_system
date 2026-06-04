@@ -3,3 +3,22 @@
 [2026-06-04T16:55:01+00:00] auditLog PREP INSERT UserID=9 Action=Logged out of the system ModuleName=User Management
 [2026-06-04T16:55:01+00:00] auditLog EXEC INSERT
 [2026-06-04T16:55:01+00:00] auditLog INSERT OK rowCount=1
+[2026-06-04T17:20:27+00:00] auditLog CALLED actionType=login_debug_school_match entityType=auth entityId=2024-116613
+[2026-06-04T17:20:27+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-04T17:20:27+00:00] auditLog CALLED actionType=login_hash_debug entityType=auth entityId=2024-116613
+[2026-06-04T17:20:27+00:00] auditLog CALLED actionType=login_debug_rbac_loaded entityType=auth entityId=2024-116613
+[2026-06-04T17:20:27+00:00] auditLog CALLED actionType=login entityType=auth entityId=2024-116613
+[2026-06-04T17:20:27+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-04T17:20:27+00:00] auditLog PREP INSERT UserID=9 Action=Logged into the system ModuleName=User Management
+[2026-06-04T17:20:27+00:00] auditLog EXEC INSERT
+[2026-06-04T17:20:27+00:00] auditLog INSERT OK rowCount=1
+[2026-06-04T17:20:36+00:00] auditLog CALLED actionType=logout entityType=auth entityId=
+[2026-06-04T17:20:36+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-04T17:20:36+00:00] auditLog PREP INSERT UserID=9 Action=Logged out of the system ModuleName=User Management
+[2026-06-04T17:20:36+00:00] auditLog EXEC INSERT
+[2026-06-04T17:20:36+00:00] auditLog INSERT OK rowCount=1
+[2026-06-04T17:20:36+00:00] auditLog CALLED actionType=logout entityType=auth entityId=
+[2026-06-04T17:20:36+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-04T17:20:36+00:00] auditLog PREP INSERT UserID=9 Action=Logged out of the system ModuleName=User Management
+[2026-06-04T17:20:36+00:00] auditLog EXEC INSERT
+[2026-06-04T17:20:36+00:00] auditLog INSERT OK rowCount=1
