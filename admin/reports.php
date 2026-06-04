@@ -174,10 +174,7 @@ try {
             display: none;
         }
         .custom-range-fields.visible {
-            display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
-            width: 100%;
+            display: contents;
         }
         .matrix-table th {
             font-size: 11px;
@@ -225,7 +222,7 @@ try {
 
         <!-- Filter Bar -->
         <div class="admin-filterbar" style="margin-top: 12px;">
-            <div class="admin-filter" style="min-width: 240px; max-width: 300px; flex: 0 1 auto;">
+            <div class="admin-filter" style="min-width: 240px;">
                 <label>Report Type</label>
                 <select id="reportType" name="report_type">
                     <option value="">Select Report</option>
@@ -238,7 +235,7 @@ try {
                 </select>
             </div>
 
-            <div class="admin-filter" style="min-width: 180px; max-width: 220px; flex: 0 1 auto;">
+            <div class="admin-filter" style="min-width: 180px;">
                 <label>Date Range</label>
                 <select id="dateRange" name="date_range">
                     <option value="">All Time</option>
@@ -250,17 +247,17 @@ try {
             </div>
 
             <div class="custom-range-fields" id="customRangeFields">
-                <div class="admin-filter" style="min-width: 160px; flex: 0 0 auto;">
+                <div class="admin-filter" style="min-width: 160px;">
                     <label>From</label>
                     <input type="date" id="dateFrom" name="date_from">
                 </div>
-                <div class="admin-filter" style="min-width: 160px; flex: 0 0 auto;">
+                <div class="admin-filter" style="min-width: 160px;">
                     <label>To</label>
                     <input type="date" id="dateTo" name="date_to">
                 </div>
             </div>
 
-            <div class="admin-filter" id="roleFilterWrap" style="min-width: 200px; max-width: 240px; flex: 0 1 auto; display: none;">
+            <div class="admin-filter" id="roleFilterWrap" style="min-width: 200px; display: none;">
                 <label>Role Filter</label>
                 <select id="roleFilter" name="role_filter">
                     <option value="">All Roles</option>
