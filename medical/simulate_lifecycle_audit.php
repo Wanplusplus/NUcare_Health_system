@@ -168,8 +168,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $csvContent = $content;
         }
-    } elseif (isset($_POST['csv_paste']) && trim($_POST['csv_paste']) !== '') {
-        $csvContent = $_POST['csv_paste'];
     } else {
         $errorMessages[] = 'No CSV data provided. Upload a file or paste CSV content.';
     }
@@ -404,8 +402,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Determine sidebar
-$isAdmin = in_array('admin', $roleNames, true) || in_array('super admin', $roleNames, true);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -566,9 +562,7 @@ $isAdmin = in_array('admin', $roleNames, true) || in_array('super admin', $roleN
 <body>
 <div class="app-shell">
     <?php
-    $sidebarPath = $isAdmin
-        ? __DIR__ . '/../includes/sidebar_admin.php'
-        : __DIR__ . '/../includes/sidebar_medical_staff.php';
+    $sidebarPath = __DIR__ . '/../includes/sidebar_medical_staff.php';
     if (file_exists($sidebarPath)) {
         require_once $sidebarPath;
     }
@@ -617,22 +611,13 @@ $isAdmin = in_array('admin', $roleNames, true) || in_array('super admin', $roleN
 
             <!-- Input Form -->
             <div class="sim-card">
-                <h3><i class="bi bi-upload me-2"></i>1. Upload or Paste CSV</h3>
+                <h3><i class="bi bi-upload me-2"></i>1. Upload CSV File</h3>
                 <form method="post" enctype="multipart/form-data" id="inputForm">
                     <div class="row g-4">
-                        <div class="col-md-6">
+                        <div class="col-12">
                             <label class="form-label fw-semibold">Upload CSV File</label>
-                            <input class="form-control" type="file" name="csv_file" id="csvFile" accept=".csv">
+                            <input class="form-control" type="file" name="csv_file" id="csvFile" accept=".csv" required>
                             <div class="form-text">Upload a .csv file with columns: SchoolID, FirstName, LastName, Email, PersonType, Status</div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Or Paste CSV Content</label>
-                            <textarea class="form-control" name="csv_paste" id="csvPaste" rows="6" placeholder="Paste CSV data here...">SchoolID,FirstName,LastName,Email,PersonType,Status
-2024-116605,John,Carter,john@nucare.edu,Student,Active
-2024-116606,Ana,Reyes,ana@nucare.edu,Student,Active
-2024-116607,Maria,Santos,maria@nucare.edu,Faculty,Active
-2024-116609,Samuel,Lim,samuel@nucare.edu,Staff,Active
-2024-116610,Patricia,Cruz,patricia@nucare.edu,Staff,Active</textarea>
                         </div>
                     </div>
 
@@ -651,17 +636,6 @@ $isAdmin = in_array('admin', $roleNames, true) || in_array('super admin', $roleN
                         </span>
                     </div>
                 </form>
-            </div>
-
-            <!-- CSV Format Reference -->
-            <div class="sim-card">
-                <h3><i class="bi bi-card-text me-2"></i>Expected CSV Format</h3>
-                <div class="csv-sample">SchoolID,FirstName,LastName,Email,PersonType,Status
-2024-116605,John,Carter,john@nucare.edu,Student,Active
-2024-116606,Ana,Reyes,ana@nucare.edu,Student,Active
-2024-116607,Maria,Santos,maria@nucare.edu,Faculty,Active
-2024-116609,Samuel,Lim,samuel@nucare.edu,Staff,Active
-2024-116610,Patricia,Cruz,patricia@nucare.edu,Staff,Active</div>
             </div>
 
             <!-- Execution Results -->

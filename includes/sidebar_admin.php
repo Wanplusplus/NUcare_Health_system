@@ -62,13 +62,6 @@
     <a class="nav-item <?= $activeKey === 'audit_logs' ? 'active' : '' ?>" href="/NUcare_Health_system/admin/audit_logs.php">
       <span class="nav-dot"></span>Audit Logs
     </a>
-    <a class="nav-item <?= $activeKey === 'simulate_lifecycle_audit' ? 'active' : '' ?>" href="/NUcare_Health_system/medical/simulate_lifecycle_audit.php">
-      <span class="nav-dot"></span>Simulate Term Audit
-    </a>
-
-
-
-
   </nav>
 
   <div class="sidebar-footer">
