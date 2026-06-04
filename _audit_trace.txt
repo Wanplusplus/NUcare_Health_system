@@ -1,0 +1,5 @@
+[2026-06-04T16:55:01+00:00] auditLog CALLED actionType=logout entityType=auth entityId=
+[2026-06-04T16:55:01+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-04T16:55:01+00:00] auditLog PREP INSERT UserID=9 Action=Logged out of the system ModuleName=User Management
+[2026-06-04T16:55:01+00:00] auditLog EXEC INSERT
+[2026-06-04T16:55:01+00:00] auditLog INSERT OK rowCount=1
