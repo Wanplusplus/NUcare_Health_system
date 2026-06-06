@@ -401,13 +401,13 @@ $activeSidebarItem = 'consultation';
                 </div>
 
                 <!-- ════════════════════════════════════════
-                     SECTION: WOUND DRESSING (Service-specific)
-                     Shown only when Service Type = Wound Dressing / hidden for Sent Home
+                     SECTION: WOUND CARE (Service-specific)
+                     Shown only when Service Type = Wound Care / hidden for Sent Home
                 ════════════════════════════════════════ -->
                 <div class="consult-card hidden" id="section-firstaid" data-section="firstaid">
                     <div class="card-section-label">
                         <i class="fa-solid fa-kit-medical"></i>
-                        Wound Dressing Details
+                        Wound Care Details
                     </div>
                     <div class="firstaid-grid">
                         <div class="form-group">
@@ -1070,7 +1070,7 @@ $activeSidebarItem = 'consultation';
 </div>
 
 <script src="../../assets/js/app.js"></script>
-<script src="../../assets/js/consultation.js?v=7"></script>
+<script src="../../assets/js/consultation.js?v=8"></script>
 <script src="../../assets/js/consultation_walkin.js?v=5"></script>
 </body>
 </html>

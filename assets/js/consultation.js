@@ -220,7 +220,7 @@
         'General Consultation': ['physical-exam', 'firstaid'],
         'Dental':               ['physical-exam', 'firstaid'],
         'First Aid':            ['physical-exam', 'attachment'],
-        'Wound Dressing':       ['physical-exam', 'attachment'],
+        'Wound Care':           ['physical-exam'],
         'Sent Home':            ['physical-exam', 'firstaid'],
         'Medical Certificate':  ['vitals', 'physical-exam', 'medicines', 'firstaid'],
         'Physical Examination': ['vitals', 'firstaid'],

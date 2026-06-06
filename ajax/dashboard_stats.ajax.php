@@ -132,6 +132,71 @@ try {
         "SELECT COUNT(*) FROM clinic_transactions WHERE DATE(VisitDate) = CURDATE()"
     )->fetchColumn();
 
+    $todayConsultationsTotal = 0;
+    $todayConsultationsCompleted = 0;
+    $consultationCompletionRate = 0.0;
+    try {
+        $todayConsultationsTotal = (int) $pdo->query(
+            "SELECT COUNT(*) FROM clinic_transactions WHERE DATE(VisitDate) = CURDATE() AND COALESCE(ConsultationStatus, '') IN ('Waiting','Consulting','Completed')"
+        )->fetchColumn();
+        $todayConsultationsCompleted = (int) $pdo->query(
+            "SELECT COUNT(*) FROM clinic_transactions WHERE DATE(VisitDate) = CURDATE() AND ConsultationStatus = 'Completed'"
+        )->fetchColumn();
+        if ($todayConsultationsTotal > 0) {
+            $consultationCompletionRate = round(($todayConsultationsCompleted / $todayConsultationsTotal) * 100, 1);
+        }
+    } catch (Throwable $e) { /* graceful */ }
+
+    $upcomingEvents = [];
+    try {
+        $eventSql = "
+            SELECT
+                event_type,
+                event_date,
+                event_time,
+                event_status,
+                title,
+                subtitle
+            FROM (
+                SELECT
+                    'appointment' AS event_type,
+                    b.AppointmentDate AS event_date,
+                    COALESCE(b.AppointmentStart, '09:00:00') AS event_time,
+                    COALESCE(b.BookingStatus, 'Pending') AS event_status,
+                    COALESCE(
+                        NULLIF(TRIM(CONCAT(sp.FirstName, ' ', COALESCE(sp.LastName, ''))), ''),
+                        CONCAT('Appointment #', b.BookingID)
+                    ) AS title,
+                    COALESCE(NULLIF(TRIM(CONCAT(COALESCE(b.ServiceType, ''), ' ', COALESCE(b.ReasonForVisit, ''))), ''), 'Clinic appointment') AS subtitle
+                FROM bookings b
+                LEFT JOIN school_people sp ON sp.SchoolPersonID = b.SchoolPersonID
+                WHERE b.AppointmentDate BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 14 DAY)
+                  AND COALESCE(b.BookingStatus, '') NOT IN ('Cancelled')
+                UNION ALL
+                SELECT
+                    'consultation' AS event_type,
+                    ct.VisitDate AS event_date,
+                    COALESCE(TIME(ct.CreatedAt), '10:00:00') AS event_time,
+                    COALESCE(ct.ConsultationStatus, 'Waiting') AS event_status,
+                    COALESCE(
+                        NULLIF(TRIM(CONCAT(sp.FirstName, ' ', COALESCE(sp.LastName, ''))), ''),
+                        CONCAT('Consultation #', ct.ClinicTransactionID)
+                    ) AS title,
+                    COALESCE(NULLIF(TRIM(CONCAT(COALESCE(ct.ServiceType, ''), ' ', COALESCE(ct.Complaint, ''))), ''), 'Consultation record') AS subtitle
+                FROM clinic_transactions ct
+                LEFT JOIN school_people sp ON sp.SchoolPersonID = ct.SchoolPersonID
+                WHERE ct.VisitDate BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 14 DAY)
+                  AND COALESCE(ct.ConsultationStatus, '') NOT IN ('Cancelled')
+            ) events
+            ORDER BY event_date ASC, event_time ASC, event_type ASC
+            LIMIT 12
+        ";
+        $stmt = $pdo->query($eventSql);
+        $upcomingEvents = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Throwable $e) {
+        $upcomingEvents = [];
+    }
+
     /* ------------------------------------------------------------------ */
     /*  6. System Health                                                   */
     /* ------------------------------------------------------------------ */
@@ -174,8 +239,12 @@ try {
             'pendingConsultations' => $pendingConsultations,
             'pendingRecords'     => $pendingRecords,
             'todayVisits'        => $todayVisits,
+            'todayConsultationsTotal' => $todayConsultationsTotal,
+            'todayConsultationsCompleted' => $todayConsultationsCompleted,
+            'consultationCompletionRate' => $consultationCompletionRate,
         ],
         'roleBreakdown' => $roleBreakdown,
+        'upcomingEvents' => $upcomingEvents,
         'health' => [
             'dbStatus'        => $dbStatus,
             'errorCountToday' => $errorCountToday,

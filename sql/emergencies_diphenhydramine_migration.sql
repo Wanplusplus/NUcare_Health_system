@@ -67,3 +67,16 @@ WHERE LOWER(m.MedicineName) = LOWER('Diphenhydramine');
         FROM medicine_inventory mi
         WHERE mi.MedicineID = m.MedicineID
     );
+
+    ALTER TABLE medicine_inventory
+MODIFY Status VARCHAR(20);
+
+INSERT INTO medicine_inventory (MedicineID, BatchNumber, Quantity, ExpiryDate, DateReceived, ReorderLevel, Status)
+    SELECT m.MedicineID, 'EMERGENCY-STOCK', 10, NULL, CURDATE(), 10, 'Emergency'
+    FROM medicines m
+    WHERE LOWER(m.MedicineName) = LOWER('Diphenhydramine')
+    AND NOT EXISTS (
+        SELECT 1
+        FROM medicine_inventory mi
+        WHERE mi.MedicineID = m.MedicineID
+    );

@@ -8,15 +8,13 @@ if (!isset($_SESSION['UserID'])) {
     exit;
 }
 
-
-// Redirect admins away from medical staff dashboard
 if (isset($_SESSION['Roles']) && is_array($_SESSION['Roles']) && array_intersect($_SESSION['Roles'], ['Admin', 'Super Admin']) !== []) {
     header('Location: admin_dashboard.php');
     exit;
 }
 
 $activeSidebarItem = 'dashboard';
-$patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
+$staffName = $_SESSION['patient_name'] ?? 'Medical Staff';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -27,542 +25,107 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
     <link rel="icon" href="/NUcare_Health_system/assets/image/nucarelogo.png">
     <link rel="stylesheet" href="../../assets/css/app.css">
     <link rel="stylesheet" href="../../assets/css/medical_staff_notifications.css?v=1">
-    <link rel="stylesheet" href="../../assets/css/logbook_print.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
-        /* ═══════════════════════════════════════
-           DAILY LOGBOOK — cute & editable ✨
-        ═══════════════════════════════════════ */
-        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
-
-        /* ── Decorative dots banner above logbook ── */
-        .logbook-deco-banner {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 10px 24px 0;
-        }
-        .logbook-deco-banner span {
-            display: inline-block;
-            width: 10px; height: 10px;
-            border-radius: 50%;
-            animation: bounceDot 1.4s ease-in-out infinite;
-        }
-        .logbook-deco-banner span:nth-child(1){ background:#60a5fa; animation-delay:0s; }
-        .logbook-deco-banner span:nth-child(2){ background:#f472b6; animation-delay:.15s; }
-        .logbook-deco-banner span:nth-child(3){ background:#34d399; animation-delay:.3s; }
-        .logbook-deco-banner span:nth-child(4){ background:#fbbf24; animation-delay:.45s; }
-        .logbook-deco-banner span:nth-child(5){ background:#a78bfa; animation-delay:.6s; }
-        @keyframes bounceDot {
-            0%,100%{ transform: translateY(0); }
-            40%{ transform: translateY(-6px); }
+        :root {
+            --clinic-primary: #0b3d91;
+            --clinic-primary-2: #1660d7;
+            --clinic-accent: #d4af37;
+            --clinic-bg: #f5f8fb;
+            --clinic-surface: #ffffff;
+            --clinic-border: #d8e3ea;
+            --clinic-text: #172033;
+            --clinic-muted: #627084;
+            --clinic-danger: #b91c1c;
+            --clinic-warn: #b45309;
+            --clinic-good: #0b3d91;
+            --clinic-shadow: 0 14px 34px rgba(11, 61, 145, .12);
         }
 
-        .logbook-wrapper {
-            padding: 6px 24px 32px;
-        }
-
-        .logbook-card {
-            background: #fff;
-            border: 2px solid #dbeafe;
-            border-radius: 22px;
-            overflow: hidden;
-            box-shadow: 0 4px 28px rgba(37,99,235,.10), 0 1px 4px rgba(0,0,0,.04);
-            position: relative;
-        }
-
-        /* cute pastel corner doodles */
-        .logbook-card::before {
-            content: '🌸';
-            position: absolute;
-            top: 14px; right: 16px;
-            font-size: 1.4rem;
-            opacity: .45;
-            pointer-events: none;
-        }
-
-        /* ── Header ── */
-        .logbook-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 12px;
-            padding: 18px 24px;
-            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+        .clinic-page { display: flex; flex-direction: column; gap: 16px; padding-bottom: 28px; }
+        .clinic-hero {
+            border: 1px solid #cfe0ff;
+            background: linear-gradient(135deg, #0b3d91 0%, #1660d7 100%);
             color: #fff;
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* shimmer stripe */
-        .logbook-header::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: repeating-linear-gradient(
-                45deg,
-                rgba(255,255,255,.04) 0px,
-                rgba(255,255,255,.04) 12px,
-                transparent 12px,
-                transparent 24px
-            );
-            pointer-events: none;
-        }
-
-        .logbook-header-left {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            position: relative; z-index:1;
-        }
-
-        .logbook-icon {
-            width: 46px; height: 46px;
-            background: rgba(255,255,255,.22);
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            flex-shrink: 0;
-            border: 1.5px solid rgba(255,255,255,.3);
-            box-shadow: 0 2px 8px rgba(0,0,0,.12);
-        }
-
-        .logbook-title {
-            font-size: 1.08rem;
-            font-weight: 900;
-            letter-spacing: .01em;
-            margin: 0 0 4px;
-            font-family: 'Nunito', sans-serif;
-        }
-
-        .logbook-meta {
-            font-size: .74rem;
-            opacity: .9;
-            margin: 0;
-            font-family: 'Nunito', sans-serif;
-        }
-
-        .logbook-header-right { position: relative; z-index:1; }
-
-        .logbook-date-badge {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            background: rgba(255,255,255,.18);
-            border: 1px solid rgba(255,255,255,.28);
-            border-radius: 10px;
-            padding: 8px 14px;
-            font-size: .73rem;
-            white-space: nowrap;
-            font-family: 'Nunito', sans-serif;
-        }
-
-        /* ── Save bar ── */
-        .logbook-savebar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            padding: 10px 24px;
-            background: linear-gradient(90deg, #eff6ff 0%, #fdf4ff 100%);
-            border-bottom: 1.5px dashed #c7d2fe;
-            flex-wrap: wrap;
-        }
-
-        .logbook-savebar-hint {
-            font-size: .75rem;
-            color: #7c3aed;
-            font-weight: 700;
-            font-family: 'Nunito', sans-serif;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .logbook-savebar-hint .sparkle { animation: spin 3s linear infinite; display:inline-block; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .lb-save-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            padding: 8px 18px;
-            border-radius: 999px;
-            border: none;
-            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
-            color: #fff;
-            font-size: .78rem;
-            font-weight: 800;
-            font-family: 'Nunito', sans-serif;
-            cursor: pointer;
-            transition: transform .15s, box-shadow .15s, opacity .15s;
-            box-shadow: 0 4px 14px rgba(124,58,237,.3);
-        }
-
-        .lb-save-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(124,58,237,.4); }
-        .lb-save-btn:active { transform: scale(.97); }
-        .lb-save-btn.saved { background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 14px rgba(16,185,129,.3); }
-
-        /* ── Export PDF button ── */
-        .lb-export-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 9px 20px;
-            border-radius: 999px;
-            border: none;
-            background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
-            color: #fff;
-            font-size: .78rem;
-            font-weight: 800;
-            font-family: 'Nunito', sans-serif;
-            cursor: pointer;
-            transition: transform .15s, box-shadow .15s;
-            box-shadow: 0 4px 14px rgba(14,165,233,.35);
-            white-space: nowrap;
-        }
-        .lb-export-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(14,165,233,.45); }
-        .lb-export-btn:active { transform: scale(.97); }
-        .lb-export-btn.exporting {
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            pointer-events: none;
-        }
-        .lb-export-btn .lb-export-spinner {
-            display: none;
-            width: 13px; height: 13px;
-            border: 2px solid rgba(255,255,255,.4);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: lbSpin .6s linear infinite;
-        }
-        .lb-export-btn.exporting .lb-export-spinner { display: inline-block; }
-        .lb-export-btn.exporting .lb-export-icon { display: none; }
-        @keyframes lbSpin { to { transform: rotate(360deg); } }
-
-        /* ── Body ── */
-        .logbook-body {
-            padding: 20px 24px 28px;
-            font-family: 'Nunito', sans-serif;
-        }
-
-        .logbook-live-summary {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 10px;
-            margin-bottom: 18px;
-        }
-        .logbook-live-card {
-            border: 1px solid #dbeafe;
-            border-radius: 14px;
-            background: #f8fbff;
-            padding: 12px 14px;
-            min-height: 72px;
-        }
-        .logbook-live-card .live-label {
-            display: block;
-            font-size: .72rem;
-            font-weight: 800;
-            letter-spacing: .02em;
-            color: #64748b;
-            text-transform: uppercase;
-            margin-bottom: 6px;
-        }
-        .logbook-live-card .live-value {
-            display: block;
-            font-size: 1.25rem;
-            font-weight: 900;
-            color: #1e293b;
-        }
-        .logbook-live-card .live-subtext {
-            display: block;
-            margin-top: 3px;
-            font-size: .72rem;
-            color: #64748b;
-        }
-        .lb-edit[readonly] {
-            background: #f8fafc;
-            color: #0f172a;
-            cursor: default;
-        }
-
-        .logbook-section-label {
-            font-size: .77rem;
-            font-weight: 900;
-            letter-spacing: .08em;
-            text-transform: uppercase;
-            color: #7c3aed;
-            padding: 12px 0 6px;
-            border-bottom: 2.5px solid;
-            border-image: linear-gradient(90deg, #2563eb, #7c3aed) 1;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .logbook-section-label .sec-emoji { font-size: .95rem; }
-
-        .logbook-row-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
-            border-radius: 10px;
-            font-size: .83rem;
-            font-weight: 700;
-            color: #111827;
-            margin-bottom: 4px;
-            background: #f8faff;
-            border: 1.5px solid #e0e7ff;
-            transition: border-color .2s, background .2s;
-        }
-
-        .logbook-row-item:hover { border-color: #a5b4fc; background: #f0f4ff; }
-
-        .logbook-row-item--heading {
-            background: linear-gradient(90deg, #eff6ff 0%, #fdf4ff 100%);
-            border-color: #c7d2fe;
-            color: #3730a3;
-            font-weight: 900;
-        }
-
-        .logbook-row-num {
-            font-weight: 900;
-            color: #7c3aed;
-            min-width: 22px;
-            font-size: .78rem;
-        }
-
-        .logbook-row-name { flex: 1; }
-
-        /* ── Editable cells ── */
-        .lb-edit {
-            background: transparent;
-            border: none;
-            outline: none;
-            width: 100%;
-            color: inherit;
-            font: inherit;
-            text-align: center;
-            padding: 2px 4px;
-            border-radius: 6px;
-            transition: background .15s, box-shadow .15s;
-            -moz-appearance: textfield;
-        }
-        .lb-edit::-webkit-outer-spin-button,
-        .lb-edit::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-
-        .lb-edit:focus {
-            background: #fffbeb;
-            box-shadow: 0 0 0 2px #fbbf24;
-            color: #92400e;
-        }
-
-        .lb-edit-text {
-            background: transparent;
-            border: none;
-            outline: none;
-            width: 100%;
-            color: inherit;
-            font: inherit;
-            padding: 2px 4px;
-            border-radius: 6px;
-            transition: background .15s, box-shadow .15s;
-        }
-        .lb-edit-text:focus {
-            background: #fdf4ff;
-            box-shadow: 0 0 0 2px #a78bfa;
-        }
-
-        /* ── Tables ── */
-        .logbook-table-wrap {
-            overflow-x: auto;
-            margin: 6px 0 14px 24px;
-            border-radius: 12px;
-            border: 1.5px solid #e0e7ff;
-            box-shadow: 0 2px 8px rgba(99,102,241,.06);
-        }
-
-        .logbook-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: .78rem;
-            font-family: 'Nunito', sans-serif;
-        }
-
-        .logbook-table thead tr {
-            background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%);
-        }
-
-        .logbook-table thead th {
-            color: #fff;
-            font-weight: 800;
-            padding: 9px 12px;
-            text-align: center;
-            font-size: .72rem;
-            letter-spacing: .04em;
-            white-space: nowrap;
-        }
-
-        .logbook-table thead th.lb-col-name {
-            text-align: left;
-            min-width: 180px;
-        }
-
-        .logbook-table thead th.lb-col-total {
-            background: rgba(255,255,255,.18);
-        }
-
-        .logbook-table tbody tr {
-            border-bottom: 1px solid #e0e7ff;
-            transition: background .15s;
-        }
-
-        .logbook-table tbody tr:last-child { border-bottom: none; }
-
-        .logbook-table tbody tr:hover { background: #f5f3ff; }
-
-        .logbook-table tbody td {
-            padding: 7px 10px;
-            color: #111827;
-            text-align: center;
-            font-size: .78rem;
-        }
-
-        .logbook-table tbody td:first-child {
-            text-align: left;
-            font-weight: 600;
-        }
-
-        .logbook-table tbody tr.lb-subrow td {
-            color: #6b7280;
-            font-style: italic;
-            font-size: .74rem;
-        }
-
-        .lb-total {
-            font-weight: 900 !important;
-            color: #7c3aed !important;
-            background: #f5f3ff;
-            font-size: .8rem !important;
-        }
-
-        /* ── Two-column ── */
-        .logbook-two-col {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin: 6px 0 0 24px;
-        }
-
-        .logbook-two-col > div {
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1.5px solid #e0e7ff;
-        }
-
-        .logbook-table--compact thead th { font-size: .7rem; padding: 7px 10px; }
-        .logbook-table--compact tbody td { font-size: .75rem; padding: 6px 10px; }
-
-        /* ── Toast notification ── */
-        .lb-toast {
-            position: fixed;
-            bottom: 28px;
-            left: 50%;
-            transform: translateX(-50%) translateY(80px);
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: #fff;
-            padding: 12px 24px;
-            border-radius: 999px;
-            font-size: .82rem;
-            font-weight: 800;
-            font-family: 'Nunito', sans-serif;
-            box-shadow: 0 8px 24px rgba(16,185,129,.35);
-            z-index: 9999;
-            transition: transform .35s cubic-bezier(.34,1.56,.64,1), opacity .35s;
-            opacity: 0;
-            pointer-events: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .lb-toast.show {
-            transform: translateX(-50%) translateY(0);
-            opacity: 1;
-        }
-
-        @media (max-width: 640px) {
-            .logbook-live-summary { grid-template-columns: 1fr; }
-            .logbook-two-col { grid-template-columns: 1fr; }
-            .logbook-header { flex-direction: column; align-items: flex-start; }
-            .logbook-wrapper { padding: 0 12px 24px; }
-            .logbook-table-wrap { margin-left: 8px; }
-        }
-
-        /* ── Month / Year period pickers ── */
-        .lb-period-label {
-            font-size: .72rem;
-            font-weight: 800;
-            font-family: 'Nunito', sans-serif;
-            color: rgba(255,255,255,.85);
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            white-space: nowrap;
-        }
-
-        .lb-period-select {
-            font-family: 'Nunito', sans-serif;
-            font-size: .73rem;
-            font-weight: 800;
-            color: #3730a3;
-            background: rgba(255,255,255,.92);
-            border: 1.5px solid rgba(255,255,255,.5);
             border-radius: 8px;
-            padding: 4px 10px 4px 8px;
-            cursor: pointer;
-            outline: none;
-            transition: background .15s, box-shadow .15s;
-            -webkit-appearance: none;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237c3aed'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 7px center;
-            padding-right: 22px;
+            padding: 22px 24px;
+            box-shadow: var(--clinic-shadow);
         }
-        .lb-period-select:hover { background-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,.4); }
-        .lb-period-select:focus { box-shadow: 0 0 0 2.5px #fbbf24; }
+        .clinic-hero-row { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; align-items: flex-start; }
+        .clinic-greeting { margin: 0 0 6px; font-size: 26px; font-weight: 800; letter-spacing: 0; }
+        .clinic-hero p { margin: 0; color: rgba(255,255,255,.9); }
+        .clinic-clock { text-align: right; min-width: 220px; font-weight: 800; }
+        .clinic-clock span { display: block; font-size: 12px; font-weight: 700; color: rgba(255,255,255,.84); margin-top: 4px; }
 
-        .lb-period-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            background: rgba(255,255,255,.18);
-            border: 1px solid rgba(255,255,255,.3);
-            border-radius: 999px;
-            padding: 3px 10px;
-            font-size: .68rem;
-            font-weight: 800;
-            font-family: 'Nunito', sans-serif;
-            color: #fff;
-            white-space: nowrap;
-            transition: background .2s;
+        .kpi-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+        .kpi-card, .clinic-card {
+            background: var(--clinic-surface);
+            border: 1px solid var(--clinic-border);
+            border-radius: 8px;
+            box-shadow: var(--clinic-shadow);
         }
-        .lb-period-badge.loaded { background: rgba(16,185,129,.35); border-color: rgba(16,185,129,.5); }
-        .lb-period-badge.new    { background: rgba(251,191,36,.25);  border-color: rgba(251,191,36,.5); }
+        .kpi-card { padding: 16px; min-height: 132px; display: flex; flex-direction: column; gap: 12px; }
+        .kpi-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .kpi-icon { width: 38px; height: 38px; border-radius: 8px; display: grid; place-items: center; color: var(--clinic-primary); background: #eff6ff; }
+        .kpi-title { font-size: 12px; color: var(--clinic-muted); font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+        .kpi-value { font-size: 30px; font-weight: 850; color: var(--clinic-text); line-height: 1; }
+        .kpi-trend { font-size: 12px; color: var(--clinic-muted); line-height: 1.35; }
+        .kpi-card.warning { border-color: #f1c274; background: #fffaf0; }
+        .kpi-card.warning .kpi-icon { background: #fef3c7; color: var(--clinic-warn); }
+
+        .clinic-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(320px, .75fr); gap: 16px; align-items: start; }
+        .clinic-stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+        .clinic-card { padding: 18px; min-width: 0; }
+        .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+        .card-title { margin: 0; color: var(--clinic-text); font-size: 16px; font-weight: 850; }
+        .card-subtitle { margin: 4px 0 0; color: var(--clinic-muted); font-size: 12px; }
+        .segmented { display: inline-flex; border: 1px solid var(--clinic-border); border-radius: 8px; overflow: hidden; background: #fff; }
+        .segmented button { border: 0; background: transparent; color: var(--clinic-muted); padding: 8px 11px; font-weight: 800; cursor: pointer; }
+        .segmented button.active { background: var(--clinic-primary); color: #fff; }
+        .chart-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(260px, .8fr); gap: 16px; align-items: stretch; }
+        .chart-box { border: 1px solid var(--clinic-border); border-radius: 8px; padding: 12px; min-height: 260px; background: #fbfdff; overflow: hidden; }
+        canvas { width: 100%; height: 220px; display: block; max-width: 100%; flex: 0 0 auto; }
+        #complaintChart { height: 260px; }
+        #medicineChart, #inventoryChart { height: 250px; }
+        .chart-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+        .mini-stat { border: 1px solid var(--clinic-border); border-radius: 8px; padding: 10px; background: #fff; }
+        .mini-stat .label { color: var(--clinic-muted); font-size: 11px; font-weight: 800; text-transform: uppercase; }
+        .mini-stat .value { color: var(--clinic-text); font-size: 18px; font-weight: 850; margin-top: 3px; }
+        .split-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+
+        .insight-list, .activity-list, .alert-list { display: flex; flex-direction: column; gap: 10px; }
+        .insight-item, .activity-item, .alert-item {
+            border: 1px solid var(--clinic-border);
+            border-radius: 8px;
+            padding: 12px;
+            background: #fbfdff;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+        .item-icon { width: 34px; height: 34px; border-radius: 8px; background: #eff6ff; color: var(--clinic-primary); display: grid; place-items: center; flex: 0 0 auto; }
+        .item-main { min-width: 0; flex: 1; }
+        .item-title { color: var(--clinic-text); font-size: 13px; font-weight: 850; margin-bottom: 3px; }
+        .item-text { color: var(--clinic-muted); font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+        .activity-time { font-size: 11px; color: var(--clinic-primary); font-weight: 800; margin-top: 5px; }
+        .priority { font-size: 10px; font-weight: 850; text-transform: uppercase; border-radius: 999px; padding: 4px 8px; }
+        .priority.high { background: #fee2e2; color: var(--clinic-danger); }
+        .priority.medium { background: #fef3c7; color: var(--clinic-warn); }
+        .priority.low { background: #dbeafe; color: var(--clinic-good); }
+
+        .empty-state, .error-state { border: 1px dashed var(--clinic-border); border-radius: 8px; padding: 18px; color: var(--clinic-muted); text-align: center; background: #fbfdff; }
+        .error-state { border-color: #fecaca; color: var(--clinic-danger); background: #fff7f7; }
+        .skeleton { position: relative; overflow: hidden; background: #e9eef4; border-radius: 8px; min-height: 18px; }
+        .skeleton::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255,255,255,.65), transparent); animation: shimmer 1.15s infinite; }
+        @keyframes shimmer { 100% { transform: translateX(100%); } }
+
+        @media (max-width: 1220px) { .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .clinic-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 820px) { .chart-row, .split-two { grid-template-columns: 1fr; } .clinic-clock { text-align: left; } }
+        @media (max-width: 640px) { .kpi-grid { grid-template-columns: 1fr; } .chart-stats { grid-template-columns: 1fr; } .clinic-hero { padding: 18px; } .clinic-greeting { font-size: 22px; } }
     </style>
-
-    <!-- jsPDF + html2canvas for PDF export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 <div class="app-shell">
-
     <?php
     $sidebarPath = __DIR__ . '/../../includes/sidebar_medical_staff.php';
     if (file_exists($sidebarPath)) {
@@ -575,10 +138,7 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
             <div>
                 <p class="breadcrumb">Home / Dashboard</p>
                 <h2>Medical Staff Dashboard</h2>
-                <p class="page-description">
-                    Welcome back, <?php echo htmlspecialchars($patientName); ?>.
-                    Access your clinical modules from the sidebar.
-                </p>
+                <p class="page-description">Live clinic operations, patient flow, and medicine activity.</p>
             </div>
             <div class="header-actions">
                 <div class="notif-bell">
@@ -586,791 +146,352 @@ $patientName = $_SESSION['patient_name'] ?? 'Medical Staff';
                         <i class="fa-solid fa-bell"></i>
                         <span>Notifications</span>
                         <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
-                        <span class="sr-only">Notifications</span>
-
                     </button>
-
-
                     <div id="notifDropdown" class="notif-dropdown" role="menu" aria-label="Notification list">
-
-
-                        <div class="notif-header">
-                            <h4>Real-time Alerts</h4>
-                            <div class="notif-lastup" id="notifLastUpdated"></div>
-                        </div>
-
+                        <div class="notif-header"><h4>Real-time Alerts</h4><div class="notif-lastup" id="notifLastUpdated"></div></div>
                         <div class="notif-body">
-                            <div class="notif-loading" id="notifLoading">Loading…</div>
+                            <div class="notif-loading" id="notifLoading">Loading...</div>
                             <div class="notif-empty" id="notifEmpty">No alerts right now.</div>
                             <div id="notifList"></div>
                         </div>
                     </div>
                 </div>
             </div>
-
         </header>
 
-        <div class="cards-grid">
-            <article class="status-card">
-                <h3>Staff Role</h3>
-                <p class="status-value" style="font-size: 26px;">Medical</p>
-            </article>
+        <section class="clinic-page">
+            <div class="clinic-hero">
+                <div class="clinic-hero-row">
+                    <div>
+                        <h1 class="clinic-greeting" id="clinicGreeting">Good day, <?php echo htmlspecialchars($staffName); ?></h1>
+                        <p>Monitor consultations, patient activity, medicine dispensing, and clinic performance.</p>
+                    </div>
+                    <div class="clinic-clock" id="clinicClock">Loading time<span>Current clinic date and time</span></div>
+                </div>
+            </div>
 
-            <article class="status-card">
-                <h3>Consultation</h3>
-                <p class="status-value" style="font-size: 26px;">Available</p>
-            </article>
+            <div class="kpi-grid" id="kpiGrid">
+                <?php for ($i = 0; $i < 6; $i++): ?>
+                    <div class="kpi-card"><div class="skeleton" style="height:38px;width:38px;"></div><div class="skeleton" style="height:14px;"></div><div class="skeleton" style="height:30px;width:72px;"></div><div class="skeleton"></div></div>
+                <?php endfor; ?>
+            </div>
 
-            <article class="status-card">
-                <h3>Records</h3>
-                <p class="status-value" style="font-size: 26px;">Available</p>
-            </article>
+            <div id="dashboardError" class="error-state" style="display:none;"></div>
 
-            <article class="status-card">
-                <h3>Schedule</h3>
-                <p class="status-value" style="font-size: 26px;">Open</p>
-            </article>
-        </div>
-
-        <!-- ══ DAILY LOGBOOK ══ -->
-        <!-- decorative bouncing dots -->
-        <div class="logbook-deco-banner" aria-hidden="true">
-            <span></span><span></span><span></span><span></span><span></span>
-        </div>
-
-        <div class="logbook-wrapper">
-            <div class="logbook-card" id="logbookCard">
-
-                <!-- Header -->
-                <div class="logbook-header">
-                    <div class="logbook-header-left">
-                        <div class="logbook-icon"><i class="fa-solid fa-book-medical"></i></div>
-                        <div>
-                            <h3 class="logbook-title">✨ Daily Logbook</h3>
-                            <p class="logbook-meta">
-                                Month: <strong id="lbMonth"><?php echo date('F'); ?></strong>
-                                &nbsp;·&nbsp; Term: <strong>2nd</strong>
-                                &nbsp;·&nbsp; Dept: <strong>NU Bacolod </strong>
-                            </p>
-                            <!-- Month / Year pickers -->
-                            <div class="lb-period-pickers" style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;">
-                                <label class="lb-period-label" for="lbPickerMonth">
-                                    <i class="fa-regular fa-calendar" style="font-size:.75rem;opacity:.8;"></i>
-                                    Record:
-                                </label>
-                                <select id="lbPickerMonth" class="lb-period-select">
-                                    <?php
-                                    $months = ['January','February','March','April','May','June',
-                                               'July','August','September','October','November','December'];
-                                    $curMonth = (int)date('n');
-                                    foreach ($months as $i => $m) {
-                                        $sel = ($i + 1 === $curMonth) ? ' selected' : '';
-                                        echo "<option value=\"".($i+1)."\"$sel>$m</option>\n";
-                                    }
-                                    ?>
-                                </select>
-                                <select id="lbPickerYear" class="lb-period-select">
-                                    <?php
-                                    $curYear = (int)date('Y');
-                                    for ($y = $curYear - 2; $y <= $curYear + 1; $y++) {
-                                        $sel = ($y === $curYear) ? ' selected' : '';
-                                        echo "<option value=\"$y\"$sel>$y</option>\n";
-                                    }
-                                    ?>
-                                </select>
-                                <span id="lbPeriodBadge" class="lb-period-badge"></span>
+            <div class="clinic-grid">
+                <div class="clinic-stack">
+                    <section class="clinic-card">
+                        <div class="card-head">
+                            <div>
+                                <h3 class="card-title">Consultation Analytics</h3>
+                                <p class="card-subtitle">Consultation volume trends and current status distribution.</p>
+                            </div>
+                            <div class="segmented" aria-label="Consultation trend range">
+                                <button type="button" data-trend="daily" class="active">Daily</button>
+                                <button type="button" data-trend="weekly">Weekly</button>
+                                <button type="button" data-trend="monthly">Monthly</button>
                             </div>
                         </div>
-                    </div>
-                    <div class="logbook-header-right">
-                        <div class="logbook-date-badge">
-                            <i class="fa-regular fa-calendar-check"></i>
-                            <span>Date Accomplished: <strong id="lbDateStamp"><?php echo date('n/j/Y g:i:s A'); ?></strong></span>
+                        <div class="chart-row">
+                            <div class="chart-box">
+                                <canvas id="trendChart" height="220"></canvas>
+                                <div class="chart-stats">
+                                    <div class="mini-stat"><div class="label">Total Consultations</div><div class="value" id="trendTotal">0</div></div>
+                                    <div class="mini-stat"><div class="label">Average</div><div class="value" id="trendAverage">0</div></div>
+                                    <div class="mini-stat"><div class="label">Highest Day</div><div class="value" id="trendHighest">None</div></div>
+                                </div>
+                            </div>
+                            <div class="chart-box">
+                                <canvas id="statusChart" height="220"></canvas>
+                            </div>
                         </div>
-                    </div>
+                    </section>
+
+                    <section class="clinic-card">
+                        <div class="card-head">
+                            <div>
+                                <h3 class="card-title">Most Common Health Complaints</h3>
+                                <p class="card-subtitle">Top clinic complaints from consultation records.</p>
+                            </div>
+                        </div>
+                        <div class="chart-box"><canvas id="complaintChart" height="260"></canvas></div>
+                    </section>
+
+                    <section class="clinic-card">
+                        <div class="card-head">
+                            <div>
+                                <h3 class="card-title">Medicine Dispensing Analytics</h3>
+                                <p class="card-subtitle">Frequently released medicines and inventory health.</p>
+                            </div>
+                        </div>
+                        <div class="split-two">
+                            <div class="chart-box"><canvas id="medicineChart" height="250"></canvas></div>
+                            <div class="chart-box"><canvas id="inventoryChart" height="250"></canvas></div>
+                        </div>
+                    </section>
                 </div>
 
-                <!-- Save bar -->
-                <div class="logbook-savebar">
-                    <div class="logbook-savebar-hint">
-                        <span class="sparkle">✦</span>
-                        Live counts sync from consultations and medicine dispensing. You can edit the counts before export. Notes stay in this browser.
-                    </div>
-                        <div style="display:flex;align-items:center;gap:10px;">
-                            <button class="lb-save-btn" id="lbEditBtn" type="button" onclick="toggleLogbookEdit()">
-                                <i class="fa-solid fa-pen-to-square"></i> Edit Counts
-                            </button>
-                            <button class="lb-export-btn" id="lbExportBtn" onclick="exportLogbookPDF()" type="button">
-                                <span class="lb-export-spinner"></span>
-                                <i class="fa-solid fa-file-pdf lb-export-icon"></i>
-                                <span class="lb-export-label">Export PDF</span>
-                            </button>
-                            <button class="lb-save-btn" id="lbSaveBtn" onclick="saveLogbook()" type="button">
-                                <i class="fa-solid fa-floppy-disk"></i> Save Notes
-                            </button>
-                        </div>
-                </div>
-                    
-                <!-- Body -->
-                <div class="logbook-body">
-                    <div class="logbook-live-summary" aria-live="polite">
-                        <div class="logbook-live-card">
-                            <span class="live-label">Consultations this period</span>
-                            <span class="live-value" id="lbConsultationTotal">0</span>
-                            <span class="live-subtext">From clinic_transactions</span>
-                        </div>
-                        <div class="logbook-live-card">
-                            <span class="live-label">Medicines dispensed</span>
-                            <span class="live-value" id="lbMedicineTotal">0</span>
-                            <span class="live-subtext">From medicine_dispensing</span>
-                        </div>
-                        <div class="logbook-live-card">
-                            <span class="live-label">Auto-record source</span>
-                            <span class="live-value" style="font-size:.98rem;">Live database</span>
-                            <span class="live-subtext">Consultations + released medicines</span>
-                        </div>
-                    </div>
+                <aside class="clinic-stack">
+                    <section class="clinic-card">
+                        <div class="card-head"><h3 class="card-title">Clinic Insights</h3></div>
+                        <div class="insight-list" id="insightList"><div class="skeleton" style="height:70px;"></div><div class="skeleton" style="height:70px;"></div></div>
+                    </section>
+                    <section class="clinic-card">
+                        <div class="card-head"><h3 class="card-title">Recent Activities</h3></div>
+                        <div class="activity-list" id="activityList"><div class="skeleton" style="height:70px;"></div><div class="skeleton" style="height:70px;"></div></div>
+                    </section>
+                    <section class="clinic-card">
+                        <div class="card-head"><h3 class="card-title">Alerts & Notifications</h3></div>
+                        <div class="alert-list" id="alertList"><div class="skeleton" style="height:70px;"></div><div class="skeleton" style="height:70px;"></div></div>
+                    </section>
+                </aside>
+            </div>
+        </section>
+    </main>
+</div>
 
-                    <!-- ── A. SERVICES ── -->
-                    <div class="logbook-section-label">
-                        <span class="sec-emoji">🩺</span> A. SERVICES
-                    </div>
+<script src="../../assets/js/app.js"></script>
+<script src="../../assets/js/medical_staff_notifications.js?v=3"></script>
+<script>
+(function () {
+    'use strict';
 
-                    <!-- 1. Student Orientation -->
-                    <div class="logbook-row-item">
-                        <span class="logbook-row-num">1.</span>
-                        <span class="logbook-row-name">Student Orientation</span>
-                    </div>
+    const endpoint = '/NUcare_Health_system/ajax/medical_staff_dashboard.ajax.php';
+    let currentTrend = 'daily';
+    let lastDashboardData = null;
+    let trendRequestId = 0;
 
-                    <!-- 2. Seminars/Trainings -->
-                    <div class="logbook-row-item">
-                        <span class="logbook-row-num">2.</span>
-                        <span class="logbook-row-name">Seminars / Trainings</span>
-                    </div>
-
-                    <!-- 3. Medical Consultation table -->
-                    <div class="logbook-row-item logbook-row-item--heading">
-                        <span class="logbook-row-num">3.</span>
-                        <span class="logbook-row-name">Medical Consultation</span>
-                    </div>
-                    <div class="logbook-table-wrap">
-                        <table class="logbook-table" data-autototal="true">
-                            <thead>
-                                <tr>
-                                    <th class="lb-col-name"></th>
-                                    <th>Student</th>
-                                    <th>Faculty</th>
-                                    <th>Staff</th>
-                                    <th>ASP</th>
-                                    <th class="lb-col-total">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr class="lb-subrow">
-                                    <td>PE</td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td class="lb-total">0</td>
-                                </tr>
-                                <tr>
-                                    <td>Systemic Viral Illness</td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="1"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td class="lb-total">1</td>
-                                </tr>
-                                <tr>
-                                    <td>Cardiovascular Problems</td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td class="lb-total">0</td>
-                                </tr>
-                                <tr>
-                                    <td>Respiratory Problems</td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td class="lb-total">0</td>
-                                </tr>
-                                <tr>
-                                    <td>GastroIntestinal Problems</td>
-                                    <td><input class="lb-edit" type="number" min="0" value="3"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="6"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td class="lb-total">9</td>
-                                </tr>
-                                <tr>
-                                    <td>Gynecologic Problems</td>
-                                    <td><input class="lb-edit" type="number" min="0" value="5"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="2"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td class="lb-total">7</td>
-                                </tr>
-                                <tr>
-                                    <td>Allergy/Hypersensitivity Problems</td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td class="lb-total">0</td>
-                                </tr>
-                                <tr>
-                                    <td>Infectious Problems</td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td class="lb-total">0</td>
-                                </tr>
-                                <tr>
-                                    <td>Minor Accidents / Trauma</td>
-                                    <td><input class="lb-edit" type="number" min="0" value="1"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="1"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td class="lb-total">2</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- 4. Dental Consult -->
-                    <div class="logbook-row-item logbook-row-item--heading">
-                        <span class="logbook-row-num">4.</span>
-                        <span class="logbook-row-name">🦷 Dental Consult</span>
-                    </div>
-                    <div class="logbook-table-wrap">
-                        <table class="logbook-table" data-autototal="true">
-                            <thead>
-                                <tr>
-                                    <th class="lb-col-name"></th>
-                                    <th>Student</th><th>Faculty</th><th>Staff</th><th>ASP</th>
-                                    <th class="lb-col-total">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Oral Prophylaxis</td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td class="lb-total">0</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- 5. Daily Consult -->
-                    <div class="logbook-row-item logbook-row-item--heading">
-                        <span class="logbook-row-num">5.</span>
-                        <span class="logbook-row-name">💻 Daily Consult</span>
-                    </div>
-                    <div class="logbook-table-wrap">
-                        <table class="logbook-table" data-autototal="true">
-                            <thead>
-                                <tr>
-                                    <th class="lb-col-name"></th>
-                                    <th>Student</th><th>Faculty</th><th>Staff</th><th>ASP</th>
-                                    <th class="lb-col-total">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>—</td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td><input class="lb-edit" type="number" min="0" value="0"></td>
-                                    <td class="lb-total">0</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- 6. Medicine Dispense + Supplies -->
-                    <div class="logbook-row-item logbook-row-item--heading">
-                        <span class="logbook-row-num">6.</span>
-                        <span class="logbook-row-name">💊 Medicine Dispense / Released</span>
-                    </div>
-
-                    <div class="logbook-two-col">
-                        <!-- Medicines -->
-                        <div>
-                            <table class="logbook-table logbook-table--compact">
-                                <thead><tr><th>Medicine</th><th>Qty</th></tr></thead>
-                                <tbody>
-                                    <tr><td>Ambroxol</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
-                                    <tr><td>Biogesic</td><td><input class="lb-edit" type="number" min="0" value="22"></td></tr>
-                                    <tr><td>Buscopan</td><td><input class="lb-edit" type="number" min="0" value="2"></td></tr>
-                                    <tr><td>Cetirizine</td><td><input class="lb-edit" type="number" min="0" value="14"></td></tr>
-                                    <tr><td>Clonidine</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
-                                    <tr><td>Diatabs</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
-                                    <tr><td>Domperidone</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
-                                    <tr><td>Gaviscon</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
-                                    <tr><td>Ibuprofen</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
-                                    <tr><td>Kremil-S</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
-                                    <tr><td>Lozenges</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
-                                    <tr><td>Mefenamic Acid</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
-                                    <tr><td>Neozep</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
-                                    <tr><td>ORS</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
-                                    <tr><td>Sinecod</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
-                                    <tr><td>Serc</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
-                                    <tr><td>Ventolin Nebules</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
-                                    <tr><td>Prednisone</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
-                                    <tr><td>Benadryl</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
-                                    <tr><td>Diphenhydramine</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
-                                    <tr><td>Norgesic Forte</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Supplies Used -->
-                        <div>
-                            <table class="logbook-table logbook-table--compact">
-                                <thead><tr><th>🩹 Supplies Used</th><th>Qty</th></tr></thead>
-                                <tbody>
-                                    <tr><td>Betadine</td><td><input class="lb-edit" type="number" min="0" value="1"></td></tr>
-                                    <tr><td>Cotton Balls</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
-                                    <tr><td>Cotton Buds</td><td><input class="lb-edit" type="number" min="0" value="1"></td></tr>
-                                    <tr><td>Elastic Bandage</td><td><input class="lb-edit" type="number" min="0" value="0"></td></tr>
-                                    <tr><td>Gauze</td><td><input class="lb-edit" type="number" min="0" value="1"></td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Notes -->
-                    <div class="logbook-section-label" style="margin-top:20px;">
-                        <span class="sec-emoji">📝</span> B. NOTES / REMARKS
-                    </div>
-                    <textarea class="lb-edit-text" id="lbNotes" rows="4"
-                        style="width:100%;border:1.5px solid #e0e7ff;border-radius:12px;padding:12px 14px;font-size:.82rem;font-family:'Nunito',sans-serif;resize:vertical;color:#374151;background:#f8faff;"
-                        placeholder="Add any notes, remarks, or observations for today's logbook…"></textarea>
-                    <div class="logbook-pdf-footer">
-                    <span>NUCARE Clinic Portal · NU Bacolod</span>
-                    <span id="lbPrintDate"></span>
-                    <span>Medical Staff Daily Logbook</span>
-                </div>
-                </div><!-- /.logbook-body -->
-            </div><!-- /.logbook-card -->
-        </div><!-- /.logbook-wrapper -->
-
-        <!-- Toast -->
-        <div class="lb-toast" id="lbToast">
-            <i class="fa-solid fa-circle-check"></i> Notes saved successfully! ✨
-        </div>
-
-        <script>
-        /* ── Period helpers ── */
-        function getNotesKey() {
-            const m = document.getElementById('lbPickerMonth');
-            const y = document.getElementById('lbPickerYear');
-            if (!m || !y) return 'nucare_logbook_notes';
-            const pad = String(m.value).padStart(2,'0');
-            return 'nucare_logbook_notes_' + y.value + '_' + pad;
-        }
-
-        function getPeriodLabel() {
-            const m = document.getElementById('lbPickerMonth');
-            const y = document.getElementById('lbPickerYear');
-            if (!m || !y) return '';
-            return m.options[m.selectedIndex].text + ' ' + y.value;
-        }
-
-        function updateMonthDisplay() {
-            const m = document.getElementById('lbPickerMonth');
-            const lbMonth = document.getElementById('lbMonth');
-            if (m && lbMonth) lbMonth.textContent = m.options[m.selectedIndex].text;
-        }
-
-        function updatePeriodBadge(state) {
-            const badge = document.getElementById('lbPeriodBadge');
-            if (!badge) return;
-            if (state === 'loading') {
-                badge.textContent = '… Syncing live data';
-                badge.className = 'lb-period-badge new';
-                return;
-            }
-            if (state === 'loaded') {
-                badge.textContent = '✔ Live record loaded';
-                badge.className = 'lb-period-badge loaded';
-            } else {
-                badge.textContent = '✦ New record';
-                badge.className = 'lb-period-badge new';
-            }
-        }
-
-        function setLiveSummary(summary) {
-            const consultEl = document.getElementById('lbConsultationTotal');
-            const medEl = document.getElementById('lbMedicineTotal');
-            if (consultEl) consultEl.textContent = String(summary?.consultations_total ?? 0);
-            if (medEl) medEl.textContent = String(summary?.medicine_units_total ?? 0);
-        }
-
-        function setReadonlyInputs(isReadonly) {
-            document.querySelectorAll('.lb-edit').forEach(inp => {
-                inp.readOnly = !!isReadonly;
-                inp.title = isReadonly ? 'Auto-recorded from live clinic data' : '';
-            });
-        }
-
-        function getCountsKey() {
-            const m = document.getElementById('lbPickerMonth');
-            const y = document.getElementById('lbPickerYear');
-            if (!m || !y) return 'nucare_logbook_counts';
-            const pad = String(m.value).padStart(2, '0');
-            return 'nucare_logbook_counts_' + y.value + '_' + pad;
-        }
-
-        function loadCountOverrides() {
-            try {
-                const raw = localStorage.getItem(getCountsKey());
-                return raw ? JSON.parse(raw) : null;
-            } catch (e) {
-                return null;
-            }
-        }
-
-        function saveCountOverrides() {
-            try {
-                const values = Array.from(document.querySelectorAll('.lb-edit')).map(inp => inp.value || '0');
-                localStorage.setItem(getCountsKey(), JSON.stringify(values));
-            } catch (e) {}
-        }
-
-        function fillLogbookInputs(values) {
-            const inputs = document.querySelectorAll('.lb-edit');
-            inputs.forEach((inp, i) => {
-                const raw = Array.isArray(values) ? values[i] : 0;
-                const numeric = Number(raw);
-                inp.value = Number.isFinite(numeric) ? String(numeric) : '0';
-                inp.dispatchEvent(new Event('input', { bubbles: true }));
-            });
-
-            const overrides = loadCountOverrides();
-            if (Array.isArray(overrides) && overrides.length) {
-                inputs.forEach((inp, i) => {
-                    if (overrides[i] !== undefined) {
-                        inp.value = String(overrides[i] ?? '0');
-                        inp.dispatchEvent(new Event('input', { bubbles: true }));
-                    }
-                });
-            }
-        }
-
-        function setEditButtonLabel(isLocked) {
-            const btn = document.getElementById('lbEditBtn');
-            if (!btn) return;
-            btn.innerHTML = isLocked
-                ? '<i class="fa-solid fa-pen-to-square"></i> Edit Counts'
-                : '<i class="fa-solid fa-lock"></i> Lock Counts';
-        }
-
-        /* ── Load logbook for the selected period ── */
-        async function loadLogbookForPeriod() {
-            updateMonthDisplay();
-            updatePeriodBadge('loading');
-            try {
-                const m = document.getElementById('lbPickerMonth');
-                const y = document.getElementById('lbPickerYear');
-                const notes = document.getElementById('lbNotes');
-                const month = m ? String(m.value).padStart(2, '0') : '';
-                const year = y ? y.value : '';
-                const endpoint = '../../ajax/dashboard_logbook.ajax.php?year=' + encodeURIComponent(year) + '&month=' + encodeURIComponent(month);
-
-                const response = await fetch(endpoint, {
-                    headers: { 'Accept': 'application/json' }
-                });
-                const payload = await response.json();
-
-                if (!payload.ok) {
-                    throw new Error(payload.message || 'Failed to load logbook.');
-                }
-
-                fillLogbookInputs(payload.values || []);
-                setReadonlyInputs(false);
-                setEditButtonLabel(false);
-                setLiveSummary(payload.summary || {});
-
-                if (notes) {
-                    notes.value = localStorage.getItem(getNotesKey()) || '';
-                }
-                updatePeriodBadge('loaded');
-            } catch(e) {
-                console.error('Logbook load failed:', e);
-                fillLogbookInputs([]);
-                setReadonlyInputs(false);
-                setEditButtonLabel(false);
-                setLiveSummary({ consultations_total: 0, medicine_units_total: 0 });
-                const notes = document.getElementById('lbNotes');
-                if (notes) notes.value = localStorage.getItem(getNotesKey()) || '';
-                updatePeriodBadge('new');
-            }
-        }
-
-        /* ── Wire up picker changes ── */
-        (function wirePickers() {
-            const mPicker = document.getElementById('lbPickerMonth');
-            const yPicker = document.getElementById('lbPickerYear');
-            if (mPicker) mPicker.addEventListener('change', loadLogbookForPeriod);
-            if (yPicker) yPicker.addEventListener('change', loadLogbookForPeriod);
-        })();
-
-        function toggleLogbookEdit() {
-            const inputs = document.querySelectorAll('.lb-edit');
-            const locked = Array.from(inputs).some(inp => inp.readOnly);
-            const nextLocked = !locked;
-            setReadonlyInputs(nextLocked);
-            setEditButtonLabel(nextLocked);
-            if (nextLocked) {
-                saveCountOverrides();
-            }
-        }
-
-        /* ── Auto-total for tables with data-autototal ── */
-        document.querySelectorAll('table[data-autototal="true"]').forEach(table => {
-            table.querySelectorAll('tbody tr').forEach(row => {
-                const inputs = row.querySelectorAll('.lb-edit');
-                const totalCell = row.querySelector('.lb-total');
-                if (!totalCell || inputs.length === 0) return;
-
-                function recalc() {
-                    let sum = 0;
-                    inputs.forEach(inp => { sum += parseInt(inp.value) || 0; });
-                    totalCell.textContent = sum;
-                }
-
-                inputs.forEach(inp => {
-                    inp.addEventListener('input', recalc);
-                    inp.addEventListener('input', saveCountOverrides);
-                });
-            });
+    function el(id) { return document.getElementById(id); }
+    function num(value) { return Number(value || 0).toLocaleString(); }
+    function esc(value) {
+        return String(value ?? '').replace(/[&<>"']/g, function (m) {
+            return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m];
         });
+    }
+    function colors() { return ['#0b3d91', '#1660d7', '#d4af37', '#2563eb', '#1d4ed8', '#7c3aed', '#be123c', '#475569', '#0891b2', '#4338ca']; }
 
-        /* ── Save / toast ── */
-        function saveLogbook() {
-            const btn = document.getElementById('lbSaveBtn');
-            const toast = document.getElementById('lbToast');
-
-            // Update timestamp
-            const now = new Date();
-            const stamp = document.getElementById('lbDateStamp');
-            if (stamp) {
-                stamp.textContent = now.toLocaleDateString('en-PH', { month: 'numeric', day: 'numeric', year: 'numeric' })
-                    + ' ' + now.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            }
-
-            const notes = document.getElementById('lbNotes');
-            try { localStorage.setItem(getNotesKey(), notes ? notes.value : ''); } catch(e){}
-
-            updatePeriodBadge('loaded');
-
-            // Button feedback
-            btn.classList.add('saved');
-            btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Notes Saved!';
-            setTimeout(() => {
-                btn.classList.remove('saved');
-                btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Notes';
-            }, 2500);
-
-            // Toast
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
-        }
-        /* ── Export Logbook as PDF ── */
-    async function exportLogbookPDF() {
-        const btn   = document.getElementById('lbExportBtn');
-        const label = btn.querySelector('.lb-export-label');
-
-        // 1. Freeze all auto-totals
-        document.querySelectorAll('table[data-autototal="true"]').forEach(table => {
-            table.querySelectorAll('tbody tr').forEach(row => {
-                const inputs    = row.querySelectorAll('.lb-edit');
-                const totalCell = row.querySelector('.lb-total');
-                if (!totalCell || inputs.length === 0) return;
-                let sum = 0;
-                inputs.forEach(inp => { sum += parseInt(inp.value) || 0; });
-                totalCell.textContent = sum;
-            });
-        });
-
-        // 2. Stamp export date/time in footer
-        const footerDate = document.getElementById('lbPrintDate');
+    function tickClock() {
         const now = new Date();
-        const dateStr = now.toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })
-            + ' · ' + now.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
-        if (footerDate) footerDate.textContent = 'Exported: ' + dateStr;
+        const hour = now.getHours();
+        const greeting = hour < 12 ? 'Good Morning' : (hour < 18 ? 'Good Afternoon' : 'Good Evening');
+        const name = window.clinicStaffName || '<?php echo addslashes($staffName); ?>';
+        el('clinicGreeting').textContent = greeting + ', ' + name;
+        el('clinicClock').innerHTML = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' ' +
+            now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) + '<span>Current clinic date and time</span>';
+    }
 
-        // 3. Show loading state
-        btn.classList.add('exporting');
-        label.textContent = 'Generating…';
+    function setupCanvas(canvas) {
+        const rect = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        const cssHeight = parseInt(window.getComputedStyle(canvas).height, 10) || Number(canvas.getAttribute('height') || 220);
+        canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+        canvas.height = Math.max(1, Math.floor(cssHeight * dpr));
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        return { ctx, width: rect.width, height: cssHeight };
+    }
 
-        // 4. Show the PDF footer temporarily
-        const pdfFooter = document.querySelector('.logbook-pdf-footer');
-        if (pdfFooter) pdfFooter.style.display = 'flex';
+    function drawEmpty(canvasId, text) {
+        const canvas = el(canvasId);
+        const setup = setupCanvas(canvas);
+        setup.ctx.clearRect(0, 0, setup.width, setup.height);
+        setup.ctx.fillStyle = '#627084';
+        setup.ctx.font = '13px Arial';
+        setup.ctx.textAlign = 'center';
+        setup.ctx.fillText(text, setup.width / 2, setup.height / 2);
+    }
 
-        // 5. Hide UI-only elements from the capture
-        const uiOnly = document.querySelectorAll('.logbook-savebar, .logbook-deco-banner, .lb-toast');
-        uiOnly.forEach(el => el.style.visibility = 'hidden');
+    function drawLine(canvasId, rows) {
+        if (!rows || rows.length === 0) return drawEmpty(canvasId, 'No consultation trend data');
+        const {ctx, width, height} = setupCanvas(el(canvasId));
+        const pad = 34;
+        const max = Math.max(1, ...rows.map(r => Number(r.total || 0)));
+        ctx.clearRect(0, 0, width, height);
+        ctx.strokeStyle = '#d8e3ea';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 4; i++) {
+            const y = pad + ((height - pad * 2) / 3) * i;
+            ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(width - pad, y); ctx.stroke();
+        }
+        ctx.strokeStyle = '#0b3d91';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        rows.forEach((r, i) => {
+            const x = pad + ((width - pad * 2) / Math.max(1, rows.length - 1)) * i;
+            const y = height - pad - (Number(r.total || 0) / max) * (height - pad * 2);
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        ctx.fillStyle = '#1660d7';
+        rows.forEach((r, i) => {
+            const x = pad + ((width - pad * 2) / Math.max(1, rows.length - 1)) * i;
+            const y = height - pad - (Number(r.total || 0) / max) * (height - pad * 2);
+            ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
+        });
+        ctx.fillStyle = '#627084';
+        ctx.font = '11px Arial';
+        ctx.textAlign = 'center';
+        rows.filter((_, i) => i === 0 || i === rows.length - 1 || i === Math.floor(rows.length / 2)).forEach((r, idx) => {
+            const i = idx === 0 ? 0 : (idx === 1 && rows.length > 2 ? Math.floor(rows.length / 2) : rows.length - 1);
+            const x = pad + ((width - pad * 2) / Math.max(1, rows.length - 1)) * i;
+            ctx.fillText(String(rows[i].label || ''), x, height - 8);
+        });
+    }
 
+    function drawDoughnut(canvasId, rows) {
+        if (!rows || rows.length === 0) return drawEmpty(canvasId, 'No status data');
+        const {ctx, width, height} = setupCanvas(el(canvasId));
+        const total = rows.reduce((s, r) => s + Number(r.total || 0), 0);
+        if (!total) return drawEmpty(canvasId, 'No status data');
+        const cx = width / 2, cy = 88, radius = 64;
+        let start = -Math.PI / 2;
+        ctx.clearRect(0, 0, width, height);
+        rows.forEach((r, i) => {
+            const slice = (Number(r.total || 0) / total) * Math.PI * 2;
+            ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, radius, start, start + slice); ctx.closePath();
+            ctx.fillStyle = colors()[i % colors().length]; ctx.fill();
+            start += slice;
+        });
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.beginPath(); ctx.arc(cx, cy, 38, 0, Math.PI * 2); ctx.fill();
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = '#172033'; ctx.font = '800 18px Arial'; ctx.textAlign = 'center'; ctx.fillText(num(total), cx, cy + 6);
+        ctx.font = '12px Arial';
+        rows.forEach((r, i) => {
+            const y = 170 + i * 18;
+            ctx.fillStyle = colors()[i % colors().length]; ctx.fillRect(16, y - 9, 10, 10);
+            ctx.fillStyle = '#172033'; ctx.textAlign = 'left';
+            ctx.fillText((r.status_label || r.label) + ' - ' + Math.round(Number(r.total || 0) / total * 100) + '%', 32, y);
+        });
+    }
+
+    function drawBars(canvasId, rows, labelKey) {
+        if (!rows || rows.length === 0) return drawEmpty(canvasId, 'No records found');
+        const {ctx, width, height} = setupCanvas(el(canvasId));
+        const max = Math.max(1, ...rows.map(r => Number(r.total || 0)));
+        const left = 118, top = 16, barH = Math.min(18, (height - 28) / rows.length - 5);
+        ctx.clearRect(0, 0, width, height);
+        ctx.font = '12px Arial';
+        rows.forEach((r, i) => {
+            const y = top + i * (barH + 7);
+            const label = String(r[labelKey] || r.label || '').slice(0, 18);
+            const w = (width - left - 40) * (Number(r.total || 0) / max);
+            ctx.fillStyle = '#627084'; ctx.textAlign = 'right'; ctx.fillText(label, left - 10, y + barH - 4);
+            ctx.fillStyle = colors()[i % colors().length]; ctx.fillRect(left, y, w, barH);
+            ctx.fillStyle = '#172033'; ctx.textAlign = 'left'; ctx.fillText(String(r.total || 0), left + w + 6, y + barH - 4);
+        });
+    }
+
+    function renderKpis(kpis) {
+        el('kpiGrid').innerHTML = kpis.map(kpi => '<article class="kpi-card ' + (kpi.warning ? 'warning' : '') + '">' +
+            '<div class="kpi-top"><div class="kpi-icon"><i class="fa-solid ' + esc(kpi.icon) + '"></i></div><div class="kpi-title">' + esc(kpi.title) + '</div></div>' +
+            '<div class="kpi-value">' + num(kpi.value) + '</div><div class="kpi-trend">' + esc(kpi.trend) + '</div></article>').join('');
+    }
+
+    function renderList(id, rows, type) {
+        if (!rows || rows.length === 0) {
+            el(id).innerHTML = '<div class="empty-state">No records to display.</div>';
+            return;
+        }
+        el(id).innerHTML = rows.map((row, idx) => {
+            if (type === 'insight') {
+                return '<article class="insight-item"><div class="item-icon"><i class="fa-solid fa-chart-simple"></i></div><div class="item-main"><div class="item-title">' + esc(row.title) + '</div><div class="item-text">' + esc(row.text) + '</div></div></article>';
+            }
+            const date = new Date(String(row.happened_at || row.alert_date || row.ExpiryDate || '').replace(' ', 'T'));
+            const time = isNaN(date.getTime()) ? '' : date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+            return '<article class="activity-item"><div class="item-icon"><i class="fa-solid ' + (idx % 2 ? 'fa-notes-medical' : 'fa-circle-check') + '"></i></div><div class="item-main"><div class="item-title">' + esc(row.activity_type || row.title || row.MedicineName || 'Activity') + '</div><div class="item-text">' + esc(row.patient_name || row.message || row.Notes || row.MedicineName || '') + '</div><div class="activity-time">' + esc(time) + '</div></div></article>';
+        }).join('');
+    }
+
+    function renderAlerts(alerts) {
+        const rows = [];
+        (alerts.lowStock || []).forEach(r => rows.push({priority:'high', title:'Low Stock Alert', text:r.MedicineName + ' (' + r.remaining + ' remaining)'}));
+        (alerts.followUps || []).forEach(r => rows.push({priority:'medium', title:'Follow-Up Alert', text:r.patient_name}));
+        (alerts.expiring || []).forEach(r => rows.push({priority:'medium', title:'Expiring Medicines Alert', text:r.MedicineName + ' expires on ' + r.ExpiryDate}));
+        if (!rows.length) {
+            el('alertList').innerHTML = '<div class="empty-state">No clinic alerts right now.</div>';
+            return;
+        }
+        el('alertList').innerHTML = rows.slice(0, 20).map(row => '<article class="alert-item"><div class="item-icon"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="item-main"><div class="item-title">' + esc(row.title) + '</div><div class="item-text">' + esc(row.text) + '</div></div><span class="priority ' + row.priority + '">' + row.priority + '</span></article>').join('');
+    }
+
+    async function loadDashboard() {
         try {
-            const card = document.getElementById('logbookCard');
-
-            // 6. Capture with html2canvas
-            const canvas = await html2canvas(card, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: '#ffffff',
-                logging: false,
-                windowWidth: card.scrollWidth,
-                windowHeight: card.scrollHeight
-            });
-
-            // 7. Build a styled PDF with jsPDF
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-
-            const pageW  = 210;   // A4 width mm
-            const pageH  = 297;   // A4 height mm
-            const margin = 12;
-            const usableW = pageW - margin * 2;
-
-            /* ── PDF Cover Header ── */
-            // Blue-to-purple gradient band
-            pdf.setFillColor(37, 99, 235);
-            pdf.rect(0, 0, pageW, 32, 'F');
-            pdf.setFillColor(124, 58, 237);
-            pdf.rect(pageW * 0.5, 0, pageW * 0.5, 32, 'F');
-
-            // Diagonal shimmer strip
-            pdf.setFillColor(255, 255, 255);
-            pdf.setGState(new pdf.GState({ opacity: 0.06 }));
-            for (let x = -10; x < pageW + 30; x += 18) {
-                pdf.triangle(x, 0, x + 12, 0, x - 12, 32, 'F');
-            }
-            pdf.setGState(new pdf.GState({ opacity: 1 }));
-
-            // NUCARE wordmark
-            pdf.setTextColor(255, 255, 255);
-            pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(15);
-            pdf.text('✦ NUCARE CLINIC PORTAL', margin, 12);
-
-            // Subtitle
-            pdf.setFont('helvetica', 'normal');
-            pdf.setFontSize(8);
-            pdf.setTextColor(199, 210, 254);
-            pdf.text('NU Bacolod · Medical Staff Daily Logbook', margin, 19);
-
-            // Date badge (right side)
-            const dateLabel = 'Date: ' + dateStr;
-            pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(7.5);
-            pdf.setTextColor(255, 255, 255);
-            const dtW = pdf.getTextWidth(dateLabel) + 10;
-            pdf.setFillColor(255, 255, 255);
-            pdf.setGState(new pdf.GState({ opacity: 0.18 }));
-            pdf.roundedRect(pageW - margin - dtW, 9, dtW, 10, 3, 3, 'F');
-            pdf.setGState(new pdf.GState({ opacity: 1 }));
-            pdf.text(dateLabel, pageW - margin - dtW + 5, 15.5);
-
-            /* ── Thin accent rule ── */
-            pdf.setDrawColor(165, 180, 252);
-            pdf.setLineWidth(0.4);
-            pdf.line(margin, 34, pageW - margin, 34);
-
-            /* ── Paste the canvas ── */
-            const imgData = canvas.toDataURL('image/jpeg', 0.97);
-            const imgW    = usableW;
-            const imgH    = (canvas.height * imgW) / canvas.width;
-            const startY  = 37;
-            const maxH    = pageH - startY - 20; // leave room for footer
-
-            // If image fits on one page
-            if (imgH <= maxH) {
-                pdf.addImage(imgData, 'JPEG', margin, startY, imgW, imgH);
-            } else {
-                // Multi-page: slice the canvas
-                const totalPages = Math.ceil(imgH / maxH);
-                for (let p = 0; p < totalPages; p++) {
-                    if (p > 0) pdf.addPage();
-                    const srcY   = (p * maxH * canvas.width) / imgW;
-                    const srcH   = Math.min((maxH * canvas.width) / imgW, canvas.height - srcY);
-                    const sliceH = (srcH * imgW) / canvas.width;
-
-                    // Slice canvas for this page
-                    const slice = document.createElement('canvas');
-                    slice.width  = canvas.width;
-                    slice.height = srcH;
-                    const ctx = slice.getContext('2d');
-                    ctx.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
-
-                    // Add header on continuation pages
-                    if (p > 0) {
-                        pdf.setFillColor(37, 99, 235);
-                        pdf.rect(0, 0, pageW, 10, 'F');
-                        pdf.setFillColor(124, 58, 237);
-                        pdf.rect(pageW * 0.5, 0, pageW * 0.5, 10, 'F');
-                        pdf.setFont('helvetica', 'bold');
-                        pdf.setFontSize(7);
-                        pdf.setTextColor(255, 255, 255);
-                        pdf.text('NUCARE · Daily Logbook (continued)', margin, 7);
-                        pdf.addImage(slice.toDataURL('image/jpeg', 0.97), 'JPEG', margin, 12, imgW, sliceH);
-                    } else {
-                        pdf.addImage(slice.toDataURL('image/jpeg', 0.97), 'JPEG', margin, startY, imgW, sliceH);
-                    }
-                }
-            }
-
-            /* ── PDF Footer on each page ── */
-            const totalPgs = pdf.internal.getNumberOfPages();
-            for (let p = 1; p <= totalPgs; p++) {
-                pdf.setPage(p);
-                pdf.setDrawColor(199, 210, 254);
-                pdf.setLineWidth(0.3);
-                pdf.line(margin, pageH - 14, pageW - margin, pageH - 14);
-                pdf.setFont('helvetica', 'normal');
-                pdf.setFontSize(6.5);
-                pdf.setTextColor(107, 114, 128);
-                pdf.text('NUCARE Clinic Portal · NU Bacolod · Medical Staff Daily Logbook', margin, pageH - 9);
-                pdf.text('Page ' + p + ' of ' + totalPgs, pageW - margin - 16, pageH - 9);
-                // Tiny purple dot accent
-                pdf.setFillColor(124, 58, 237);
-                pdf.circle(margin - 4, pageH - 9.5, 1.2, 'F');
-            }
-
-            // 8. Save the PDF
-            const fileName = 'NUCARE_Logbook_' + now.toISOString().slice(0,10) + '.pdf';
-            pdf.save(fileName);
-
+            const response = await fetch(endpoint + '?trend=' + encodeURIComponent(currentTrend), { headers: { Accept: 'application/json' } });
+            const data = await response.json();
+            if (!data.ok) throw new Error(data.message || 'Dashboard failed to load.');
+            lastDashboardData = data;
+            window.clinicStaffName = data.staffName || window.clinicStaffName;
+            el('dashboardError').style.display = 'none';
+            renderKpis(data.kpis || []);
+            drawLine('trendChart', (data.consultationTrend || {}).rows || []);
+            drawDoughnut('statusChart', data.statusDistribution || []);
+            drawBars('complaintChart', data.commonComplaints || [], 'label');
+            drawBars('medicineChart', data.mostDispensed || [], 'label');
+            drawDoughnut('inventoryChart', data.inventoryStatus || []);
+            el('trendTotal').textContent = num((data.consultationTrend || {}).total);
+            el('trendAverage').textContent = String((data.consultationTrend || {}).average || 0);
+            const highest = (data.consultationTrend || {}).highest || {};
+            el('trendHighest').textContent = highest.total ? highest.label + ' (' + highest.total + ')' : 'None';
+            renderList('insightList', data.insights || [], 'insight');
+            renderList('activityList', data.activities || [], 'activity');
+            renderAlerts(data.alerts || {});
         } catch (err) {
-            console.error('PDF export error:', err);
-            alert('PDF export failed. Please try again.');
-        } finally {
-            // 9. Restore UI
-            uiOnly.forEach(el => el.style.visibility = '');
-            if (pdfFooter) pdfFooter.style.display = '';
-            btn.classList.remove('exporting');
-            label.textContent = 'Export PDF';
+            el('dashboardError').textContent = err.message || 'Unable to load dashboard data.';
+            el('dashboardError').style.display = 'block';
         }
     }
 
-        /* ── Restore from localStorage on load (period-aware) ── */
-        loadLogbookForPeriod();
-        </script>
-    </main>
+    async function loadTrendOnly(range) {
+        const requestId = ++trendRequestId;
+        try {
+            const response = await fetch(endpoint + '?trend=' + encodeURIComponent(range), { headers: { Accept: 'application/json' } });
+            const data = await response.json();
+            if (!data.ok || requestId !== trendRequestId) return;
+            lastDashboardData = Object.assign({}, lastDashboardData || {}, {
+                consultationTrend: data.consultationTrend,
+                statusDistribution: data.statusDistribution
+            });
+            drawLine('trendChart', (data.consultationTrend || {}).rows || []);
+            drawDoughnut('statusChart', data.statusDistribution || []);
+            el('trendTotal').textContent = num((data.consultationTrend || {}).total);
+            el('trendAverage').textContent = String((data.consultationTrend || {}).average || 0);
+            const highest = (data.consultationTrend || {}).highest || {};
+            el('trendHighest').textContent = highest.total ? highest.label + ' (' + highest.total + ')' : 'None';
+        } catch (err) {
+            el('dashboardError').textContent = err.message || 'Unable to load consultation analytics.';
+            el('dashboardError').style.display = 'block';
+        }
+    }
 
-</div>
-<script src="../../assets/js/app.js"></script>
-<script src="../../assets/js/medical_staff_notifications.js?v=3"></script>
+    function redrawCachedCharts() {
+        if (!lastDashboardData) return;
+        drawLine('trendChart', (lastDashboardData.consultationTrend || {}).rows || []);
+        drawDoughnut('statusChart', lastDashboardData.statusDistribution || []);
+        drawBars('complaintChart', lastDashboardData.commonComplaints || [], 'label');
+        drawBars('medicineChart', lastDashboardData.mostDispensed || [], 'label');
+        drawDoughnut('inventoryChart', lastDashboardData.inventoryStatus || []);
+    }
+
+    document.querySelectorAll('[data-trend]').forEach(button => {
+        button.addEventListener('click', function () {
+            document.querySelectorAll('[data-trend]').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentTrend = this.dataset.trend;
+            loadTrendOnly(currentTrend);
+        });
+    });
+
+    let resizeTimer = null;
+    window.addEventListener('resize', function () {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(redrawCachedCharts, 120);
+    });
+    tickClock();
+    setInterval(tickClock, 1000);
+    loadDashboard();
+    setInterval(loadDashboard, 30000);
+})();
+</script>
 </body>
 </html>

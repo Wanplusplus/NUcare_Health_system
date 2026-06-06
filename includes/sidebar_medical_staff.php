@@ -70,6 +70,10 @@ $activeSidebarItem = $activeSidebarItem ?? 'dashboard';
       <span class="nav-icon"><i class="fa-solid fa-calendar-days"></i></span>
       Schedule
     </a>
+    <a class="nav-item <?php echo $activeSidebarItem === 'reports' ? 'active' : ''; ?>" href="/NUcare_Health_system/modules/reports/reports.php">
+      <span class="nav-icon"><i class="fa-solid fa-chart-column"></i></span>
+      Reports
+    </a>
     <details class="nav-settings" <?php echo in_array($activeSidebarItem, ['my_profile', 'settings', 'simulate_lifecycle_audit'], true) ? 'open' : ''; ?>>
       <summary class="nav-item <?php echo in_array($activeSidebarItem, ['my_profile', 'settings', 'simulate_lifecycle_audit'], true) ? 'active' : ''; ?>">
         <span class="nav-icon"><i class="fa-solid fa-gear"></i></span>
