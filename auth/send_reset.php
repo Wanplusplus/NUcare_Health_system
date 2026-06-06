@@ -1,83 +1,72 @@
 <?php
-// Handles email lookup and sending the reset link (users + school_people schema)
-header('Content-Type: application/json');
+declare(strict_types=1);
 
-require_once __DIR__ . '/../config/db_pdo.php';
+header('Content-Type: application/json; charset=utf-8');
+
+$pdo = require __DIR__ . '/../config/db_pdo.php';
 require_once __DIR__ . '/../config/mailer.php';
 
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo json_encode(['status' => 'error', 'message' => 'Invalid request.']);
+function resetResponse(string $status, string $message): void
+{
+    echo json_encode(['status' => $status, 'message' => $message]);
     exit;
 }
 
-// ── Sanitize and validate email ───────────────────────────────────────────────
-$email = strtolower(trim($_POST['email'] ?? ''));
+try {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        resetResponse('error', 'Invalid request.');
+    }
 
-if ($email === '') {
-    echo json_encode(['status' => 'error', 'message' => 'Email address is required.']);
-    exit;
+    $email = strtolower(trim((string)($_POST['email'] ?? '')));
+
+    if ($email === '') {
+        resetResponse('error', 'Email address is required.');
+    }
+
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        resetResponse('error', 'Please enter a valid email address.');
+    }
+
+    $stmt = $pdo->prepare("
+        SELECT u.UserID, u.IsActive
+        FROM users u
+        INNER JOIN school_people sp ON sp.SchoolPersonID = u.SchoolPersonID
+        WHERE LOWER(sp.Email) = ?
+        LIMIT 1
+    ");
+    $stmt->execute([$email]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$user) {
+        resetResponse('error', 'No account found with that email address.');
+    }
+
+    if (isset($user['IsActive']) && (int)$user['IsActive'] !== 1) {
+        resetResponse('error', 'Account is inactive.');
+    }
+
+    $token = bin2hex(random_bytes(32));
+    $expiry = date('Y-m-d H:i:s', strtotime('+20 minutes'));
+
+    $update = $pdo->prepare("
+        UPDATE users
+        SET ResetToken = ?, TokenExpiry = ?
+        WHERE UserID = ?
+    ");
+    $update->execute([$token, $expiry, (int)$user['UserID']]);
+
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $scriptDir = str_replace('\\', '/', dirname((string)($_SERVER['SCRIPT_NAME'] ?? '/NUcare_Health_system/ajax/forgot_password.ajax.php')));
+    $appRoot = preg_replace('#/(ajax|auth)$#', '', rtrim($scriptDir, '/'));
+    $resetLink = $scheme . '://' . $host . $appRoot . '/auth/reset_password.php?token=' . urlencode($token);
+
+    if (!sendResetEmail($email, $resetLink)) {
+        resetResponse('error', 'Failed to send email. Check the Gmail app password or SMTP connection.');
+    }
+
+    resetResponse('success', 'Reset link sent! Please check your email.');
+} catch (Throwable $e) {
+    error_log('Forgot password error: ' . $e->getMessage());
+    resetResponse('error', 'Password reset failed. Please try again.');
 }
-
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    echo json_encode(['status' => 'error', 'message' => 'Please enter a valid email address.']);
-    exit;
-}
-
-// ── Find user by email (school_people.Email -> users.UserID) ────────────────
-$stmt = $conn->prepare(
-    "SELECT u.UserID, u.IsActive\n"
-    ."FROM users u\n"
-    ."JOIN school_people sp ON sp.SchoolPersonID = u.SchoolPersonID\n"
-    ."WHERE sp.Email = ?\n"
-    ."LIMIT 1"
-);
-$stmt->bind_param('s', $email);
-$stmt->execute();
-$result = $stmt->get_result();
-
-if ($result->num_rows === 0) {
-    $stmt->close();
-    echo json_encode(['status' => 'error', 'message' => 'No account found with that email address.']);
-    exit;
-}
-
-$user = $result->fetch_assoc();
-$stmt->close();
-
-if (isset($user['IsActive']) && (int)$user['IsActive'] !== 1) {
-    echo json_encode(['status' => 'error', 'message' => 'Account is inactive.']);
-    exit;
-}
-
-// ── Generate secure reset token ───────────────────────────────────────────────
-$token  = bin2hex(random_bytes(32));
-$expiry = date('Y-m-d H:i:s', strtotime('+20 minutes'));
-
-// ── Save token and expiry to users table ─────────────────────────────────────
-$update = $conn->prepare(
-    "UPDATE users\n"
-    ."SET ResetToken = ?, TokenExpiry = ?\n"
-    ."WHERE UserID = ?"
-);
-$update->bind_param('ssi', $token, $expiry, $user['UserID']);
-$update->execute();
-$update->close();
-
-// ── Build reset link ──────────────────────────────────────────────────────────
-$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-$basePath = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
-$resetLink = $scheme . '://' . $host . dirname($basePath, 1) . '/auth/reset_password.php?token=' . urlencode($token);
-
-// ── Send email via PHPMailer ─────────────────────────────────────────────────
-$sent = sendResetEmail($email, $resetLink);
-
-if ($sent) {
-    echo json_encode(['status' => 'success', 'message' => 'Reset link sent! Please check your email.']);
-} else {
-    echo json_encode(['status' => 'error', 'message' => 'Failed to send email. Please try again.']);
-}
-
-$conn->close();
-?>

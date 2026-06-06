@@ -62,7 +62,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const raw = await response.text();
             console.log('FORGOT RESPONSE:', raw);
-            const result = JSON.parse(raw);
+            let result;
+            try {
+                result = JSON.parse(raw);
+            } catch (parseErr) {
+                console.error('FORGOT RESPONSE IS NOT JSON:', raw);
+                throw new Error('Server returned an invalid response. Check PHP errors or mail configuration.');
+            }
 
             if (result.status === 'success') {
                 showToast(result.message, 'success');
@@ -75,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (err) {
             console.error('FORGOT ERROR:', err);
-            showToast('Something went wrong. Please try again.', 'error');
+            showToast(err.message || 'Something went wrong. Please try again.', 'error');
         } finally {
             setLoading(false);
         }

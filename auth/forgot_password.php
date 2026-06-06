@@ -88,6 +88,6 @@ if (isset($_SESSION['patient_id'])) {
         </div>
     </div>
 
-    <script src="../assets/js/forgot_password.js"></script>
+    <script src="../assets/js/forgot_password.js?v=2"></script>
 </body>
 </html>

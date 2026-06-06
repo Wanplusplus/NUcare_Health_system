@@ -254,10 +254,14 @@ try {
             m.MedicineID,
             m.MedicineName,
             COALESCE(SUM(i.Quantity), 0) AS TotalQuantity,
+            COALESCE(MIN(i.Quantity), 0) AS LowestBatchQuantity,
             MIN(i.ExpiryDate) AS EarliestExpiry,
-            COALESCE(MAX(i.ReorderLevel), 10) AS ReorderLevel,
+            GREATEST(COALESCE(MAX(i.ReorderLevel), 10), 50) AS ReorderLevel,
             MAX(i.UpdatedAt) AS UpdatedAt,
-            COUNT(i.InventoryID) AS InventoryCount
+            COUNT(i.InventoryID) AS InventoryCount,
+            SUM(CASE WHEN i.Quantity <= GREATEST(COALESCE(i.ReorderLevel, 10), 50) THEN 1 ELSE 0 END) AS LowBatchCount,
+            SUM(CASE WHEN LOWER(COALESCE(i.Status, '')) IN ('low stock', 'out of stock') THEN 1 ELSE 0 END) AS StatusAlertCount,
+            SUM(CASE WHEN LOWER(COALESCE(i.Status, '')) = 'out of stock' THEN 1 ELSE 0 END) AS OutOfStockStatusCount
         FROM medicines m
         LEFT JOIN medicine_inventory i ON i.MedicineID = m.MedicineID
         GROUP BY m.MedicineID, m.MedicineName
@@ -272,16 +276,22 @@ try {
     foreach ($rows as $r) {
         $medicineName = safeStr($r['MedicineName'] ?? 'Medicine');
         $qty = (int)($r['TotalQuantity'] ?? 0);
+        $lowestBatchQty = (int)($r['LowestBatchQuantity'] ?? 0);
         $expiry = $r['EarliestExpiry'] ?? null;
         $reorder = (int)($r['ReorderLevel'] ?? 10);
         $updatedAt = $r['UpdatedAt'] ?? null;
         $inventoryCount = (int)($r['InventoryCount'] ?? 0);
+        $lowBatchCount = (int)($r['LowBatchCount'] ?? 0);
+        $statusAlertCount = (int)($r['StatusAlertCount'] ?? 0);
+        $outOfStockStatusCount = (int)($r['OutOfStockStatusCount'] ?? 0);
 
         $status = null;
-        if ($qty <= 0 || $inventoryCount === 0) {
+        if ($qty <= 0 || $inventoryCount === 0 || $outOfStockStatusCount > 0) {
+            $status = 'Out of Stock';
+        } elseif ($qty <= $reorder || $lowBatchCount > 0 || $statusAlertCount > 0) {
             $status = 'Low Stock';
         } elseif ($expiry === null || $expiry === '' || $expiry === '0000-00-00') {
-            $status = ($qty <= $reorder) ? 'Low Stock' : 'Available';
+            $status = 'Available';
         } else {
             $expDate = DateTimeImmutable::createFromFormat('Y-m-d', (string)$expiry);
             if ($expDate instanceof DateTimeImmutable && $expDate < $today) {
@@ -293,8 +303,6 @@ try {
                 }
                 if ($expDate instanceof DateTimeImmutable && $days <= 30) {
                     $status = 'Near Expiry';
-                } elseif ($qty <= $reorder) {
-                    $status = 'Low Stock';
                 } else {
                     $status = 'Available';
                 }
@@ -315,7 +323,7 @@ try {
 
         $notifications[] = [
             'title' => $title,
-            'message' => $medicineName,
+            'message' => $medicineName . ' (' . $qty . ' total remaining' . ($lowBatchCount > 0 ? ', lowest batch ' . $lowestBatchQty : '') . ')',
             'timestamp' => $updatedAt ?: date('c'),
             'priority' => computePriorityForStatus($status),
             'status' => $status,

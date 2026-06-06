@@ -24,7 +24,7 @@ if (isset($_SESSION['patient_id'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NUCARE - Health Management System</title>
     <link rel="icon" type="image/png" href="../assets/image/nucarelogo.png">
-    <link rel="stylesheet" href="../assets/css/login.css?v=3">
+    <link rel="stylesheet" href="../assets/css/login.css?v=4">
 </head>
 <body>
     <div class="login-container">
@@ -145,12 +145,15 @@ if (isset($_SESSION['patient_id'])) {
                                 type="button"
                                 class="password-toggle"
                                 onclick="togglePasswordVisibility()"
-                                aria-label="Toggle password visibility"
+                                aria-label="Show password"
+                                aria-pressed="false"
                                 id="passwordToggleBtn"
                             >
                                 <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                    <circle cx="12" cy="12" r="3"></circle>
+                                    <path d="M3 3l18 18"></path>
+                                    <path d="M10.58 10.58a2 2 0 0 0 2.83 2.83"></path>
+                                    <path d="M9.88 4.26A10.49 10.49 0 0 1 12 4c7 0 11 8 11 8a17.06 17.06 0 0 1-3.08 4.21"></path>
+                                    <path d="M6.61 6.61A17.32 17.32 0 0 0 1 12s4 8 11 8a10.86 10.86 0 0 0 5.39-1.61"></path>
                                 </svg>
                             </button>
                         </div>
@@ -183,6 +186,6 @@ if (isset($_SESSION['patient_id'])) {
         </div>
     </div>
 
-    <script src="../assets/js/login.js?v=3"></script>
+    <script src="../assets/js/login.js?v=5"></script>
 </body>
 </html>

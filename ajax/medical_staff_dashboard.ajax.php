@@ -73,11 +73,16 @@ try {
     $followUpCases = one($pdo, "SELECT COUNT(*) FROM clinic_transactions WHERE Notes LIKE '%follow%'");
     $lowStockMedicines = one($pdo, "
         SELECT COUNT(*) FROM (
-            SELECT m.MedicineID, COALESCE(SUM(mi.Quantity), 0) AS CurrentStock, COALESCE(MAX(mi.ReorderLevel), 10) AS MinimumStock
+            SELECT
+                m.MedicineID,
+                COALESCE(SUM(mi.Quantity), 0) AS CurrentStock,
+                GREATEST(COALESCE(MAX(mi.ReorderLevel), 10), 50) AS MinimumStock,
+                SUM(CASE WHEN mi.Quantity <= GREATEST(COALESCE(mi.ReorderLevel, 10), 50) THEN 1 ELSE 0 END) AS LowBatchCount,
+                SUM(CASE WHEN LOWER(COALESCE(mi.Status, '')) IN ('low stock', 'out of stock') THEN 1 ELSE 0 END) AS StatusAlertCount
             FROM medicines m
             LEFT JOIN medicine_inventory mi ON mi.MedicineID = m.MedicineID
             GROUP BY m.MedicineID
-            HAVING CurrentStock <= MinimumStock
+            HAVING CurrentStock <= MinimumStock OR LowBatchCount > 0 OR StatusAlertCount > 0
         ) x
     ");
 
@@ -265,11 +270,17 @@ try {
     ");
 
     $lowStock = rows($pdo, "
-        SELECT m.MedicineName, COALESCE(SUM(mi.Quantity), 0) AS remaining, COALESCE(MAX(mi.ReorderLevel), 10) AS threshold
+        SELECT
+            m.MedicineName,
+            COALESCE(SUM(mi.Quantity), 0) AS remaining,
+            COALESCE(MIN(mi.Quantity), 0) AS lowest_batch,
+            GREATEST(COALESCE(MAX(mi.ReorderLevel), 10), 50) AS threshold,
+            SUM(CASE WHEN mi.Quantity <= GREATEST(COALESCE(mi.ReorderLevel, 10), 50) THEN 1 ELSE 0 END) AS low_batch_count,
+            SUM(CASE WHEN LOWER(COALESCE(mi.Status, '')) IN ('low stock', 'out of stock') THEN 1 ELSE 0 END) AS status_alert_count
         FROM medicines m
         LEFT JOIN medicine_inventory mi ON mi.MedicineID = m.MedicineID
         GROUP BY m.MedicineID, m.MedicineName
-        HAVING remaining <= threshold
+        HAVING remaining <= threshold OR low_batch_count > 0 OR status_alert_count > 0
         ORDER BY remaining ASC, m.MedicineName ASC
         LIMIT 10
     ");

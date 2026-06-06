@@ -843,3 +843,326 @@
 [2026-06-04T19:36:40+00:00] auditLog PREP INSERT UserID=5 Action=Logged into the system ModuleName=User Management
 [2026-06-04T19:36:40+00:00] auditLog EXEC INSERT
 [2026-06-04T19:36:40+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:37:32+00:00] auditLog CALLED actionType=Started consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T15:37:32+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:37:32+00:00] auditLog PREP INSERT UserID=6 Action=Started consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T15:37:32+00:00] auditLog EXEC INSERT
+[2026-06-06T15:37:32+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:38:39+00:00] auditLog CALLED actionType=Saved consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T15:38:39+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:38:39+00:00] auditLog PREP INSERT UserID=6 Action=Saved consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T15:38:39+00:00] auditLog EXEC INSERT
+[2026-06-06T15:38:39+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:38:39+00:00] auditLog CALLED actionType=Updated consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T15:38:39+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:38:39+00:00] auditLog PREP INSERT UserID=6 Action=Updated consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T15:38:39+00:00] auditLog EXEC INSERT
+[2026-06-06T15:38:39+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:38:45+00:00] auditLog CALLED actionType=Started consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T15:38:45+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:38:45+00:00] auditLog PREP INSERT UserID=6 Action=Started consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T15:38:45+00:00] auditLog EXEC INSERT
+[2026-06-06T15:38:45+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:39:45+00:00] auditLog CALLED actionType=Saved consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T15:39:45+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:39:45+00:00] auditLog PREP INSERT UserID=6 Action=Saved consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T15:39:45+00:00] auditLog EXEC INSERT
+[2026-06-06T15:39:45+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:39:45+00:00] auditLog CALLED actionType=Updated consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T15:39:45+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:39:45+00:00] auditLog PREP INSERT UserID=6 Action=Updated consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T15:39:45+00:00] auditLog EXEC INSERT
+[2026-06-06T15:39:45+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:39:46+00:00] auditLog CALLED actionType=Started consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T15:39:46+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:39:46+00:00] auditLog PREP INSERT UserID=6 Action=Started consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T15:39:46+00:00] auditLog EXEC INSERT
+[2026-06-06T15:39:46+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:40:30+00:00] auditLog CALLED actionType=Saved consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T15:40:30+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:40:30+00:00] auditLog PREP INSERT UserID=6 Action=Saved consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T15:40:30+00:00] auditLog EXEC INSERT
+[2026-06-06T15:40:30+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:40:30+00:00] auditLog CALLED actionType=Updated consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T15:40:30+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:40:30+00:00] auditLog PREP INSERT UserID=6 Action=Updated consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T15:40:30+00:00] auditLog EXEC INSERT
+[2026-06-06T15:40:30+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:40:31+00:00] auditLog CALLED actionType=Started consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T15:40:31+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:40:31+00:00] auditLog PREP INSERT UserID=6 Action=Started consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T15:40:31+00:00] auditLog EXEC INSERT
+[2026-06-06T15:40:31+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:41:39+00:00] auditLog CALLED actionType=Saved consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T15:41:39+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:41:39+00:00] auditLog PREP INSERT UserID=6 Action=Saved consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T15:41:39+00:00] auditLog EXEC INSERT
+[2026-06-06T15:41:39+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:41:39+00:00] auditLog CALLED actionType=Updated consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T15:41:39+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:41:39+00:00] auditLog PREP INSERT UserID=6 Action=Updated consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T15:41:39+00:00] auditLog EXEC INSERT
+[2026-06-06T15:41:39+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:41:41+00:00] auditLog CALLED actionType=Started consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T15:41:41+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:41:41+00:00] auditLog PREP INSERT UserID=6 Action=Started consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T15:41:41+00:00] auditLog EXEC INSERT
+[2026-06-06T15:41:41+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:42:45+00:00] auditLog CALLED actionType=Saved consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T15:42:45+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:42:45+00:00] auditLog PREP INSERT UserID=6 Action=Saved consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T15:42:45+00:00] auditLog EXEC INSERT
+[2026-06-06T15:42:45+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:42:45+00:00] auditLog CALLED actionType=Updated consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T15:42:45+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:42:45+00:00] auditLog PREP INSERT UserID=6 Action=Updated consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T15:42:45+00:00] auditLog EXEC INSERT
+[2026-06-06T15:42:45+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:43:04+00:00] auditLog CALLED actionType=Started consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T15:43:04+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:43:04+00:00] auditLog PREP INSERT UserID=6 Action=Started consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T15:43:04+00:00] auditLog EXEC INSERT
+[2026-06-06T15:43:04+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:43:24+00:00] auditLog CALLED actionType=Saved consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T15:43:24+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:43:24+00:00] auditLog PREP INSERT UserID=6 Action=Saved consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T15:43:24+00:00] auditLog EXEC INSERT
+[2026-06-06T15:43:24+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:43:24+00:00] auditLog CALLED actionType=Updated consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T15:43:24+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:43:24+00:00] auditLog PREP INSERT UserID=6 Action=Updated consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T15:43:24+00:00] auditLog EXEC INSERT
+[2026-06-06T15:43:24+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:45:11+00:00] auditLog CALLED actionType=Updated medicine ID 2 entityType=Medicine entityId=
+[2026-06-06T15:45:11+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:45:11+00:00] auditLog PREP INSERT UserID=6 Action=Updated medicine ID 2 ModuleName=Medicine
+[2026-06-06T15:45:11+00:00] auditLog EXEC INSERT
+[2026-06-06T15:45:11+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:50:55+00:00] auditLog CALLED actionType=Started consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T15:50:55+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:50:55+00:00] auditLog PREP INSERT UserID=6 Action=Started consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T15:50:55+00:00] auditLog EXEC INSERT
+[2026-06-06T15:50:55+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:51:52+00:00] auditLog CALLED actionType=Saved consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T15:51:52+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:51:52+00:00] auditLog PREP INSERT UserID=6 Action=Saved consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T15:51:52+00:00] auditLog EXEC INSERT
+[2026-06-06T15:51:52+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:51:52+00:00] auditLog CALLED actionType=Updated consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T15:51:52+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:51:52+00:00] auditLog PREP INSERT UserID=6 Action=Updated consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T15:51:52+00:00] auditLog EXEC INSERT
+[2026-06-06T15:51:52+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T15:55:53+00:00] auditLog CALLED actionType=logout entityType=auth entityId=
+[2026-06-06T15:55:53+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T15:55:53+00:00] auditLog PREP INSERT UserID=6 Action=Logged out of the system ModuleName=User Management
+[2026-06-06T15:55:53+00:00] auditLog EXEC INSERT
+[2026-06-06T15:55:53+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T16:05:04+00:00] auditLog CALLED actionType=login_debug_school_match entityType=auth entityId=2024-116610
+[2026-06-06T16:05:04+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:05:04+00:00] auditLog CALLED actionType=login_hash_debug entityType=auth entityId=2024-116610
+[2026-06-06T16:05:04+00:00] auditLog CALLED actionType=login_debug_rbac_loaded entityType=auth entityId=2024-116610
+[2026-06-06T16:05:04+00:00] auditLog CALLED actionType=login entityType=auth entityId=2024-116610
+[2026-06-06T16:05:04+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T16:05:04+00:00] auditLog PREP INSERT UserID=6 Action=Logged into the system ModuleName=User Management
+[2026-06-06T16:05:04+00:00] auditLog EXEC INSERT
+[2026-06-06T16:05:04+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T16:13:00+00:00] auditLog CALLED actionType=Added medicine Biogesic entityType=Medicine entityId=
+[2026-06-06T16:13:00+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T16:13:00+00:00] auditLog PREP INSERT UserID=6 Action=Added medicine Biogesic ModuleName=Medicine
+[2026-06-06T16:13:00+00:00] auditLog EXEC INSERT
+[2026-06-06T16:13:00+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T16:17:55+00:00] auditLog CALLED actionType=logout entityType=auth entityId=
+[2026-06-06T16:17:55+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T16:17:55+00:00] auditLog PREP INSERT UserID=6 Action=Logged out of the system ModuleName=User Management
+[2026-06-06T16:17:55+00:00] auditLog EXEC INSERT
+[2026-06-06T16:17:55+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T16:18:20+00:00] auditLog CALLED actionType=login_debug_school_match entityType=auth entityId=2024-116610
+[2026-06-06T16:18:20+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:18:20+00:00] auditLog CALLED actionType=login_hash_debug entityType=auth entityId=2024-116610
+[2026-06-06T16:18:20+00:00] auditLog CALLED actionType=failed_login entityType=Authentication entityId=
+[2026-06-06T16:18:20+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T16:18:20+00:00] auditLog PREP INSERT UserID=6 Action=Failed login attempt ModuleName=Authentication
+[2026-06-06T16:18:20+00:00] auditLog EXEC INSERT
+[2026-06-06T16:18:20+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T16:18:26+00:00] auditLog CALLED actionType=login_debug_school_match entityType=auth entityId=2024-116610
+[2026-06-06T16:18:26+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:18:26+00:00] auditLog CALLED actionType=login_hash_debug entityType=auth entityId=2024-116610
+[2026-06-06T16:18:26+00:00] auditLog CALLED actionType=login_debug_rbac_loaded entityType=auth entityId=2024-116610
+[2026-06-06T16:18:26+00:00] auditLog CALLED actionType=login entityType=auth entityId=2024-116610
+[2026-06-06T16:18:26+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T16:18:26+00:00] auditLog PREP INSERT UserID=6 Action=Logged into the system ModuleName=User Management
+[2026-06-06T16:18:26+00:00] auditLog EXEC INSERT
+[2026-06-06T16:18:26+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T16:19:31+00:00] auditLog CALLED actionType=logout entityType=auth entityId=
+[2026-06-06T16:19:31+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T16:19:31+00:00] auditLog PREP INSERT UserID=6 Action=Logged out of the system ModuleName=User Management
+[2026-06-06T16:19:31+00:00] auditLog EXEC INSERT
+[2026-06-06T16:19:31+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T16:39:21+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116616
+[2026-06-06T16:39:21+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:41:29+00:00] auditLog CALLED actionType=signup entityType=auth entityId=2024-116615
+[2026-06-06T16:41:29+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T16:41:29+00:00] auditLog PREP INSERT UserID=13 Action=Created user account ModuleName=User Management
+[2026-06-06T16:41:29+00:00] auditLog EXEC INSERT
+[2026-06-06T16:41:29+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T16:41:48+00:00] auditLog CALLED actionType=login_debug_school_match entityType=auth entityId=2024-116615
+[2026-06-06T16:41:48+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:41:48+00:00] auditLog CALLED actionType=login_hash_debug entityType=auth entityId=2024-116615
+[2026-06-06T16:41:48+00:00] auditLog CALLED actionType=failed_login entityType=Authentication entityId=
+[2026-06-06T16:41:48+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T16:41:48+00:00] auditLog PREP INSERT UserID=13 Action=Failed login attempt ModuleName=Authentication
+[2026-06-06T16:41:48+00:00] auditLog EXEC INSERT
+[2026-06-06T16:41:48+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T16:46:09+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116614
+[2026-06-06T16:46:09+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:48:38+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116613
+[2026-06-06T16:48:38+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:51:00+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116609
+[2026-06-06T16:51:00+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:51:40+00:00] auditLog CALLED actionType=login_debug_school_match entityType=auth entityId=2024-116611
+[2026-06-06T16:51:40+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:51:40+00:00] auditLog CALLED actionType=login_hash_debug entityType=auth entityId=2024-116611
+[2026-06-06T16:51:40+00:00] auditLog CALLED actionType=failed_login entityType=Authentication entityId=
+[2026-06-06T16:51:40+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T16:51:40+00:00] auditLog PREP INSERT UserID=7 Action=Failed login attempt ModuleName=Authentication
+[2026-06-06T16:51:40+00:00] auditLog EXEC INSERT
+[2026-06-06T16:51:40+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T16:51:44+00:00] auditLog CALLED actionType=login_debug_school_match entityType=auth entityId=2024-116611
+[2026-06-06T16:51:44+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:51:44+00:00] auditLog CALLED actionType=login_hash_debug entityType=auth entityId=2024-116611
+[2026-06-06T16:51:44+00:00] auditLog CALLED actionType=failed_login entityType=Authentication entityId=
+[2026-06-06T16:51:44+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T16:51:44+00:00] auditLog PREP INSERT UserID=7 Action=Failed login attempt ModuleName=Authentication
+[2026-06-06T16:51:44+00:00] auditLog EXEC INSERT
+[2026-06-06T16:51:44+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T16:51:44+00:00] auditLog CALLED actionType=login_debug_school_match entityType=auth entityId=2024-116611
+[2026-06-06T16:51:44+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:51:44+00:00] auditLog CALLED actionType=login_hash_debug entityType=auth entityId=2024-116611
+[2026-06-06T16:51:44+00:00] auditLog CALLED actionType=failed_login entityType=Authentication entityId=
+[2026-06-06T16:51:44+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T16:51:44+00:00] auditLog PREP INSERT UserID=7 Action=Failed login attempt ModuleName=Authentication
+[2026-06-06T16:51:44+00:00] auditLog EXEC INSERT
+[2026-06-06T16:51:44+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T16:51:45+00:00] auditLog CALLED actionType=login_debug_school_match entityType=auth entityId=2024-116611
+[2026-06-06T16:51:45+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:51:45+00:00] auditLog CALLED actionType=login_hash_debug entityType=auth entityId=2024-116611
+[2026-06-06T16:51:45+00:00] auditLog CALLED actionType=failed_login entityType=Authentication entityId=
+[2026-06-06T16:51:45+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T16:51:45+00:00] auditLog PREP INSERT UserID=7 Action=Failed login attempt ModuleName=Authentication
+[2026-06-06T16:51:45+00:00] auditLog EXEC INSERT
+[2026-06-06T16:51:45+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T16:53:04+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116611
+[2026-06-06T16:53:04+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:53:07+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116611
+[2026-06-06T16:53:07+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:53:08+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116611
+[2026-06-06T16:53:08+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:53:08+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116611
+[2026-06-06T16:53:08+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:53:08+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116611
+[2026-06-06T16:53:08+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:53:08+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116611
+[2026-06-06T16:53:08+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:53:08+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116611
+[2026-06-06T16:53:08+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:53:08+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116611
+[2026-06-06T16:53:08+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:53:09+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116611
+[2026-06-06T16:53:09+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:53:09+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116611
+[2026-06-06T16:53:09+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:53:09+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116611
+[2026-06-06T16:53:09+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:53:12+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116611
+[2026-06-06T16:53:12+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:53:13+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116611
+[2026-06-06T16:53:13+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:53:13+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116611
+[2026-06-06T16:53:13+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:53:13+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116611
+[2026-06-06T16:53:13+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:53:13+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116611
+[2026-06-06T16:53:13+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:53:14+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116611
+[2026-06-06T16:53:14+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:53:14+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116611
+[2026-06-06T16:53:14+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:53:14+00:00] auditLog CALLED actionType=failed_signup entityType=auth entityId=2024-116611
+[2026-06-06T16:53:14+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:53:20+00:00] auditLog CALLED actionType=login_debug_school_match entityType=auth entityId=2024-116611
+[2026-06-06T16:53:20+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:53:20+00:00] auditLog CALLED actionType=login_hash_debug entityType=auth entityId=2024-116611
+[2026-06-06T16:53:20+00:00] auditLog CALLED actionType=failed_login entityType=Authentication entityId=
+[2026-06-06T16:53:20+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T16:53:20+00:00] auditLog PREP INSERT UserID=7 Action=Failed login attempt ModuleName=Authentication
+[2026-06-06T16:53:20+00:00] auditLog EXEC INSERT
+[2026-06-06T16:53:20+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T16:53:23+00:00] auditLog CALLED actionType=login_debug_school_match entityType=auth entityId=2024-116610
+[2026-06-06T16:53:23+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:53:23+00:00] auditLog CALLED actionType=login_hash_debug entityType=auth entityId=2024-116610
+[2026-06-06T16:53:23+00:00] auditLog CALLED actionType=login_debug_rbac_loaded entityType=auth entityId=2024-116610
+[2026-06-06T16:53:23+00:00] auditLog CALLED actionType=login entityType=auth entityId=2024-116610
+[2026-06-06T16:53:23+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T16:53:23+00:00] auditLog PREP INSERT UserID=6 Action=Logged into the system ModuleName=User Management
+[2026-06-06T16:53:23+00:00] auditLog EXEC INSERT
+[2026-06-06T16:53:23+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T16:53:37+00:00] auditLog CALLED actionType=logout entityType=auth entityId=
+[2026-06-06T16:53:37+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T16:53:37+00:00] auditLog PREP INSERT UserID=6 Action=Logged out of the system ModuleName=User Management
+[2026-06-06T16:53:37+00:00] auditLog EXEC INSERT
+[2026-06-06T16:53:37+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T16:55:24+00:00] auditLog CALLED actionType=login_debug_school_match entityType=auth entityId=2024-116610
+[2026-06-06T16:55:24+00:00] auditLog SKIP actorUserId is null (would violate audit_logs.UserID NOT NULL)
+[2026-06-06T16:55:24+00:00] auditLog CALLED actionType=login_hash_debug entityType=auth entityId=2024-116610
+[2026-06-06T16:55:24+00:00] auditLog CALLED actionType=login_debug_rbac_loaded entityType=auth entityId=2024-116610
+[2026-06-06T16:55:24+00:00] auditLog CALLED actionType=login entityType=auth entityId=2024-116610
+[2026-06-06T16:55:24+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T16:55:24+00:00] auditLog PREP INSERT UserID=6 Action=Logged into the system ModuleName=User Management
+[2026-06-06T16:55:24+00:00] auditLog EXEC INSERT
+[2026-06-06T16:55:24+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T16:57:53+00:00] auditLog CALLED actionType=Started consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T16:57:53+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T16:57:53+00:00] auditLog PREP INSERT UserID=6 Action=Started consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T16:57:53+00:00] auditLog EXEC INSERT
+[2026-06-06T16:57:53+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T16:58:51+00:00] auditLog CALLED actionType=Saved consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T16:58:51+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T16:58:51+00:00] auditLog PREP INSERT UserID=6 Action=Saved consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T16:58:51+00:00] auditLog EXEC INSERT
+[2026-06-06T16:58:51+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T16:58:51+00:00] auditLog CALLED actionType=Updated consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T16:58:51+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T16:58:51+00:00] auditLog PREP INSERT UserID=6 Action=Updated consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T16:58:51+00:00] auditLog EXEC INSERT
+[2026-06-06T16:58:51+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T16:58:57+00:00] auditLog CALLED actionType=Started consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T16:58:57+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T16:58:57+00:00] auditLog PREP INSERT UserID=6 Action=Started consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T16:58:57+00:00] auditLog EXEC INSERT
+[2026-06-06T16:58:57+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T17:01:01+00:00] auditLog CALLED actionType=Saved consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T17:01:01+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T17:01:01+00:00] auditLog PREP INSERT UserID=6 Action=Saved consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T17:01:01+00:00] auditLog EXEC INSERT
+[2026-06-06T17:01:01+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T17:01:01+00:00] auditLog CALLED actionType=Updated consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T17:01:01+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T17:01:01+00:00] auditLog PREP INSERT UserID=6 Action=Updated consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T17:01:01+00:00] auditLog EXEC INSERT
+[2026-06-06T17:01:01+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T17:02:22+00:00] auditLog CALLED actionType=Started consultation for Patricia Cruz entityType=Consultation entityId=
+[2026-06-06T17:02:22+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T17:02:22+00:00] auditLog PREP INSERT UserID=6 Action=Started consultation for Patricia Cruz ModuleName=Consultation
+[2026-06-06T17:02:22+00:00] auditLog EXEC INSERT
+[2026-06-06T17:02:22+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T17:06:31+00:00] auditLog CALLED actionType=Updated medicine ID 12 entityType=Medicine entityId=
+[2026-06-06T17:06:31+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T17:06:31+00:00] auditLog PREP INSERT UserID=6 Action=Updated medicine ID 12 ModuleName=Medicine
+[2026-06-06T17:06:31+00:00] auditLog EXEC INSERT
+[2026-06-06T17:06:31+00:00] auditLog INSERT OK rowCount=1
+[2026-06-06T17:07:51+00:00] auditLog CALLED actionType=Added medicine amoxil entityType=Medicine entityId=
+[2026-06-06T17:07:51+00:00] auditLog RECORDID coerced to NULL (non-numeric entityId)
+[2026-06-06T17:07:51+00:00] auditLog PREP INSERT UserID=6 Action=Added medicine amoxil ModuleName=Medicine
+[2026-06-06T17:07:51+00:00] auditLog EXEC INSERT
+[2026-06-06T17:07:51+00:00] auditLog INSERT OK rowCount=1
