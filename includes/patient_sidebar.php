@@ -49,7 +49,7 @@ $activeSidebarItem = $activeSidebarItem ?? 'dashboard';
     <div class="brand-mark">NU</div>
     <div>
       <h1>NUCARE</h1>
-      <p>Student Portal</p>
+      <p>Patient Portal</p>
     </div>
   </div>
 
