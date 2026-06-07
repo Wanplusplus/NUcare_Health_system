@@ -1,68 +1,68 @@
-/* ═══════════════════════════════════════════════════════════════
-   NUCARE · Daily Logbook — PDF Export Stylesheet
-   Drop this inside <style> in medical_staff_dashboard.php
-   (or link it as a separate stylesheet)
-   ═══════════════════════════════════════════════════════════════ */
+/* ---
+ NUCARE * Daily Logbook - PDF Export Stylesheet
+ Drop this inside <style> in medical_staff_dashboard.php
+ (or link it as a separate stylesheet)
+ --- */
 
-/* ── Export PDF button (visible on screen only) ── */
+/* -- Export PDF button (visible on screen only) -- */
 .lb-export-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 9px 20px;
-    border-radius: 999px;
-    border: none;
-    background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
-    color: #fff;
-    font-size: .78rem;
-    font-weight: 800;
-    font-family: 'Nunito', sans-serif;
-    cursor: pointer;
-    transition: transform .15s, box-shadow .15s;
-    box-shadow: 0 4px 14px rgba(14,165,233,.35);
-    white-space: nowrap;
+ display: inline-flex;
+ align-items: center;
+ gap: 8px;
+ padding: 9px 20px;
+ border-radius: 999px;
+ border: none;
+ background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+ color: #fff;
+ font-size: .78rem;
+ font-weight: 800;
+ font-family: 'Nunito', sans-serif;
+ cursor: pointer;
+ transition: transform .15s, box-shadow .15s;
+ box-shadow: 0 4px 14px rgba(14,165,233,.35);
+ white-space: nowrap;
 }
 .lb-export-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(14,165,233,.45);
+ transform: translateY(-2px);
+ box-shadow: 0 6px 20px rgba(14,165,233,.45);
 }
 .lb-export-btn:active { transform: scale(.97); }
 .lb-export-btn.exporting {
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-    box-shadow: 0 4px 14px rgba(99,102,241,.35);
-    pointer-events: none;
+ background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+ box-shadow: 0 4px 14px rgba(99,102,241,.35);
+ pointer-events: none;
 }
 .lb-export-btn .lb-export-spinner {
-    display: none;
-    width: 13px; height: 13px;
-    border: 2px solid rgba(255,255,255,.4);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: lbSpin .6s linear infinite;
+ display: none;
+ width: 13px; height: 13px;
+ border: 2px solid rgba(255,255,255,.4);
+ border-top-color: #fff;
+ border-radius: 50%;
+ animation: lbSpin .6s linear infinite;
 }
 .lb-export-btn.exporting .lb-export-spinner { display: inline-block; }
 .lb-export-btn.exporting .lb-export-icon { display: none; }
 @keyframes lbSpin { to { transform: rotate(360deg); } }
 
-/* Keep @media print minimal — just hide UI chrome if someone still
-   triggers browser print manually */
+/* Keep @media print minimal - just hide UI chrome if someone still
+ triggers browser print manually */
 @media print {
-    body > *:not(.app-shell) { display: none !important; }
-    .app-shell > *:not(.main-content) { display: none !important; }
-    .main-content > *:not(.logbook-wrapper):not(.logbook-deco-banner) { display: none !important; }
+ body > *:not(.app-shell) { display: none !important; }
+ .app-shell > *:not(.main-content) { display: none !important; }
+ .main-content > *:not(.logbook-wrapper):not(.logbook-deco-banner) { display: none !important; }
 
-    * {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
+ * {
+ -webkit-print-color-adjust: exact !important;
+ print-color-adjust: exact !important;
+ }
 
-    @page { size: A4 portrait; margin: 14mm 12mm; }
+ @page { size: A4 portrait; margin: 14mm 12mm; }
 
-    .logbook-savebar-hint,
-    .lb-save-btn,
-    .lb-export-btn,
-    .lb-toast,
-    .logbook-deco-banner { display: none !important; }
+ .logbook-savebar-hint,
+ .lb-save-btn,
+ .lb-export-btn,
+ .lb-toast,
+ .logbook-deco-banner { display: none !important; }
 }
 
 /* Hide PDF-export footer on screen */
