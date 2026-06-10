@@ -40,7 +40,19 @@ $activeSidebarItem = $activeSidebarItem ?? 'dashboard';
 <button class="hamburger-btn" id="hamburgerBtn" type="button" aria-label="Toggle menu"></button>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
+<script>
+try {
+ if (window.localStorage.getItem('nucareMedicalSidebarCollapsed') === '1' && window.matchMedia('(min-width: 961px)').matches) {
+ document.body.classList.add('sidebar-collapsed');
+ }
+} catch (error) {}
+</script>
+
 <aside class="sidebar sidebar-medical" id="sidebar">
+ <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" type="button" aria-label="Collapse sidebar" aria-expanded="true">
+ <i class="fa-solid fa-angles-left"></i>
+ </button>
+
  <div class="sidebar-brand">
  <div class="brand-mark">MS</div>
  <div>

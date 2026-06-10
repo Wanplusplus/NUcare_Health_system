@@ -558,6 +558,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
  .detail-list { font-size: 0.85rem; max-height: 200px; overflow-y: auto; }
  .confirm-checkbox { transform: scale(1.2); margin-right: 8px; }
  </style>
+ <link rel="stylesheet" href="/NUcare_Health_system/assets/css/medical_staff_premium.css?v=5">
 </head>
 <body>
 <div class="app-shell">
@@ -774,6 +775,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/NUcare_Health_system/assets/js/app.js?v=3"></script>
 <script>
  function confirmExecution() {
  document.getElementById('modeField').value = 'execute';

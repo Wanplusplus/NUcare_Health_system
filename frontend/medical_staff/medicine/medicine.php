@@ -24,6 +24,7 @@ $activeSidebarItem = 'medicine';
 
  <!-- Medicine Styles -->
  <link rel="stylesheet" href="/NUcare_Health_system/assets/css/medicine.css?v=2">
+ <link rel="stylesheet" href="/NUcare_Health_system/assets/css/medical_staff_premium.css?v=5">
 
  <!-- Font Awesome -->
  <link rel="stylesheet"
@@ -505,7 +506,7 @@ $activeSidebarItem = 'medicine';
 <div id="toastWrap" class="toast-wrap"></div>
 
 <!-- Main App JS -->
-<script src="/NUcare_Health_system/assets/js/app.js"></script>
+<script src="/NUcare_Health_system/assets/js/app.js?v=3"></script>
 <script src="/NUcare_Health_system/assets/js/medicine.js?v=4"></script>
 
 </body>

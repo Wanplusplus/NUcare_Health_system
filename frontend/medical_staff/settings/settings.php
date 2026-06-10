@@ -179,6 +179,7 @@ $activeSidebarItem = 'settings';
  .card-body, .card-header { padding: 24px 20px; }
  }
  </style>
+ <link rel="stylesheet" href="/NUcare_Health_system/assets/css/medical_staff_premium.css?v=5">
 </head>
 <body>
 
@@ -233,6 +234,7 @@ if (file_exists($sidebarPath)) require_once $sidebarPath;
  </main>
 </div>
 
+<script src="/NUcare_Health_system/assets/js/app.js?v=3"></script>
 <script src="/NUcare_Health_system/assets/js/settings_change_password.js?v=1"></script>
 
 <div class="toast-stack" id="toastContainer" aria-live="polite"></div>

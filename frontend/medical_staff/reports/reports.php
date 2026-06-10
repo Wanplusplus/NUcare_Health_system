@@ -89,6 +89,7 @@ $activeSidebarItem = 'reports';
  @media (max-width: 1060px) { .filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
  @media (max-width: 640px) { .filter-grid, .custom-range, .summary-grid { grid-template-columns: 1fr; } .search-box { width: 100%; } .search-box input { min-width: 0; width: 100%; } }
  </style>
+ <link rel="stylesheet" href="/NUcare_Health_system/assets/css/medical_staff_premium.css?v=5">
 </head>
 <body>
 <div class="app-shell">
@@ -205,7 +206,7 @@ $activeSidebarItem = 'reports';
  <input type="hidden" name="payload" id="pdfPayload">
 </form>
 
-<script src="/NUcare_Health_system/assets/js/app.js"></script>
+<script src="/NUcare_Health_system/assets/js/app.js?v=3"></script>
 <script>
 (function () {
  'use strict';

@@ -24,105 +24,221 @@ $staffName = $_SESSION['patient_name'] ?? 'Medical Staff';
  <title>NUCARE | Medical Staff Dashboard</title>
  <link rel="icon" href="/NUcare_Health_system/assets/image/nucarelogo.png">
  <link rel="stylesheet" href="/NUcare_Health_system/assets/css/app.css">
- <link rel="stylesheet" href="/NUcare_Health_system/assets/css/medical_staff_notifications.css?v=1">
+ <link rel="stylesheet" href="/NUcare_Health_system/assets/css/medical_staff_notifications.css?v=4">
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
  <style>
  :root {
- --clinic-primary: #0b3d91;
- --clinic-primary-2: #1660d7;
- --clinic-accent: #d4af37;
- --clinic-bg: #f5f8fb;
- --clinic-surface: #ffffff;
- --clinic-border: #d8e3ea;
- --clinic-text: #172033;
- --clinic-muted: #627084;
- --clinic-danger: #b91c1c;
- --clinic-warn: #b45309;
- --clinic-good: #0b3d91;
- --clinic-shadow: 0 14px 34px rgba(11, 61, 145, .12);
+ --clinic-royal: #113aa8;
+ --clinic-blue: #1e63dc;
+ --clinic-medical: #41a7ff;
+ --clinic-navy: #071642;
+ --clinic-navy-2: #102b72;
+ --clinic-champagne: #f7df9b;
+ --clinic-gold: #d9ad4f;
+ --clinic-metallic: #b8862b;
+ --clinic-glow: #fff2bd;
+ --clinic-bg: #eef5ff;
+ --clinic-surface: rgba(255, 255, 255, .82);
+ --clinic-border: rgba(217, 173, 79, .34);
+ --clinic-text: #102454;
+ --clinic-muted: #65769d;
+ --clinic-danger: #a73342;
+ --clinic-warn: #94620f;
+ --clinic-good: #113aa8;
+ --clinic-shadow: 0 22px 52px rgba(7, 22, 66, .13);
+ --clinic-gold-shadow: 0 0 34px rgba(247, 223, 155, .22);
  }
 
- .clinic-page { display: flex; flex-direction: column; gap: 16px; padding-bottom: 28px; }
- .clinic-hero {
- border: 1px solid #cfe0ff;
- background: linear-gradient(135deg, #0b3d91 0%, #1660d7 100%);
+ body {
+ background:
+ radial-gradient(circle at 18% 10%, rgba(65,167,255,.18), transparent 26%),
+ radial-gradient(circle at 88% 18%, rgba(247,223,155,.2), transparent 20%),
+ linear-gradient(135deg, #f7fbff 0%, #eaf2ff 100%);
+ }
+ .main-content {
+ background:
+ radial-gradient(circle at 18% 8%, rgba(65,167,255,.18), transparent 24%),
+ radial-gradient(circle at 92% 18%, rgba(247,223,155,.24), transparent 18%),
+ linear-gradient(160deg, #f7fbff 0%, #eaf2ff 100%);
+ }
+ .main-content::before {
+ content: "";
+ position: fixed;
+ inset: 0 0 0 280px;
+ pointer-events: none;
+ background-image:
+ linear-gradient(rgba(17,58,168,.05) 1px, transparent 1px),
+ linear-gradient(90deg, rgba(217,173,79,.05) 1px, transparent 1px);
+ background-size: 48px 48px;
+ mask-image: radial-gradient(circle at 55% 30%, rgba(0,0,0,.52), transparent 70%);
+ }
+ .page-header {
+ position: relative;
+ z-index: 1;
+ padding: 18px 20px;
+ border: 1px solid rgba(217,173,79,.28);
+ border-radius: 18px;
+ background: rgba(255,255,255,.72);
+ box-shadow: 0 16px 42px rgba(7,22,66,.08);
+ backdrop-filter: blur(18px);
+ }
+ .breadcrumb { color: var(--clinic-metallic); font-weight: 900; text-transform: uppercase; letter-spacing: .04em; }
+ .page-header h2 { color: var(--clinic-navy); font-weight: 900; letter-spacing: 0; }
+ .page-description { color: #42577f; }
+ .notif-bell button {
+ border: 1px solid rgba(217,173,79,.38);
+ background: linear-gradient(135deg, var(--clinic-navy), var(--clinic-royal) 58%, var(--clinic-gold));
  color: #fff;
- border-radius: 8px;
- padding: 22px 24px;
- box-shadow: var(--clinic-shadow);
+ box-shadow: 0 16px 30px rgba(17,58,168,.2), 0 0 22px rgba(247,223,155,.2);
  }
- .clinic-hero-row { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; align-items: flex-start; }
- .clinic-greeting { margin: 0 0 6px; font-size: 26px; font-weight: 800; letter-spacing: 0; }
- .clinic-hero p { margin: 0; color: rgba(255,255,255,.9); }
- .clinic-clock { text-align: right; min-width: 220px; font-weight: 800; }
- .clinic-clock span { display: block; font-size: 12px; font-weight: 700; color: rgba(255,255,255,.84); margin-top: 4px; }
 
- .kpi-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+ .sidebar.sidebar-medical {
+ background:
+ radial-gradient(circle at 24% 14%, rgba(247,223,155,.16), transparent 22%),
+ linear-gradient(180deg, #071642 0%, #102b72 54%, #030a21 100%) !important;
+ box-shadow: 16px 0 48px rgba(7,22,66,.26);
+ }
+ .sidebar-medical .brand-mark {
+ background: linear-gradient(135deg, var(--clinic-champagne), var(--clinic-metallic)) !important;
+ color: var(--clinic-navy) !important;
+ box-shadow: 0 0 26px rgba(247,223,155,.28);
+ }
+ .sidebar-medical .nav-item {
+ border-color: rgba(247,223,155,.12) !important;
+ background: rgba(255,255,255,.08) !important;
+ }
+ .sidebar-medical .nav-item:hover,
+ .sidebar-medical .nav-item.active {
+ border-color: rgba(247,223,155,.42) !important;
+ background: linear-gradient(135deg, rgba(255,255,255,.16), rgba(247,223,155,.14)) !important;
+ box-shadow: inset 4px 0 0 var(--clinic-champagne), 0 12px 28px rgba(3,10,33,.18);
+ }
+ .sidebar-medical .nav-dot,
+ .sidebar-medical .status-pill {
+ background: linear-gradient(135deg, var(--clinic-champagne), var(--clinic-metallic)) !important;
+ color: var(--clinic-navy) !important;
+ box-shadow: 0 0 0 6px rgba(247,223,155,.14);
+ }
+
+ .clinic-page { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 18px; padding-bottom: 28px; }
+ .clinic-hero {
+ position: relative;
+ overflow: hidden;
+ border: 1px solid rgba(247,223,155,.5);
+ background:
+ radial-gradient(circle at 18% 22%, rgba(65,167,255,.28), transparent 26%),
+ radial-gradient(circle at 84% 18%, rgba(255,242,189,.24), transparent 20%),
+ linear-gradient(135deg, #071642 0%, #113aa8 54%, #1e63dc 100%);
+ color: #fff;
+ border-radius: 18px;
+ padding: 28px 30px;
+ box-shadow: var(--clinic-shadow), var(--clinic-gold-shadow);
+ }
+ .clinic-hero::before {
+ content: "";
+ position: absolute;
+ left: -20%;
+ top: 18%;
+ width: 140%;
+ height: 2px;
+ background: linear-gradient(90deg, transparent, rgba(255,242,189,.86), transparent);
+ box-shadow: 0 0 22px rgba(247,223,155,.46);
+ transform: rotate(-12deg);
+ animation: clinicSweep 6s ease-in-out infinite;
+ }
+ .clinic-hero::after {
+ content: "";
+ position: absolute;
+ right: 28px;
+ bottom: 18px;
+ width: 154px;
+ height: 54px;
+ opacity: .76;
+ background: linear-gradient(90deg, var(--clinic-champagne), var(--clinic-medical), var(--clinic-gold));
+ clip-path: polygon(0 56%, 16% 56%, 26% 14%, 39% 92%, 52% 24%, 66% 24%, 82% 56%, 100% 56%, 100% 72%, 78% 72%, 64% 42%, 54% 42%, 40% 92%, 28% 30%, 20% 72%, 0 72%);
+ filter: drop-shadow(0 0 14px rgba(247,223,155,.5));
+ animation: pulseGold 1.8s ease-in-out infinite;
+ }
+ .clinic-hero-row { position: relative; z-index: 1; display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; align-items: flex-start; }
+ .clinic-greeting { margin: 0 0 8px; font-size: 30px; font-weight: 900; letter-spacing: 0; color: var(--clinic-champagne); text-shadow: 0 0 22px rgba(247,223,155,.22); }
+ .clinic-hero p { margin: 0; color: rgba(255,255,255,.92); }
+ .clinic-clock { min-width: 250px; padding: 12px 14px; border: 1px solid rgba(247,223,155,.28); border-radius: 14px; background: rgba(255,255,255,.1); text-align: right; font-weight: 900; backdrop-filter: blur(14px); }
+ .clinic-clock span { display: block; font-size: 12px; font-weight: 800; color: rgba(255,242,189,.9); margin-top: 4px; }
+
+ .kpi-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; }
  .kpi-card, .clinic-card {
  background: var(--clinic-surface);
  border: 1px solid var(--clinic-border);
- border-radius: 8px;
+ border-radius: 14px;
  box-shadow: var(--clinic-shadow);
+ backdrop-filter: blur(18px);
  }
- .kpi-card { padding: 16px; min-height: 132px; display: flex; flex-direction: column; gap: 12px; }
+ .kpi-card { position: relative; overflow: hidden; padding: 17px; min-height: 136px; display: flex; flex-direction: column; gap: 12px; }
+ .kpi-card::before { content: ""; position: absolute; inset: 0 0 auto; height: 3px; background: linear-gradient(90deg, var(--clinic-royal), var(--clinic-champagne), var(--clinic-metallic)); }
  .kpi-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
- .kpi-icon { width: 38px; height: 38px; border-radius: 8px; display: grid; place-items: center; color: var(--clinic-primary); background: #eff6ff; }
- .kpi-title { font-size: 12px; color: var(--clinic-muted); font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
- .kpi-value { font-size: 30px; font-weight: 850; color: var(--clinic-text); line-height: 1; }
+ .kpi-icon { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; color: var(--clinic-navy); background: linear-gradient(135deg, rgba(247,223,155,.9), rgba(184,134,43,.82)); box-shadow: 0 0 20px rgba(247,223,155,.24); }
+ .kpi-title { font-size: 11px; color: var(--clinic-muted); font-weight: 900; text-transform: uppercase; letter-spacing: .04em; }
+ .kpi-value { font-size: 31px; font-weight: 900; color: var(--clinic-text); line-height: 1; }
  .kpi-trend { font-size: 12px; color: var(--clinic-muted); line-height: 1.35; }
- .kpi-card.warning { border-color: #f1c274; background: #fffaf0; }
- .kpi-card.warning .kpi-icon { background: #fef3c7; color: var(--clinic-warn); }
+ .kpi-card.warning { border-color: rgba(217,173,79,.72); background: linear-gradient(145deg, rgba(255,255,255,.86), rgba(255,242,189,.35)); }
+ .kpi-card.warning .kpi-icon { background: linear-gradient(135deg, var(--clinic-navy), var(--clinic-royal)); color: var(--clinic-champagne); }
 
- .clinic-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(320px, .75fr); gap: 16px; align-items: start; }
- .clinic-stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
- .clinic-card { padding: 18px; min-width: 0; }
- .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
- .card-title { margin: 0; color: var(--clinic-text); font-size: 16px; font-weight: 850; }
+ .clinic-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(320px, .75fr); gap: 18px; align-items: start; }
+ .clinic-stack { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+ .clinic-card { position: relative; overflow: hidden; padding: 20px; min-width: 0; }
+ .clinic-card::before { content: ""; position: absolute; inset: 0 0 auto; height: 3px; background: linear-gradient(90deg, var(--clinic-royal), var(--clinic-champagne), transparent); }
+ .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 15px; }
+ .card-title { margin: 0; color: var(--clinic-text); font-size: 17px; font-weight: 900; }
  .card-subtitle { margin: 4px 0 0; color: var(--clinic-muted); font-size: 12px; }
- .segmented { display: inline-flex; border: 1px solid var(--clinic-border); border-radius: 8px; overflow: hidden; background: #fff; }
- .segmented button { border: 0; background: transparent; color: var(--clinic-muted); padding: 8px 11px; font-weight: 800; cursor: pointer; }
- .segmented button.active { background: var(--clinic-primary); color: #fff; }
+ .segmented { display: inline-flex; border: 1px solid rgba(217,173,79,.38); border-radius: 12px; overflow: hidden; background: rgba(255,255,255,.72); box-shadow: inset 0 1px 0 rgba(255,255,255,.8); }
+ .segmented button { border: 0; background: transparent; color: var(--clinic-muted); padding: 9px 12px; font-weight: 900; cursor: pointer; }
+ .segmented button.active { background: linear-gradient(135deg, var(--clinic-royal), var(--clinic-blue)); color: #fff; box-shadow: inset 0 -3px 0 var(--clinic-champagne); }
  .chart-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(260px, .8fr); gap: 16px; align-items: stretch; }
- .chart-box { border: 1px solid var(--clinic-border); border-radius: 8px; padding: 12px; min-height: 260px; background: #fbfdff; overflow: hidden; }
+ .chart-box { border: 1px solid rgba(153,177,219,.38); border-radius: 14px; padding: 14px; min-height: 260px; background: linear-gradient(145deg, rgba(255,255,255,.8), rgba(247,251,255,.74)); overflow: hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,.86); }
  canvas { width: 100%; height: 220px; display: block; max-width: 100%; flex: 0 0 auto; }
  #complaintChart { height: 260px; }
  #medicineChart, #inventoryChart { height: 250px; }
  .chart-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
- .mini-stat { border: 1px solid var(--clinic-border); border-radius: 8px; padding: 10px; background: #fff; }
- .mini-stat .label { color: var(--clinic-muted); font-size: 11px; font-weight: 800; text-transform: uppercase; }
- .mini-stat .value { color: var(--clinic-text); font-size: 18px; font-weight: 850; margin-top: 3px; }
+ .mini-stat { border: 1px solid rgba(217,173,79,.28); border-radius: 12px; padding: 11px; background: rgba(255,255,255,.78); }
+ .mini-stat .label { color: var(--clinic-muted); font-size: 10px; font-weight: 900; text-transform: uppercase; }
+ .mini-stat .value { color: var(--clinic-text); font-size: 18px; font-weight: 900; margin-top: 3px; }
  .split-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 
  .insight-list, .activity-list, .alert-list { display: flex; flex-direction: column; gap: 10px; }
  .insight-item, .activity-item, .alert-item {
- border: 1px solid var(--clinic-border);
- border-radius: 8px;
- padding: 12px;
- background: #fbfdff;
+ border: 1px solid rgba(153,177,219,.34);
+ border-radius: 12px;
+ padding: 13px;
+ background: rgba(255,255,255,.72);
  display: flex;
  gap: 12px;
  align-items: flex-start;
  }
- .item-icon { width: 34px; height: 34px; border-radius: 8px; background: #eff6ff; color: var(--clinic-primary); display: grid; place-items: center; flex: 0 0 auto; }
+ .item-icon { width: 36px; height: 36px; border-radius: 12px; background: linear-gradient(135deg, var(--clinic-navy), var(--clinic-blue)); color: var(--clinic-champagne); display: grid; place-items: center; flex: 0 0 auto; box-shadow: 0 0 18px rgba(17,58,168,.16); }
  .item-main { min-width: 0; flex: 1; }
- .item-title { color: var(--clinic-text); font-size: 13px; font-weight: 850; margin-bottom: 3px; }
+ .item-title { color: var(--clinic-text); font-size: 13px; font-weight: 900; margin-bottom: 3px; }
  .item-text { color: var(--clinic-muted); font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
- .activity-time { font-size: 11px; color: var(--clinic-primary); font-weight: 800; margin-top: 5px; }
- .priority { font-size: 10px; font-weight: 850; text-transform: uppercase; border-radius: 999px; padding: 4px 8px; }
- .priority.high { background: #fee2e2; color: var(--clinic-danger); }
- .priority.medium { background: #fef3c7; color: var(--clinic-warn); }
- .priority.low { background: #dbeafe; color: var(--clinic-good); }
+ .activity-time { font-size: 11px; color: var(--clinic-metallic); font-weight: 900; margin-top: 5px; }
+ .priority { font-size: 10px; font-weight: 900; text-transform: uppercase; border-radius: 999px; padding: 4px 8px; }
+ .priority.high { background: #fff4f5; color: var(--clinic-danger); border: 1px solid #f3cbd1; }
+ .priority.medium { background: rgba(255,242,189,.56); color: var(--clinic-warn); border: 1px solid rgba(217,173,79,.32); }
+ .priority.low { background: #eaf2ff; color: var(--clinic-good); border: 1px solid rgba(17,58,168,.18); }
 
- .empty-state, .error-state { border: 1px dashed var(--clinic-border); border-radius: 8px; padding: 18px; color: var(--clinic-muted); text-align: center; background: #fbfdff; }
- .error-state { border-color: #fecaca; color: var(--clinic-danger); background: #fff7f7; }
- .skeleton { position: relative; overflow: hidden; background: #e9eef4; border-radius: 8px; min-height: 18px; }
- .skeleton::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255,255,255,.65), transparent); animation: shimmer 1.15s infinite; }
+ .empty-state, .error-state { border: 1px dashed rgba(217,173,79,.42); border-radius: 12px; padding: 18px; color: var(--clinic-muted); text-align: center; background: rgba(255,255,255,.68); }
+ .error-state { border-color: #f3cbd1; color: var(--clinic-danger); background: #fff7f8; }
+ .skeleton { position: relative; overflow: hidden; background: linear-gradient(90deg, #e7eefb, #f7fbff); border-radius: 10px; min-height: 18px; }
+ .skeleton::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255,242,189,.65), transparent); animation: shimmer 1.15s infinite; }
  @keyframes shimmer { 100% { transform: translateX(100%); } }
+ @keyframes clinicSweep { 0%,100% { transform: translateX(-28%) rotate(-12deg); opacity: 0; } 45%,60% { opacity: 1; } 78% { transform: translateX(42%) rotate(-12deg); opacity: 0; } }
+ @keyframes pulseGold { 0%,100% { opacity: .64; filter: drop-shadow(0 0 6px rgba(247,223,155,.32)); } 50% { opacity: 1; filter: drop-shadow(0 0 15px rgba(247,223,155,.78)); } }
 
+ @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
  @media (max-width: 1220px) { .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .clinic-grid { grid-template-columns: 1fr; } }
+ @media (max-width: 960px) { .main-content::before { inset: 0; } }
  @media (max-width: 820px) { .chart-row, .split-two { grid-template-columns: 1fr; } .clinic-clock { text-align: left; } }
- @media (max-width: 640px) { .kpi-grid { grid-template-columns: 1fr; } .chart-stats { grid-template-columns: 1fr; } .clinic-hero { padding: 18px; } .clinic-greeting { font-size: 22px; } }
+ @media (max-width: 640px) { .page-header { padding: 16px; } .kpi-grid { grid-template-columns: 1fr; } .chart-stats { grid-template-columns: 1fr; } .clinic-hero { padding: 22px; } .clinic-greeting { font-size: 23px; } }
  </style>
+ <link rel="stylesheet" href="/NUcare_Health_system/assets/css/medical_staff_premium.css?v=5">
 </head>
 <body>
 <div class="app-shell">
@@ -250,7 +366,7 @@ $staffName = $_SESSION['patient_name'] ?? 'Medical Staff';
  </main>
 </div>
 
-<script src="/NUcare_Health_system/assets/js/app.js"></script>
+<script src="/NUcare_Health_system/assets/js/app.js?v=3"></script>
 <script src="/NUcare_Health_system/assets/js/medical_staff_notifications.js?v=3"></script>
 <script>
 (function () {
@@ -268,7 +384,7 @@ $staffName = $_SESSION['patient_name'] ?? 'Medical Staff';
  return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m];
  });
  }
- function colors() { return ['#0b3d91', '#1660d7', '#d4af37', '#2563eb', '#1d4ed8', '#7c3aed', '#be123c', '#475569', '#0891b2', '#4338ca']; }
+ function colors() { return ['#071642', '#113aa8', '#1e63dc', '#41a7ff', '#f7df9b', '#d9ad4f', '#b8862b', '#102b72', '#6faeff', '#fff2bd']; }
 
  function tickClock() {
  const now = new Date();
@@ -295,7 +411,7 @@ $staffName = $_SESSION['patient_name'] ?? 'Medical Staff';
  const canvas = el(canvasId);
  const setup = setupCanvas(canvas);
  setup.ctx.clearRect(0, 0, setup.width, setup.height);
- setup.ctx.fillStyle = '#627084';
+ setup.ctx.fillStyle = '#65769d';
  setup.ctx.font = '13px Arial';
  setup.ctx.textAlign = 'center';
  setup.ctx.fillText(text, setup.width / 2, setup.height / 2);
@@ -307,13 +423,13 @@ $staffName = $_SESSION['patient_name'] ?? 'Medical Staff';
  const pad = 34;
  const max = Math.max(1, ...rows.map(r => Number(r.total || 0)));
  ctx.clearRect(0, 0, width, height);
- ctx.strokeStyle = '#d8e3ea';
+ ctx.strokeStyle = 'rgba(153,177,219,.46)';
  ctx.lineWidth = 1;
  for (let i = 0; i < 4; i++) {
  const y = pad + ((height - pad * 2) / 3) * i;
  ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(width - pad, y); ctx.stroke();
  }
- ctx.strokeStyle = '#0b3d91';
+ ctx.strokeStyle = '#113aa8';
  ctx.lineWidth = 3;
  ctx.beginPath();
  rows.forEach((r, i) => {
@@ -322,13 +438,13 @@ $staffName = $_SESSION['patient_name'] ?? 'Medical Staff';
  if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
  });
  ctx.stroke();
- ctx.fillStyle = '#1660d7';
+ ctx.fillStyle = '#d9ad4f';
  rows.forEach((r, i) => {
  const x = pad + ((width - pad * 2) / Math.max(1, rows.length - 1)) * i;
  const y = height - pad - (Number(r.total || 0) / max) * (height - pad * 2);
  ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
  });
- ctx.fillStyle = '#627084';
+ ctx.fillStyle = '#65769d';
  ctx.font = '11px Arial';
  ctx.textAlign = 'center';
  rows.filter((_, i) => i === 0 || i === rows.length - 1 || i === Math.floor(rows.length / 2)).forEach((r, idx) => {
@@ -355,12 +471,12 @@ $staffName = $_SESSION['patient_name'] ?? 'Medical Staff';
  ctx.globalCompositeOperation = 'destination-out';
  ctx.beginPath(); ctx.arc(cx, cy, 38, 0, Math.PI * 2); ctx.fill();
  ctx.globalCompositeOperation = 'source-over';
- ctx.fillStyle = '#172033'; ctx.font = '800 18px Arial'; ctx.textAlign = 'center'; ctx.fillText(num(total), cx, cy + 6);
+ ctx.fillStyle = '#102454'; ctx.font = '800 18px Arial'; ctx.textAlign = 'center'; ctx.fillText(num(total), cx, cy + 6);
  ctx.font = '12px Arial';
  rows.forEach((r, i) => {
  const y = 170 + i * 18;
  ctx.fillStyle = colors()[i % colors().length]; ctx.fillRect(16, y - 9, 10, 10);
- ctx.fillStyle = '#172033'; ctx.textAlign = 'left';
+ ctx.fillStyle = '#102454'; ctx.textAlign = 'left';
  ctx.fillText((r.status_label || r.label) + ' - ' + Math.round(Number(r.total || 0) / total * 100) + '%', 32, y);
  });
  }
@@ -376,9 +492,9 @@ $staffName = $_SESSION['patient_name'] ?? 'Medical Staff';
  const y = top + i * (barH + 7);
  const label = String(r[labelKey] || r.label || '').slice(0, 18);
  const w = (width - left - 40) * (Number(r.total || 0) / max);
- ctx.fillStyle = '#627084'; ctx.textAlign = 'right'; ctx.fillText(label, left - 10, y + barH - 4);
+ ctx.fillStyle = '#65769d'; ctx.textAlign = 'right'; ctx.fillText(label, left - 10, y + barH - 4);
  ctx.fillStyle = colors()[i % colors().length]; ctx.fillRect(left, y, w, barH);
- ctx.fillStyle = '#172033'; ctx.textAlign = 'left'; ctx.fillText(String(r.total || 0), left + w + 6, y + barH - 4);
+ ctx.fillStyle = '#102454'; ctx.textAlign = 'left'; ctx.fillText(String(r.total || 0), left + w + 6, y + barH - 4);
  });
  }
 

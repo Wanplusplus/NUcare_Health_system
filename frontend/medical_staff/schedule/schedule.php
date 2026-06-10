@@ -22,6 +22,7 @@ $activeSidebarItem = 'schedule';
  <link rel="icon" href="/NUcare_Health_system/assets/image/nucarelogo.png">
  <link rel="stylesheet" href="/NUcare_Health_system/assets/css/app.css?v=1">
  <link rel="stylesheet" href="/NUcare_Health_system/assets/css/schedule.css?v=2">
+ <link rel="stylesheet" href="/NUcare_Health_system/assets/css/medical_staff_premium.css?v=5">
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
@@ -391,7 +392,7 @@ $activeSidebarItem = 'schedule';
  </main>
 </div>
 
-<script src="/NUcare_Health_system/assets/js/app.js"></script>
+<script src="/NUcare_Health_system/assets/js/app.js?v=3"></script>
 <script src="/NUcare_Health_system/assets/js/schedule.js?v=2"></script>
 </body>
 </html>

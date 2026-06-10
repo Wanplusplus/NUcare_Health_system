@@ -66,6 +66,7 @@ $patientName = $_SESSION['patient_name'] ?? $_SESSION['full_name'] ?? 'User';
  @media (max-width: 920px) { .profile-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); } .family-row { grid-template-columns:1fr; } .family-remove { width:100%; } }
  @media (max-width: 620px) { .profile-page { padding:18px; } .profile-grid { grid-template-columns:1fr; } .profile-head { flex-direction:column; } }
  </style>
+ <link rel="stylesheet" href="/NUcare_Health_system/assets/css/medical_staff_premium.css?v=5">
 </head>
 <body>
 <div class="app-shell">
@@ -169,7 +170,7 @@ $patientName = $_SESSION['patient_name'] ?? $_SESSION['full_name'] ?? 'User';
 </div>
 
 <div class="profile-toast" id="profileToast"></div>
-<script src="/NUcare_Health_system/assets/js/app.js"></script>
+<script src="/NUcare_Health_system/assets/js/app.js?v=3"></script>
 <script>
 (function () {
  const fields = ['contact_no','gender','birth_date','age','nationality','status','religion','address','guardian_name','relationship','mobile_no','telephone','emergency_address'];

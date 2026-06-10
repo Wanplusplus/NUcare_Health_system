@@ -19,6 +19,30 @@ document.addEventListener('DOMContentLoaded', function() {
  const hamburgerBtn = document.getElementById('hamburgerBtn');
  const sidebar = document.getElementById('sidebar');
  const sidebarOverlay = document.getElementById('sidebarOverlay');
+ const sidebarCollapseBtn = document.getElementById('sidebarCollapseBtn');
+ const sidebarStorageKey = 'nucareMedicalSidebarCollapsed';
+
+ function setSidebarCollapsed(collapsed) {
+ if (!sidebar) return;
+ document.body.classList.toggle('sidebar-collapsed', collapsed);
+ sidebar.classList.toggle('collapsed', collapsed);
+ if (sidebarCollapseBtn) {
+ sidebarCollapseBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+ sidebarCollapseBtn.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+ sidebarCollapseBtn.innerHTML = collapsed
+ ? '<i class="fa-solid fa-angles-right"></i>'
+ : '<i class="fa-solid fa-angles-left"></i>';
+ }
+ try {
+ window.localStorage.setItem(sidebarStorageKey, collapsed ? '1' : '0');
+ } catch (error) {}
+ }
+
+ try {
+ if (window.localStorage.getItem(sidebarStorageKey) === '1' && window.matchMedia('(min-width: 961px)').matches) {
+ setSidebarCollapsed(true);
+ }
+ } catch (error) {}
 
  function toggleSidebar() {
  sidebar.classList.toggle('active');
@@ -38,9 +62,26 @@ document.addEventListener('DOMContentLoaded', function() {
  sidebarOverlay.addEventListener('click', closeSidebar);
  }
 
+ if (sidebarCollapseBtn) {
+ sidebarCollapseBtn.addEventListener('click', function() {
+ const isCollapsed = document.body.classList.contains('sidebar-collapsed');
+ setSidebarCollapsed(!isCollapsed);
+ });
+ }
+
+ window.addEventListener('resize', function() {
+ if (!window.matchMedia('(min-width: 961px)').matches) {
+ document.body.classList.remove('sidebar-collapsed');
+ if (sidebar) sidebar.classList.remove('collapsed');
+ }
+ });
+
  // Close sidebar when a nav item is clicked (mobile)
  navItems.forEach(item => {
  item.addEventListener('click', function() {
+ if (!this.dataset.panel) {
+ return;
+ }
  window.activateDashboardPanel(this.dataset.panel);
  closeSidebar();
  });

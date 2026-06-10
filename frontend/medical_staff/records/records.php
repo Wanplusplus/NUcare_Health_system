@@ -22,6 +22,7 @@ $activeSidebarItem = 'records';
  <link rel="icon" href="/NUcare_Health_system/assets/image/nucarelogo.png">
  <link rel="stylesheet" href="/NUcare_Health_system/assets/css/app.css?v=1">
  <link rel="stylesheet" href="/NUcare_Health_system/assets/css/records.css?v=3">
+ <link rel="stylesheet" href="/NUcare_Health_system/assets/css/medical_staff_premium.css?v=5">
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
@@ -506,7 +507,7 @@ $activeSidebarItem = 'records';
  </main>
 </div>
 
-<script src="/NUcare_Health_system/assets/js/app.js"></script>
+<script src="/NUcare_Health_system/assets/js/app.js?v=3"></script>
 <script src="/NUcare_Health_system/assets/js/records.js?v=7"></script>
 </body>
 </html>

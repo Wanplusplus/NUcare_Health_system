@@ -24,7 +24,7 @@ if (isset($_SESSION['patient_id'])) {
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
  <title>NUCARE - Health Management System</title>
  <link rel="icon" type="image/png" href="/NUcare_Health_system/assets/image/nucarelogo.png">
- <link rel="stylesheet" href="/NUcare_Health_system/assets/css/login.css?v=4">
+ <link rel="stylesheet" href="/NUcare_Health_system/assets/css/login.css?v=6">
 </head>
 <body>
  <div class="login-container">
@@ -37,11 +37,14 @@ if (isset($_SESSION['patient_id'])) {
  <span></span>
  <span></span>
  </div>
+ <div class="gold-orbit orbit-one" aria-hidden="true"></div>
+ <div class="gold-orbit orbit-two" aria-hidden="true"></div>
  <div class="hospital-visual" aria-hidden="true"></div>
  <div class="curve-accent" aria-hidden="true"></div>
  <div class="curve-shadow" aria-hidden="true"></div>
 
  <div class="logo-section">
+ <div class="premium-badge">Blue &amp; Gold Health-Tech Portal</div>
  <div class="logo-placeholder">
  <img src="/NUcare_Health_system/assets/image/nucarelogo.png" alt="NUCARE Logo" class="logo-icon">
  </div>
@@ -87,8 +90,17 @@ if (isset($_SESSION['patient_id'])) {
  <div class="login-right">
  <div class="medical-cross" aria-hidden="true"></div>
  <div class="right-light" aria-hidden="true"></div>
+ <div class="pulse-card pulse-card-top" aria-hidden="true">
+ <span></span>
+ <i></i>
+ </div>
+ <div class="pulse-card pulse-card-bottom" aria-hidden="true">
+ <span></span>
+ <i></i>
+ </div>
 
  <div class="form-container">
+ <div class="card-shine" aria-hidden="true"></div>
  <div class="avatar-badge" aria-hidden="true">
  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
  <path d="M20 21a8 8 0 0 0-16 0"></path>

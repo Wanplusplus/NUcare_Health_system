@@ -1,0 +1,535 @@
+/* Premium NUcare medical staff theme: royal blue foundation with champagne gold accents. */
+:root {
+ --ms-royal: #113aa8;
+ --ms-blue: #1e63dc;
+ --ms-medical: #41a7ff;
+ --ms-navy: #071642;
+ --ms-navy-soft: #102b72;
+ --ms-offwhite: #f7fbff;
+ --ms-bluewash: #eaf2ff;
+ --ms-champagne: #f7df9b;
+ --ms-gold: #d9ad4f;
+ --ms-metallic: #b8862b;
+ --ms-glow: #fff2bd;
+ --ms-text: #102454;
+ --ms-muted: #65769d;
+ --ms-border: rgba(217, 173, 79, .34);
+ --ms-blue-border: rgba(153, 177, 219, .38);
+ --ms-shadow: 0 22px 52px rgba(7, 22, 66, .13);
+ --ms-gold-shadow: 0 0 34px rgba(247, 223, 155, .22);
+ --success: #113aa8;
+ --success-bg: #eaf2ff;
+ --purple: #d9ad4f;
+ --purple-bg: rgba(247, 223, 155, .28);
+ --primary: #113aa8;
+ --primary-dark: #071642;
+ --primary-light: #fff2bd;
+ --card: rgba(255, 255, 255, .82);
+ --text: #102454;
+ --muted: #65769d;
+ --border: rgba(217, 173, 79, .34);
+}
+
+body {
+ background:
+ radial-gradient(circle at 18% 10%, rgba(65, 167, 255, .18), transparent 26%),
+ radial-gradient(circle at 88% 18%, rgba(247, 223, 155, .2), transparent 20%),
+ linear-gradient(135deg, var(--ms-offwhite) 0%, var(--ms-bluewash) 100%) !important;
+}
+
+.main-content {
+ background:
+ radial-gradient(circle at 18% 8%, rgba(65, 167, 255, .18), transparent 24%),
+ radial-gradient(circle at 92% 18%, rgba(247, 223, 155, .24), transparent 18%),
+ linear-gradient(160deg, var(--ms-offwhite) 0%, var(--ms-bluewash) 100%) !important;
+}
+
+.main-content::before {
+ content: "";
+ position: fixed;
+ inset: 0 0 0 280px;
+ pointer-events: none;
+ background-image:
+ linear-gradient(rgba(17, 58, 168, .05) 1px, transparent 1px),
+ linear-gradient(90deg, rgba(217, 173, 79, .05) 1px, transparent 1px);
+ background-size: 48px 48px;
+ mask-image: radial-gradient(circle at 55% 30%, rgba(0, 0, 0, .52), transparent 70%);
+ z-index: 0;
+}
+
+.clinic-page,
+.consult-page,
+.records-page,
+.med-page,
+.schedule-page,
+.clinic-reports,
+.profile-page,
+.page-wrapper,
+.sim-wrapper,
+.page-header {
+ position: relative;
+ z-index: 1;
+}
+
+.sidebar.sidebar-medical {
+ background:
+ radial-gradient(circle at 24% 14%, rgba(247, 223, 155, .16), transparent 22%),
+ linear-gradient(180deg, var(--ms-navy) 0%, var(--ms-navy-soft) 54%, #030a21 100%) !important;
+ box-shadow: 16px 0 48px rgba(7, 22, 66, .26);
+ transition: width .24s ease, padding .24s ease, transform .3s ease;
+}
+
+.sidebar-collapse-btn {
+ position: absolute;
+ top: 24px;
+ right: 18px;
+ z-index: 1002;
+ width: 42px;
+ height: 42px;
+ border: 1px solid rgba(247, 223, 155, .52);
+ border-radius: 14px;
+ display: grid;
+ place-items: center;
+ background: linear-gradient(135deg, var(--ms-champagne), var(--ms-metallic));
+ color: var(--ms-navy);
+ box-shadow: 0 14px 28px rgba(7, 22, 66, .24), 0 0 22px rgba(247, 223, 155, .28);
+ cursor: pointer;
+ transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.sidebar-collapse-btn:hover {
+ transform: translateY(-1px);
+ box-shadow: 0 18px 34px rgba(7, 22, 66, .28), 0 0 32px rgba(247, 223, 155, .36);
+}
+
+.sidebar-collapse-btn i {
+ font-size: 1rem;
+}
+
+.sidebar-medical .sidebar-brand {
+ padding-right: 46px;
+}
+
+.main-content {
+ transition: margin-left .24s ease, width .24s ease;
+}
+
+.sidebar-medical .brand-mark,
+.sidebar-medical .nav-dot,
+.sidebar-medical .status-pill {
+ background: linear-gradient(135deg, var(--ms-champagne), var(--ms-metallic)) !important;
+ color: var(--ms-navy) !important;
+ box-shadow: 0 0 0 6px rgba(247, 223, 155, .14), 0 0 26px rgba(247, 223, 155, .24) !important;
+}
+
+.sidebar-medical .nav-item {
+ border-color: rgba(247, 223, 155, .12) !important;
+ background: rgba(255, 255, 255, .08) !important;
+}
+
+.sidebar-medical .nav-item:hover,
+.sidebar-medical .nav-item.active {
+ border-color: rgba(247, 223, 155, .42) !important;
+ background: linear-gradient(135deg, rgba(255, 255, 255, .16), rgba(247, 223, 155, .14)) !important;
+ box-shadow: inset 4px 0 0 var(--ms-champagne), 0 12px 28px rgba(3, 10, 33, .18);
+}
+
+body.sidebar-collapsed .sidebar.sidebar-medical {
+ width: 92px;
+ padding: 28px 14px;
+ overflow-x: visible;
+}
+
+body.sidebar-collapsed .main-content {
+ margin-left: 92px;
+ width: calc(100% - 92px);
+}
+
+body.sidebar-collapsed .main-content::before {
+ inset-left: 92px;
+}
+
+body.sidebar-collapsed .sidebar-brand {
+ justify-content: center;
+ margin-bottom: 34px;
+}
+
+body.sidebar-collapsed .sidebar-brand h1,
+body.sidebar-collapsed .sidebar-brand p,
+body.sidebar-collapsed .footer-title,
+body.sidebar-collapsed .status-pill,
+body.sidebar-collapsed .nav-submenu {
+ display: none !important;
+}
+
+body.sidebar-collapsed .brand-mark {
+ width: 52px;
+ height: 52px;
+ flex: 0 0 52px;
+}
+
+body.sidebar-collapsed .nav-menu {
+ gap: 12px;
+}
+
+body.sidebar-collapsed .sidebar-medical .nav-item {
+ width: 58px;
+ height: 58px;
+ padding: 0;
+ justify-content: center;
+ gap: 0;
+ border-radius: 18px;
+ font-size: 0;
+}
+
+body.sidebar-collapsed .sidebar-medical .nav-icon,
+body.sidebar-collapsed .sidebar-medical .nav-item i {
+ font-size: 1.16rem;
+}
+
+body.sidebar-collapsed .sidebar-medical .nav-settings summary::after {
+ display: none;
+}
+
+body.sidebar-collapsed .sidebar-footer {
+ border-top: 1px solid rgba(247, 223, 155, .16);
+ min-height: 42px;
+}
+
+body.sidebar-collapsed .sidebar-collapse-btn {
+ top: 22px;
+ right: 50%;
+ transform: translateX(50%);
+}
+
+body.sidebar-collapsed .sidebar-collapse-btn:hover {
+ transform: translateX(50%) translateY(-1px);
+}
+
+body.sidebar-collapsed .sidebar-medical .sidebar-brand {
+ padding-right: 0;
+ padding-top: 44px;
+}
+
+.page-header,
+.consult-page-header,
+.records-page-header,
+.schedule-page-header,
+.profile-head {
+ position: relative;
+ padding: 20px !important;
+ border: 1px solid rgba(217, 173, 79, .28) !important;
+ border-radius: 18px !important;
+ background:
+ radial-gradient(circle at 92% 8%, rgba(247, 223, 155, .2), transparent 24%),
+ rgba(255, 255, 255, .72) !important;
+ box-shadow: 0 16px 42px rgba(7, 22, 66, .08) !important;
+ backdrop-filter: blur(18px);
+}
+
+.page-header {
+ overflow: visible !important;
+ z-index: 9000 !important;
+}
+
+.consult-page-header,
+.records-page-header,
+.schedule-page-header,
+.profile-head {
+ overflow: hidden;
+}
+
+.header-actions,
+.notif-bell {
+ overflow: visible !important;
+ z-index: 10000 !important;
+}
+
+.page-header::before,
+.consult-page-header::before,
+.records-page-header::before,
+.schedule-page-header::before,
+.profile-head::before {
+ content: "";
+ position: absolute;
+ inset: 0 0 auto;
+ height: 3px;
+ background: linear-gradient(90deg, var(--ms-royal), var(--ms-champagne), var(--ms-metallic));
+}
+
+.breadcrumb,
+.breadcrumb span,
+.bc-active {
+ color: var(--ms-metallic) !important;
+ font-weight: 900 !important;
+}
+
+.page-header h2,
+.page-title,
+.profile-title {
+ color: var(--ms-navy) !important;
+ font-weight: 900 !important;
+ letter-spacing: 0 !important;
+}
+
+.page-description,
+.page-desc,
+.profile-desc {
+ color: #42577f !important;
+}
+
+.consult-card,
+.records-card,
+.stat-card,
+.schedule-card,
+.med-card,
+.inventory-card,
+.medicine-card,
+.report-card,
+.summary-card,
+.profile-card,
+.card,
+.sim-card,
+.panel-card,
+.modal-box,
+.modal-card {
+ border: 1px solid var(--ms-border) !important;
+ border-radius: 14px !important;
+ background:
+ linear-gradient(145deg, rgba(255, 255, 255, .86), rgba(247, 251, 255, .72)) !important;
+ box-shadow: var(--ms-shadow) !important;
+ backdrop-filter: blur(18px);
+}
+
+.consult-card,
+.records-card,
+.schedule-card,
+.med-card,
+.inventory-card,
+.medicine-card,
+.profile-card,
+.sim-card {
+ position: relative;
+ overflow: hidden;
+}
+
+.consult-card::before,
+.records-card::before,
+.schedule-card::before,
+.med-card::before,
+.inventory-card::before,
+.medicine-card::before,
+.profile-card::before,
+.sim-card::before {
+ content: "";
+ position: absolute;
+ inset: 0 0 auto;
+ height: 3px;
+ background: linear-gradient(90deg, var(--ms-royal), var(--ms-champagne), transparent);
+}
+
+.card-section-label,
+.profile-section-title,
+.info-section-title,
+.table-toolbar h3,
+.project-title {
+ color: var(--ms-text) !important;
+ font-weight: 900 !important;
+}
+
+.card-section-label i,
+.profile-section-title i,
+.info-section-title i {
+ color: var(--ms-gold) !important;
+}
+
+.stat-icon,
+.kpi-icon,
+.modal-avatar,
+.patient-banner-avatar,
+.pdf-file-icon,
+.pe-section-label-icon,
+.item-icon,
+.brand-badge {
+ background: linear-gradient(135deg, var(--ms-champagne), var(--ms-metallic)) !important;
+ color: var(--ms-navy) !important;
+ box-shadow: 0 0 22px rgba(247, 223, 155, .24) !important;
+}
+
+.stat-icon.green,
+.stat-icon.purple,
+.stat-icon.blue,
+.stat-icon.yellow,
+.stat-icon.red {
+ background: linear-gradient(135deg, var(--ms-champagne), var(--ms-metallic)) !important;
+ color: var(--ms-navy) !important;
+}
+
+.stat-val,
+.summary-card .value,
+.status-value {
+ color: var(--ms-royal) !important;
+ font-weight: 900 !important;
+}
+
+.btn-search-patient,
+.btn-save-consult,
+.btn-add-med,
+.btn-primary,
+.btn-account,
+.btn.primary,
+.search-patient-btn,
+.primary-button,
+.profile-btn.primary,
+.btn-print-history,
+.btn-export-pdf,
+.month-tab.active,
+.history-filter-btn.active,
+.cert-filter-btn.active,
+.modal-tab.active,
+.segmented button.active {
+ border-color: rgba(217, 173, 79, .38) !important;
+ background: linear-gradient(100deg, var(--ms-royal) 0%, var(--ms-blue) 54%, var(--ms-champagne) 100%) !important;
+ color: #fff !important;
+ box-shadow: 0 16px 30px rgba(17, 58, 168, .2), 0 0 22px rgba(247, 223, 155, .2) !important;
+}
+
+.btn-clear-consult,
+.btn-outline,
+.btn.secondary,
+.profile-btn.secondary,
+.filter-select,
+.field select,
+.field input,
+.search-box input,
+.history-search-wrap,
+.history-date-wrap,
+.search-input-wrap,
+.form-group input,
+.form-group select,
+.form-group textarea,
+.profile-field input,
+.profile-field select,
+.profile-field textarea,
+.field-input {
+ border-color: var(--ms-blue-border) !important;
+ background: rgba(255, 255, 255, .82) !important;
+ color: var(--ms-text) !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.field-input:focus {
+ border-color: var(--ms-gold) !important;
+ box-shadow: 0 0 0 4px rgba(247, 223, 155, .24) !important;
+ outline: none !important;
+}
+
+.patient-banner,
+.physexam-card,
+.report-hero,
+.card-header {
+ position: relative;
+ overflow: hidden;
+ border: 1px solid rgba(247, 223, 155, .5) !important;
+ border-radius: 18px !important;
+ background:
+ radial-gradient(circle at 18% 22%, rgba(65, 167, 255, .28), transparent 26%),
+ radial-gradient(circle at 84% 18%, rgba(255, 242, 189, .24), transparent 20%),
+ linear-gradient(135deg, var(--ms-navy) 0%, var(--ms-royal) 54%, var(--ms-blue) 100%) !important;
+ color: #fff !important;
+ box-shadow: var(--ms-shadow), var(--ms-gold-shadow) !important;
+}
+
+.report-hero h2,
+.card-header .brand-name,
+.physexam-header-title {
+ color: var(--ms-champagne) !important;
+}
+
+.report-hero p,
+.card-header .brand-sub,
+.physexam-header-desc {
+ color: rgba(255, 255, 255, .9) !important;
+}
+
+table th,
+.records-table th,
+.report-table th,
+.project-table th {
+ background: linear-gradient(90deg, var(--ms-navy), var(--ms-royal) 68%, var(--ms-gold)) !important;
+ color: #fff !important;
+}
+
+table td,
+.records-table td,
+.report-table td,
+.project-table td {
+ color: var(--ms-text) !important;
+}
+
+.project-table td:last-child,
+.type-badge.faculty,
+.tab-count-green,
+.cert-icon.image-icon {
+ background: rgba(247, 223, 155, .3) !important;
+ color: var(--ms-metallic) !important;
+}
+
+.status-badge,
+.priority.low,
+.badge-active {
+ background: #eaf2ff !important;
+ color: var(--ms-royal) !important;
+ border-color: rgba(17, 58, 168, .18) !important;
+}
+
+.settings-feedback.success,
+.profile-toast.success {
+ color: var(--ms-royal) !important;
+ border-color: rgba(217, 173, 79, .34) !important;
+ background: rgba(255, 242, 189, .28) !important;
+}
+
+.warning-banner {
+ background: rgba(255, 242, 189, .42) !important;
+ border-color: var(--ms-gold) !important;
+ color: #7a530f !important;
+}
+
+.success-banner,
+.exec-inserted {
+ background: var(--ms-royal) !important;
+ border-color: var(--ms-gold) !important;
+ color: #fff !important;
+}
+
+.stat-green .stat-value {
+ color: var(--ms-royal) !important;
+}
+
+.slot-available,
+.slot-selected {
+ outline-color: var(--ms-gold) !important;
+}
+
+@media (max-width: 960px) {
+ .main-content::before {
+ inset: 0;
+ }
+
+ .sidebar-collapse-btn {
+ display: none;
+ }
+
+ body.sidebar-collapsed .sidebar.sidebar-medical {
+ width: 280px;
+ padding: 32px 24px;
+ }
+
+ body.sidebar-collapsed .main-content {
+ margin-left: 0;
+ width: 100%;
+ }
+}
