@@ -6,6 +6,22 @@ document.addEventListener('DOMContentLoaded', () => {
  const submitBtn = document.getElementById('submitBtn');
  const btnText = document.getElementById('btnText');
  const btnSpinner = document.getElementById('btnSpinner');
+ const motionAllowed = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+ if (motionAllowed && window.matchMedia('(pointer: fine)').matches) {
+ const parallaxItems = document.querySelectorAll('.page-wrapper, .card-header, .brand-badge');
+ parallaxItems.forEach((item) => item.classList.add('auth-parallax'));
+
+ window.addEventListener('pointermove', (event) => {
+ const x = event.clientX / window.innerWidth - 0.5;
+ const y = event.clientY / window.innerHeight - 0.5;
+
+ parallaxItems.forEach((item, index) => {
+ const depth = (index + 1) * 4;
+ item.style.transform = `translate3d(${x * depth}px, ${y * depth}px, 0)`;
+ });
+ }, { passive: true });
+ }
 
  // -- Toast helper ---
  function showToast(message, type = 'success') {

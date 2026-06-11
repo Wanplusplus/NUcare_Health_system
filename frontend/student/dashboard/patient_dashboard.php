@@ -115,6 +115,7 @@ $notifications = [
  .list-item{padding:10px 12px;border-radius:12px;background:rgba(250,204,21,.08);border:1px solid rgba(250,204,21,.15);margin-top:8px;}
  .h2{margin:0 0 8px 0;font-size:1.15rem;}
  </style>
+ <link rel="stylesheet" href="/NUcare_Health_system/assets/css/student_cyber.css?v=2">
 </head>
 <body>
 <div class="app-shell">
@@ -126,6 +127,20 @@ $notifications = [
 
  <main class="main-content">
  <div class="clinic-shell">
+ <div class="student-cyber-stage" aria-hidden="true">
+ <span class="cyber-grid-plane"></span>
+ <span class="student-orbit orbit-alpha"></span>
+ <span class="student-orbit orbit-beta"></span>
+ <span class="student-beam beam-alpha"></span>
+ <span class="student-beam beam-beta"></span>
+ <span class="student-glyph glyph-plus">+</span>
+ <span class="student-glyph glyph-id"></span>
+ <span class="student-glyph glyph-care"></span>
+ <span class="student-particle p1"></span>
+ <span class="student-particle p2"></span>
+ <span class="student-particle p3"></span>
+ <span class="student-particle p4"></span>
+ </div>
  <div class="clinic-hero clinic-card">
  <div>
  <h1 class="clinic-title">Clinic Portal</h1>

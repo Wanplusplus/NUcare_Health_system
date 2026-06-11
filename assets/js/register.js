@@ -6,8 +6,24 @@ document.addEventListener('DOMContentLoaded', () => {
  const passwordInput = document.getElementById('password');
  const confirmPasswordInput = document.getElementById('confirm_password');
  const passwordToggle = document.getElementById('passwordToggle');
+ const motionAllowed = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+ if (motionAllowed && window.matchMedia('(pointer: fine)').matches) {
+ const parallaxItems = document.querySelectorAll('.hero-content, .register-card, .hero-cross, .hero-arc, .hero-dots');
+ parallaxItems.forEach((item) => item.classList.add('auth-parallax'));
+
+ window.addEventListener('pointermove', (event) => {
+ const x = event.clientX / window.innerWidth - 0.5;
+ const y = event.clientY / window.innerHeight - 0.5;
+
+ parallaxItems.forEach((item, index) => {
+ const depth = (index % 4 + 1) * 4;
+ item.style.transform = `translate3d(${x * depth}px, ${y * depth}px, 0)`;
+ });
+ }, { passive: true });
+ }
 
  function syncConfirmPassword() {
  if (confirmPasswordInput && passwordInput) {
@@ -37,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
  passwordInput.type = isPassword ? 'text' : 'password';
  if (passwordToggle) {
  passwordToggle.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+ passwordToggle.classList.toggle('is-visible', isPassword);
  }
  }
 

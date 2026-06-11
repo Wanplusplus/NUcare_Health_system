@@ -77,6 +77,7 @@ $personType = $person ? (string)$person['PersonType'] : '';
  @media (max-width:900px) { .form-grid, .account-summary { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
  @media (max-width:620px) { .form-grid, .account-summary { grid-template-columns:1fr; } .profile-wrap { padding:0 12px 24px; } }
  </style>
+ <link rel="stylesheet" href="/NUcare_Health_system/assets/css/student_cyber.css?v=2">
 </head>
 <body>
 <div class="app-shell">
@@ -84,6 +85,20 @@ $personType = $person ? (string)$person['PersonType'] : '';
 
  <main class="main-content">
  <div class="profile-wrap">
+ <div class="student-cyber-stage" aria-hidden="true">
+ <span class="cyber-grid-plane"></span>
+ <span class="student-orbit orbit-alpha"></span>
+ <span class="student-orbit orbit-beta"></span>
+ <span class="student-beam beam-alpha"></span>
+ <span class="student-beam beam-beta"></span>
+ <span class="student-glyph glyph-plus">+</span>
+ <span class="student-glyph glyph-id"></span>
+ <span class="student-glyph glyph-care"></span>
+ <span class="student-particle p1"></span>
+ <span class="student-particle p2"></span>
+ <span class="student-particle p3"></span>
+ <span class="student-particle p4"></span>
+ </div>
  <div class="profile-card">
  <div class="profile-head">
  <div>

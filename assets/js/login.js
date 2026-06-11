@@ -9,6 +9,7 @@ function togglePasswordVisibility() {
  passwordInput.type = showPassword ? 'text' : 'password';
  passwordToggle.setAttribute('aria-label', showPassword ? 'Hide password' : 'Show password');
  passwordToggle.setAttribute('aria-pressed', showPassword ? 'true' : 'false');
+ passwordToggle.classList.toggle('is-visible', showPassword);
  eyeIcon.innerHTML = showPassword ? openEyeIcon : closedEyeIcon;
 }
 
@@ -71,6 +72,22 @@ document.addEventListener('DOMContentLoaded', function() {
  const usernameInput = document.getElementById('username');
  const passwordInput = document.getElementById('password');
  const loginButton = document.querySelector('.login-button');
+ const motionAllowed = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+ if (motionAllowed && window.matchMedia('(pointer: fine)').matches) {
+ const parallaxItems = document.querySelectorAll('.logo-section, .form-container, .pulse-card, .medical-cross, .gold-orbit');
+ parallaxItems.forEach((item) => item.classList.add('auth-parallax'));
+
+ window.addEventListener('pointermove', function(event) {
+ const x = event.clientX / window.innerWidth - 0.5;
+ const y = event.clientY / window.innerHeight - 0.5;
+
+ parallaxItems.forEach((item, index) => {
+ const depth = (index % 4 + 1) * 5;
+ item.style.transform = `translate3d(${x * depth}px, ${y * depth}px, 0)`;
+ });
+ }, { passive: true });
+ }
 
  usernameInput.addEventListener('input', function() {
  document.getElementById('usernameError').textContent = '';

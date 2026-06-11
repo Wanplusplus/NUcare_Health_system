@@ -360,6 +360,7 @@ $cancelledCount = count(array_filter($upcoming, fn($a) => strtolower($a['Booking
  <link rel="icon" href="/NUcare_Health_system/assets/image/nucarelogo.png">
  <link rel="stylesheet" href="/NUcare_Health_system/assets/css/app.css?v=1">
  <link rel="stylesheet" href="/NUcare_Health_system/assets/css/my_schedule.css?v=1">
+ <link rel="stylesheet" href="/NUcare_Health_system/assets/css/student_cyber.css?v=2">
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
  <style>
  /* -- Scrollable appointment lists -- */
@@ -415,6 +416,20 @@ $cancelledCount = count(array_filter($upcoming, fn($a) => strtolower($a['Booking
 
  <main class="main-content">
  <div class="my-schedule-page">
+ <div class="student-cyber-stage" aria-hidden="true">
+ <span class="cyber-grid-plane"></span>
+ <span class="student-orbit orbit-alpha"></span>
+ <span class="student-orbit orbit-beta"></span>
+ <span class="student-beam beam-alpha"></span>
+ <span class="student-beam beam-beta"></span>
+ <span class="student-glyph glyph-plus">+</span>
+ <span class="student-glyph glyph-id"></span>
+ <span class="student-glyph glyph-care"></span>
+ <span class="student-particle p1"></span>
+ <span class="student-particle p2"></span>
+ <span class="student-particle p3"></span>
+ <span class="student-particle p4"></span>
+ </div>
 
  <!-- -- PAGE HEADER -- -->
  <div class="schedule-page-header">

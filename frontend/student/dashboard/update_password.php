@@ -37,6 +37,7 @@ $activeSidebarItem = 'settings';
  .settings-toast.success { background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; }
  .settings-toast.error { background:#fef2f2; color:#991b1b; border:1px solid #fecaca; }
  </style>
+ <link rel="stylesheet" href="/NUcare_Health_system/assets/css/student_cyber.css?v=2">
 </head>
 <body>
 <div class="app-shell">
@@ -44,6 +45,20 @@ $activeSidebarItem = 'settings';
 
  <main class="main-content">
  <div class="settings-wrap">
+ <div class="student-cyber-stage" aria-hidden="true">
+ <span class="cyber-grid-plane"></span>
+ <span class="student-orbit orbit-alpha"></span>
+ <span class="student-orbit orbit-beta"></span>
+ <span class="student-beam beam-alpha"></span>
+ <span class="student-beam beam-beta"></span>
+ <span class="student-glyph glyph-plus">+</span>
+ <span class="student-glyph glyph-id"></span>
+ <span class="student-glyph glyph-care"></span>
+ <span class="student-particle p1"></span>
+ <span class="student-particle p2"></span>
+ <span class="student-particle p3"></span>
+ <span class="student-particle p4"></span>
+ </div>
  <div class="settings-card">
  <h1 class="settings-title">Update Password</h1>
  <p class="settings-desc">Enter your current password and choose a new one.</p>

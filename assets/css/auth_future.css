@@ -1,0 +1,1248 @@
+/* Futuristic NUcare auth animation layer: login, register, forgot password only. */
+:root {
+ --future-navy: #030816;
+ --future-blue: #0b2c8f;
+ --future-royal: #1457f3;
+ --future-sky: #49b7ff;
+ --future-ice: #e9f8ff;
+ --future-gold: #f4c86a;
+ --future-gold-soft: #fff0b8;
+ --future-gold-deep: #b98429;
+ --future-glass: rgba(255, 255, 255, 0.12);
+ --future-glass-strong: rgba(255, 255, 255, 0.74);
+ --future-line: rgba(244, 200, 106, 0.34);
+ --future-blue-line: rgba(73, 183, 255, 0.24);
+ --future-shadow: 0 32px 90px rgba(0, 12, 44, 0.42);
+ --future-ease: cubic-bezier(.2, .8, .2, 1);
+}
+
+html {
+ background: #030816;
+}
+
+body {
+ position: relative;
+ min-height: 100vh;
+ overflow-x: hidden;
+ background:
+  radial-gradient(circle at 18% 16%, rgba(73, 183, 255, .34), transparent 24%),
+  radial-gradient(circle at 78% 10%, rgba(244, 200, 106, .26), transparent 22%),
+  radial-gradient(circle at 70% 82%, rgba(20, 87, 243, .34), transparent 28%),
+  linear-gradient(125deg, #030816 0%, #071a54 42%, #0d3bab 100%) !important;
+ background-size: 180% 180%;
+ animation: futureMesh 18s ease-in-out infinite;
+ isolation: isolate;
+}
+
+body::before,
+body::after {
+ content: "";
+ position: fixed;
+ inset: -12%;
+ z-index: -2;
+ pointer-events: none;
+}
+
+body::before {
+ background:
+  linear-gradient(rgba(73, 183, 255, .12) 1px, transparent 1px),
+  linear-gradient(90deg, rgba(244, 200, 106, .11) 1px, transparent 1px),
+  radial-gradient(circle at 16% 35%, rgba(255, 240, 184, .16) 0 2px, transparent 3px),
+  radial-gradient(circle at 72% 22%, rgba(255, 240, 184, .14) 0 2px, transparent 3px),
+  radial-gradient(circle at 82% 76%, rgba(73, 183, 255, .16) 0 2px, transparent 3px);
+ background-size: 68px 68px, 68px 68px, 260px 260px, 310px 310px, 230px 230px;
+ opacity: .62;
+ mask-image: radial-gradient(circle at 50% 46%, #000 0 52%, transparent 82%);
+ animation: futureGrid 26s linear infinite;
+}
+
+body::after {
+ z-index: -1;
+ background:
+  linear-gradient(105deg, transparent 0 28%, rgba(73, 183, 255, .16) 38%, transparent 48%),
+  linear-gradient(73deg, transparent 0 42%, rgba(244, 200, 106, .16) 48%, transparent 56%),
+  conic-gradient(from 180deg at 50% 50%, transparent, rgba(73, 183, 255, .12), transparent 24%, rgba(244, 200, 106, .12), transparent 52%);
+ filter: blur(1px);
+ opacity: .8;
+ animation: futureLightWaves 15s ease-in-out infinite;
+}
+
+.login-container,
+.register-shell,
+.page-wrapper {
+ position: relative;
+ z-index: 1;
+}
+
+.login-left,
+.login-right,
+.register-hero,
+.register-form-area,
+.page-wrapper {
+ transform-style: preserve-3d;
+}
+
+.login-left::before,
+.register-hero::before,
+.page-wrapper::before {
+ content: "";
+ position: absolute;
+ inset: -34%;
+ pointer-events: none;
+ background:
+  radial-gradient(circle, rgba(244, 200, 106, .18), transparent 8%),
+  radial-gradient(circle, rgba(73, 183, 255, .18), transparent 10%),
+  conic-gradient(from 0deg, transparent, rgba(244, 200, 106, .18), transparent 24%, rgba(73, 183, 255, .16), transparent 55%);
+ filter: blur(10px);
+ animation: futureAura 24s linear infinite;
+}
+
+.login-left::after,
+.register-hero::after,
+.page-wrapper::after {
+ content: "";
+ position: absolute;
+ left: -30%;
+ right: -30%;
+ top: 17%;
+ height: 2px;
+ pointer-events: none;
+ background: linear-gradient(90deg, transparent, rgba(255, 240, 184, .95), rgba(73, 183, 255, .7), transparent);
+ box-shadow: 0 0 28px rgba(244, 200, 106, .44);
+ transform: rotate(-13deg);
+ animation: futurePulseLine 6.4s ease-in-out infinite;
+}
+
+.logo-section,
+.hero-content,
+.card-header {
+ animation: futureHeroIn .9s var(--future-ease) both;
+}
+
+.form-container,
+.register-card,
+.card {
+ position: relative;
+ overflow: hidden;
+ border: 1px solid rgba(255, 240, 184, .5) !important;
+ background:
+  linear-gradient(140deg, rgba(255,255,255,.84), rgba(233,248,255,.68) 48%, rgba(255,240,184,.25)),
+  radial-gradient(circle at 20% 0, rgba(73,183,255,.2), transparent 35%) !important;
+ box-shadow:
+  var(--future-shadow),
+  0 0 0 8px rgba(244, 200, 106, .08),
+  0 0 60px rgba(244, 200, 106, .22),
+  inset 0 1px 0 rgba(255,255,255,.74) !important;
+ backdrop-filter: blur(24px) saturate(1.25);
+ animation: futureCardIn .86s .12s var(--future-ease) both, futureCardFloat 7s ease-in-out infinite .95s;
+}
+
+.form-container::before,
+.register-card::before,
+.card::before {
+ content: "";
+ position: absolute;
+ inset: 0;
+ padding: 1px;
+ border-radius: inherit;
+ pointer-events: none;
+ background: conic-gradient(from var(--future-angle, 0deg), rgba(244,200,106,.96), rgba(73,183,255,.34), rgba(255,255,255,.58), rgba(244,200,106,.96));
+ -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+ -webkit-mask-composite: xor;
+ mask-composite: exclude;
+ animation: futureBorder 7s linear infinite;
+}
+
+.form-container::after,
+.register-card::after,
+.card::after {
+ content: "";
+ position: absolute;
+ inset: -42%;
+ pointer-events: none;
+ background:
+  linear-gradient(90deg, transparent, rgba(255,255,255,.5), rgba(244,200,106,.28), transparent),
+  radial-gradient(circle at 50% 50%, rgba(73,183,255,.2), transparent 26%);
+ transform: translateX(-48%) rotate(18deg);
+ animation: futureShine 7.6s ease-in-out infinite;
+}
+
+.login-right::before,
+.register-form-area::before {
+ content: "";
+ position: absolute;
+ width: min(52vw, 620px);
+ aspect-ratio: 1;
+ border-radius: 50%;
+ border: 1px solid rgba(244,200,106,.28);
+ box-shadow:
+  inset 0 0 34px rgba(73,183,255,.18),
+  0 0 50px rgba(244,200,106,.18);
+ animation: futureRing 18s linear infinite;
+}
+
+.login-right::after,
+.register-form-area::after {
+ content: "";
+ position: absolute;
+ width: min(38vw, 430px);
+ aspect-ratio: 1;
+ border-radius: 50%;
+ border: 1px dashed rgba(73,183,255,.32);
+ box-shadow: 0 0 42px rgba(73,183,255,.13);
+ animation: futureRing 14s linear infinite reverse;
+}
+
+.brand-name,
+.hero-content h1 span,
+.register-card h2,
+.form-title {
+ background: linear-gradient(95deg, #ffffff, var(--future-gold-soft), var(--future-sky), var(--future-gold), #ffffff);
+ background-size: 260% auto;
+ -webkit-background-clip: text;
+ background-clip: text;
+ color: transparent !important;
+ animation: futureTextShimmer 5.8s ease-in-out infinite;
+}
+
+.register-card h2,
+.form-title {
+ background-image: linear-gradient(95deg, #102454, #1457f3, #b98429, #102454);
+}
+
+.premium-badge,
+.privacy-note,
+.secure-badge,
+.brand-badge {
+ animation: futureBadgePulse 3.2s ease-in-out infinite;
+}
+
+.feature-item,
+.pulse-card,
+.hero-features .feature-item,
+.privacy-note {
+ transition: transform .35s var(--future-ease), box-shadow .35s var(--future-ease), border-color .35s var(--future-ease);
+ animation: futureBentoFloat 6.4s ease-in-out infinite;
+}
+
+.feature-item:nth-child(2),
+.hero-features .feature-item:nth-child(2) { animation-delay: -.9s; }
+.feature-item:nth-child(3),
+.hero-features .feature-item:nth-child(3) { animation-delay: -1.8s; }
+.feature-item:nth-child(4) { animation-delay: -2.7s; }
+
+.feature-item:hover,
+.pulse-card:hover,
+.hero-features .feature-item:hover {
+ transform: translateY(-6px) rotateX(3deg) rotateY(-3deg);
+ box-shadow: 0 22px 46px rgba(0, 12, 44, .26), 0 0 28px rgba(244,200,106,.2);
+ border-color: rgba(244,200,106,.58);
+}
+
+.feature-icon,
+.input-icon,
+.card-icon,
+.avatar-badge,
+.brand-badge {
+ animation: futureIconBreath 3.4s ease-in-out infinite;
+}
+
+.heartbeat-divider i::before,
+.pulse-card i {
+ animation: futureHeartbeat 1.7s ease-in-out infinite !important;
+}
+
+.form-group,
+.field,
+.privacy-note,
+.submit-button,
+.login-button,
+.btn-primary,
+.card-footer,
+.form-footer {
+ animation: futureFadeUp .74s var(--future-ease) both;
+}
+
+.form-group:nth-child(1),
+.field:nth-child(1) { animation-delay: .18s; }
+.form-group:nth-child(2),
+.field:nth-child(2) { animation-delay: .26s; }
+.field:nth-child(3) { animation-delay: .32s; }
+.field:nth-child(4) { animation-delay: .38s; }
+.field:nth-child(5) { animation-delay: .44s; }
+.field:nth-child(6) { animation-delay: .50s; }
+.privacy-note { animation-delay: .56s; }
+.submit-button,
+.login-button,
+.btn-primary { animation-delay: .62s; }
+
+.input-shell,
+.password-wrapper,
+.form-input {
+ transition: transform .28s var(--future-ease), box-shadow .28s var(--future-ease), border-color .28s var(--future-ease), background .28s var(--future-ease);
+}
+
+.input-shell,
+.password-wrapper {
+ isolation: isolate;
+}
+
+.input-shell::after,
+.password-wrapper::after {
+ content: "";
+ position: absolute;
+ left: 12px;
+ right: 12px;
+ bottom: 0;
+ height: 1px;
+ pointer-events: none;
+ background: linear-gradient(90deg, transparent, rgba(244,200,106,.95), transparent);
+ transform: scaleX(0);
+ transform-origin: left;
+ transition: transform .46s var(--future-ease);
+}
+
+.input-shell:focus-within,
+.password-wrapper:focus-within {
+ transform: translateY(-2px);
+ box-shadow: 0 0 0 4px rgba(244,200,106,.16), 0 18px 36px rgba(20,87,243,.12) !important;
+}
+
+.input-shell:focus-within::after,
+.password-wrapper:focus-within::after {
+ transform: scaleX(1);
+}
+
+.form-input:focus,
+.input-shell:focus-within input,
+.input-shell:focus-within select {
+ box-shadow: 0 0 0 4px rgba(244,200,106,.18), 0 16px 34px rgba(20,87,243,.14) !important;
+}
+
+.login-button,
+.submit-button,
+.btn-primary {
+ position: relative;
+ overflow: hidden;
+ background: linear-gradient(105deg, #0b2c8f 0%, #1457f3 34%, #49b7ff 58%, #f4c86a 100%) !important;
+ background-size: 220% 100% !important;
+ color: #fff !important;
+ box-shadow: 0 18px 42px rgba(20,87,243,.32), 0 0 32px rgba(244,200,106,.28) !important;
+ transition: transform .22s var(--future-ease), box-shadow .22s var(--future-ease), filter .22s var(--future-ease);
+ animation-name: futureFadeUp, futureButtonGlow;
+ animation-duration: .74s, 3.8s;
+ animation-timing-function: var(--future-ease), ease-in-out;
+ animation-fill-mode: both, none;
+ animation-iteration-count: 1, infinite;
+}
+
+.login-button::before,
+.submit-button::before,
+.btn-primary::before {
+ content: "";
+ position: absolute;
+ inset: -40% -35%;
+ background: linear-gradient(90deg, transparent, rgba(255,255,255,.62), rgba(255,240,184,.44), transparent);
+ transform: translateX(-88%) rotate(12deg);
+ animation: futureButtonSweep 3.8s ease-in-out infinite;
+}
+
+.login-button:hover,
+.submit-button:hover,
+.btn-primary:hover {
+ transform: translateY(-3px);
+ filter: saturate(1.08) brightness(1.04);
+ box-shadow: 0 24px 52px rgba(20,87,243,.42), 0 0 46px rgba(244,200,106,.42) !important;
+}
+
+.login-button:active,
+.submit-button:active,
+.btn-primary:active {
+ transform: translateY(0) scale(.985);
+}
+
+.password-toggle,
+.checkbox,
+.back-link,
+.forgot-link,
+.signup-link,
+.card-footer a {
+ transition: transform .22s var(--future-ease), color .22s ease, background .22s ease, box-shadow .22s ease;
+}
+
+.password-toggle:hover {
+ transform: translateY(-50%) scale(1.08) rotate(4deg) !important;
+ box-shadow: 0 0 18px rgba(244,200,106,.22);
+}
+
+.checkbox:checked {
+ filter: drop-shadow(0 0 8px rgba(244,200,106,.72));
+ transform: scale(1.08);
+}
+
+.forgot-link:hover,
+.signup-link:hover,
+.card-footer a:hover,
+.back-link:hover {
+ text-decoration: none !important;
+ color: var(--future-gold-deep) !important;
+ transform: translateY(-1px);
+ text-shadow: 0 0 12px rgba(244,200,106,.36);
+}
+
+.toast {
+ backdrop-filter: blur(18px);
+ border: 1px solid rgba(255,255,255,.22);
+ animation: futureToast .36s var(--future-ease) both !important;
+}
+
+.auth-parallax {
+ transition: transform .16s linear;
+}
+
+@property --future-angle {
+ syntax: "<angle>";
+ inherits: false;
+ initial-value: 0deg;
+}
+
+@keyframes futureMesh {
+ 0%, 100% { background-position: 0% 44%; }
+ 50% { background-position: 100% 56%; }
+}
+
+@keyframes futureGrid {
+ to { transform: translate3d(68px, 68px, 0); }
+}
+
+@keyframes futureLightWaves {
+ 0%, 100% { transform: translate3d(-4%, 0, 0) rotate(0deg); opacity: .58; }
+ 50% { transform: translate3d(5%, -2%, 0) rotate(5deg); opacity: .92; }
+}
+
+@keyframes futureAura {
+ to { transform: rotate(360deg); }
+}
+
+@keyframes futurePulseLine {
+ 0%, 100% { transform: translateX(-24%) rotate(-13deg); opacity: 0; }
+ 38%, 58% { opacity: .98; }
+ 72% { transform: translateX(34%) rotate(-13deg); opacity: 0; }
+}
+
+@keyframes futureHeroIn {
+ from { opacity: 0; transform: translateY(22px) scale(.98); filter: blur(8px); }
+ to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes futureCardIn {
+ from { opacity: 0; transform: translateY(32px) scale(.94); filter: blur(10px); }
+ to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes futureCardFloat {
+ 0%, 100% { transform: translateY(0); }
+ 50% { transform: translateY(-8px); }
+}
+
+@keyframes futureBorder {
+ to { --future-angle: 360deg; }
+}
+
+@keyframes futureShine {
+ 0%, 58% { transform: translateX(-48%) rotate(18deg); opacity: 0; }
+ 66% { opacity: .72; }
+ 88%, 100% { transform: translateX(48%) rotate(18deg); opacity: 0; }
+}
+
+@keyframes futureRing {
+ to { transform: rotate(360deg); }
+}
+
+@keyframes futureTextShimmer {
+ 0%, 100% { background-position: 0% 50%; }
+ 50% { background-position: 100% 50%; }
+}
+
+@keyframes futureBadgePulse {
+ 0%, 100% { box-shadow: 0 0 0 rgba(244,200,106,0), 0 0 22px rgba(244,200,106,.16); }
+ 50% { box-shadow: 0 0 0 6px rgba(244,200,106,.08), 0 0 34px rgba(244,200,106,.3); }
+}
+
+@keyframes futureBentoFloat {
+ 0%, 100% { transform: translateY(0); }
+ 50% { transform: translateY(-7px); }
+}
+
+@keyframes futureIconBreath {
+ 0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(244,200,106,0)); }
+ 50% { transform: scale(1.045); filter: drop-shadow(0 0 12px rgba(244,200,106,.34)); }
+}
+
+@keyframes futureHeartbeat {
+ 0%, 100% { opacity: .68; transform: scaleX(.96); filter: drop-shadow(0 0 6px rgba(244,200,106,.32)); }
+ 42% { opacity: 1; transform: scaleX(1.05); filter: drop-shadow(0 0 16px rgba(244,200,106,.86)); }
+}
+
+@keyframes futureFadeUp {
+ from { opacity: 0; transform: translateY(16px); }
+ to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes futureButtonGlow {
+ 0%, 100% { background-position: 0% 50%; }
+ 50% { background-position: 100% 50%; }
+}
+
+@keyframes futureButtonSweep {
+ 0%, 48% { transform: translateX(-88%) rotate(12deg); opacity: 0; }
+ 58% { opacity: .85; }
+ 78%, 100% { transform: translateX(88%) rotate(12deg); opacity: 0; }
+}
+
+@keyframes futureToast {
+ from { opacity: 0; transform: translateX(34px) scale(.98); }
+ to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@media (max-width: 760px) {
+ body::before {
+  background-size: 86px 86px, 86px 86px, 360px 360px, 420px 420px, 340px 340px;
+  opacity: .38;
+  animation-duration: 42s;
+ }
+
+ body::after,
+ .login-left::before,
+ .register-hero::before,
+ .page-wrapper::before {
+  opacity: .46;
+  filter: blur(16px);
+ }
+
+ .login-right::before,
+ .login-right::after,
+ .register-form-area::before,
+ .register-form-area::after {
+  display: none;
+ }
+
+ .form-container,
+ .register-card,
+ .card {
+  animation: futureCardIn .72s var(--future-ease) both;
+ }
+}
+
+@media (prefers-reduced-motion: reduce) {
+ *,
+ *::before,
+ *::after {
+  animation-duration: .01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: .01ms !important;
+ }
+}
+
+/* Neon arcade cyberpunk pass: still blue-and-gold, but darker, louder, and more electric. */
+:root {
+ --cyber-black: #02040d;
+ --cyber-navy: #040b24;
+ --cyber-panel: rgba(3, 12, 38, .78);
+ --cyber-panel-soft: rgba(8, 24, 68, .66);
+ --cyber-blue: #176bff;
+ --cyber-blue-hot: #42c8ff;
+ --cyber-gold: #ffd76b;
+ --cyber-gold-hot: #ffbd24;
+ --cyber-white: #f7fbff;
+ --cyber-muted: #9eb9e8;
+ --cyber-danger: #ff5b76;
+}
+
+body {
+ color: var(--cyber-white);
+ background:
+  radial-gradient(circle at 15% 18%, rgba(66, 200, 255, .38), transparent 21%),
+  radial-gradient(circle at 88% 12%, rgba(255, 215, 107, .24), transparent 18%),
+  radial-gradient(circle at 74% 78%, rgba(23, 107, 255, .32), transparent 27%),
+  linear-gradient(125deg, #02040d 0%, #040b24 38%, #082b83 100%) !important;
+ background-size: 220% 220%;
+ animation: futureMesh 14s ease-in-out infinite, cyberGlowPulse 4.6s ease-in-out infinite;
+}
+
+body::before {
+ background:
+  linear-gradient(rgba(66, 200, 255, .19) 1px, transparent 1px),
+  linear-gradient(90deg, rgba(66, 200, 255, .14) 1px, transparent 1px),
+  linear-gradient(115deg, transparent 0 44%, rgba(255, 215, 107, .24) 48%, transparent 52%),
+  radial-gradient(circle at 18% 32%, rgba(255, 215, 107, .48) 0 1px, transparent 3px),
+  radial-gradient(circle at 72% 18%, rgba(66, 200, 255, .42) 0 1px, transparent 3px);
+ background-size: 58px 58px, 58px 58px, 360px 360px, 180px 180px, 220px 220px;
+ opacity: .78;
+ mask-image: radial-gradient(circle at 50% 48%, #000 0 60%, transparent 88%);
+ animation: cyberGridDrift 14s linear infinite;
+}
+
+body::after {
+ background:
+  repeating-linear-gradient(180deg, rgba(255,255,255,.035) 0 1px, transparent 1px 5px),
+  linear-gradient(105deg, transparent 0 29%, rgba(66,200,255,.24) 38%, transparent 48%),
+  linear-gradient(72deg, transparent 0 39%, rgba(255,215,107,.26) 46%, transparent 55%),
+  conic-gradient(from 210deg at 50% 50%, transparent, rgba(66,200,255,.16), transparent 24%, rgba(255,215,107,.18), transparent 54%);
+ mix-blend-mode: screen;
+ opacity: .9;
+ animation: cyberScanWaves 8s ease-in-out infinite;
+}
+
+.login-left,
+.register-hero,
+.card-header {
+ background:
+  radial-gradient(circle at 18% 18%, rgba(66, 200, 255, .34), transparent 24%),
+  radial-gradient(circle at 74% 16%, rgba(255, 215, 107, .2), transparent 20%),
+  linear-gradient(145deg, rgba(4, 20, 72, .92), rgba(2, 4, 13, .98) 68%) !important;
+}
+
+.login-right,
+.register-form-area,
+body:has(.page-wrapper) {
+ background:
+  radial-gradient(circle at 28% 18%, rgba(66, 200, 255, .18), transparent 27%),
+  radial-gradient(circle at 76% 74%, rgba(255, 215, 107, .12), transparent 24%),
+  linear-gradient(145deg, rgba(2, 4, 13, .8), rgba(4, 11, 36, .98)) !important;
+}
+
+.left-overlay,
+.right-light,
+.hero-grid {
+ background:
+  linear-gradient(90deg, rgba(66,200,255,.12) 0 1px, transparent 1px 34px),
+  linear-gradient(rgba(255,215,107,.09) 0 1px, transparent 1px 34px),
+  radial-gradient(circle at 50% 50%, rgba(23,107,255,.32), transparent 42%) !important;
+ opacity: .9;
+ animation: cyberHudSlide 9s linear infinite;
+}
+
+.hospital-visual,
+.pulse-card,
+.feature-item,
+.hero-features .feature-item,
+.privacy-note {
+ background:
+  linear-gradient(145deg, rgba(10, 31, 86, .7), rgba(3, 12, 38, .58)),
+  radial-gradient(circle at 14% 0, rgba(66,200,255,.2), transparent 38%) !important;
+ border-color: rgba(66, 200, 255, .28) !important;
+ color: var(--cyber-white);
+ box-shadow: 0 20px 48px rgba(0,0,0,.34), 0 0 28px rgba(23,107,255,.14), inset 0 0 18px rgba(66,200,255,.08) !important;
+}
+
+.form-container,
+.register-card,
+.card {
+ color: var(--cyber-white);
+ border-color: rgba(255, 215, 107, .72) !important;
+ background:
+  linear-gradient(145deg, rgba(5, 16, 48, .86), rgba(3, 9, 30, .78) 52%, rgba(31, 37, 57, .72)),
+  radial-gradient(circle at 18% 0, rgba(66,200,255,.26), transparent 34%),
+  radial-gradient(circle at 92% 8%, rgba(255,215,107,.2), transparent 28%) !important;
+ box-shadow:
+  0 34px 100px rgba(0, 0, 0, .58),
+  0 0 0 1px rgba(66,200,255,.16),
+  0 0 52px rgba(23,107,255,.34),
+  0 0 70px rgba(255,189,36,.18),
+  inset 0 1px 0 rgba(255,255,255,.18),
+  inset 0 0 36px rgba(66,200,255,.12) !important;
+}
+
+.form-container::before,
+.register-card::before,
+.card::before {
+ background:
+  conic-gradient(from var(--future-angle, 0deg), rgba(255,215,107,1), rgba(66,200,255,.88), rgba(255,255,255,.7), rgba(23,107,255,.7), rgba(255,215,107,1));
+ filter: drop-shadow(0 0 12px rgba(255,215,107,.5));
+}
+
+.form-container::after,
+.register-card::after,
+.card::after {
+ background:
+  repeating-linear-gradient(180deg, rgba(255,255,255,.04) 0 1px, transparent 1px 7px),
+  linear-gradient(90deg, transparent, rgba(66,200,255,.28), rgba(255,215,107,.34), transparent),
+  radial-gradient(circle at 50% 50%, rgba(66,200,255,.24), transparent 26%);
+ animation: futureShine 5.8s ease-in-out infinite, cyberScanLines 3.7s linear infinite;
+}
+
+.form-container {
+ border-radius: 24px;
+}
+
+.card-header,
+.progress-steps {
+ position: relative;
+}
+
+.form-container .card-shine::after,
+.register-card .progress-steps::after,
+.card-header::after {
+ content: "";
+ position: absolute;
+ pointer-events: none;
+ inset: 14px;
+ border-radius: inherit;
+ background:
+  linear-gradient(90deg, var(--cyber-gold) 0 34px, transparent 34px calc(100% - 34px), var(--cyber-gold) calc(100% - 34px)),
+  linear-gradient(180deg, var(--cyber-blue-hot) 0 34px, transparent 34px calc(100% - 34px), var(--cyber-blue-hot) calc(100% - 34px));
+ background-size: 100% 2px, 2px 100%;
+ background-position: top left, top left;
+ background-repeat: no-repeat;
+ opacity: .62;
+ filter: drop-shadow(0 0 8px rgba(66,200,255,.72));
+ animation: cyberCornerBlink 2.6s ease-in-out infinite;
+}
+
+.login-right::before,
+.register-form-area::before {
+ border-color: rgba(255, 215, 107, .44);
+ box-shadow: inset 0 0 44px rgba(66,200,255,.22), 0 0 60px rgba(255,215,107,.22);
+}
+
+.login-right::after,
+.register-form-area::after {
+ border-color: rgba(66,200,255,.46);
+ box-shadow: 0 0 58px rgba(66,200,255,.22);
+}
+
+.brand-name,
+.hero-content h1,
+.form-title,
+.register-card h2,
+.brand-badge {
+ text-shadow: 0 0 16px rgba(66,200,255,.42), 0 0 24px rgba(255,215,107,.22);
+}
+
+.premium-badge,
+.brand-subtitle,
+.brand-sub,
+.card-subtitle,
+.form-subtitle,
+.hero-copy,
+.brand-description,
+.form-footer,
+.card-footer,
+.helper-text,
+.remember-me,
+.feature-item p,
+.hero-features .feature-item p,
+.form-desc {
+ color: var(--cyber-muted) !important;
+}
+
+.premium-badge,
+.brand-badge,
+.avatar-badge,
+.card-icon {
+ background:
+  linear-gradient(145deg, rgba(66,200,255,.18), rgba(255,215,107,.2)),
+  rgba(4, 13, 42, .78) !important;
+ color: var(--cyber-gold) !important;
+ border: 1px solid rgba(255,215,107,.4);
+ box-shadow: 0 0 28px rgba(255,215,107,.22), inset 0 0 20px rgba(66,200,255,.12) !important;
+}
+
+.form-title,
+.register-card h2,
+.brand-name,
+.hero-content h1 span {
+ background-image: linear-gradient(92deg, #f7fbff, #42c8ff, #ffd76b, #ffffff, #176bff);
+ filter: drop-shadow(0 0 11px rgba(66,200,255,.32));
+}
+
+.form-label,
+.field label {
+ color: #eaf4ff !important;
+ text-shadow: 0 0 9px rgba(66,200,255,.28);
+}
+
+.form-input,
+.input-shell,
+.password-wrapper,
+.input-shell input,
+.input-shell select {
+ color: var(--cyber-white) !important;
+ background: rgba(1, 8, 27, .72) !important;
+ border-color: rgba(66, 200, 255, .34) !important;
+ box-shadow: inset 0 0 18px rgba(66,200,255,.08), 0 10px 24px rgba(0,0,0,.18) !important;
+}
+
+.input-shell {
+ border-width: 1px;
+}
+
+.form-input::placeholder,
+.input-shell input::placeholder {
+ color: rgba(205, 225, 255, .58) !important;
+}
+
+.form-input:focus,
+.input-shell:focus-within,
+.password-wrapper:focus-within,
+.input-shell:focus-within input,
+.input-shell:focus-within select {
+ border-color: var(--cyber-gold) !important;
+ background: rgba(4, 14, 45, .9) !important;
+ box-shadow:
+  0 0 0 3px rgba(255,215,107,.16),
+  0 0 26px rgba(66,200,255,.28),
+  0 0 24px rgba(255,215,107,.14),
+  inset 0 0 22px rgba(66,200,255,.1) !important;
+}
+
+.input-icon,
+.password-toggle,
+.select-arrow,
+.form-label svg,
+.back-link svg {
+ color: var(--cyber-blue-hot) !important;
+ filter: drop-shadow(0 0 8px rgba(66,200,255,.45));
+}
+
+.password-toggle:hover,
+.password-toggle.is-visible {
+ color: var(--cyber-gold) !important;
+ background: rgba(255,215,107,.12) !important;
+}
+
+.checkbox {
+ accent-color: var(--cyber-gold);
+}
+
+.login-button,
+.submit-button,
+.btn-primary {
+ border: 1px solid rgba(255,215,107,.62) !important;
+ background:
+  linear-gradient(105deg, #062a86 0%, #176bff 28%, #42c8ff 48%, #ffbd24 76%, #ffd76b 100%) !important;
+ background-size: 260% 100% !important;
+ text-shadow: 0 0 10px rgba(0,0,0,.38);
+ box-shadow:
+  0 20px 52px rgba(23,107,255,.42),
+  0 0 32px rgba(66,200,255,.34),
+  0 0 42px rgba(255,189,36,.28),
+  inset 0 1px 0 rgba(255,255,255,.36) !important;
+}
+
+.login-button::after,
+.submit-button::after,
+.btn-primary::after {
+ content: "";
+ position: absolute;
+ inset: 3px;
+ border-radius: inherit;
+ border: 1px solid rgba(255,255,255,.22);
+ pointer-events: none;
+ opacity: .72;
+}
+
+.forgot-link,
+.signup-link,
+.card-footer a,
+.back-link {
+ position: relative;
+ color: #65d6ff !important;
+}
+
+.forgot-link::after,
+.signup-link::after,
+.card-footer a::after,
+.back-link::after {
+ content: "";
+ position: absolute;
+ left: 0;
+ right: 0;
+ bottom: -4px;
+ display: block;
+ height: 1px;
+ width: 100%;
+ background: linear-gradient(90deg, transparent, var(--cyber-gold), var(--cyber-blue-hot), transparent);
+ transform: scaleX(0);
+ transform-origin: left;
+ transition: transform .24s var(--future-ease);
+ box-shadow: 0 0 10px rgba(255,215,107,.44);
+}
+
+.forgot-link:hover::after,
+.signup-link:hover::after,
+.card-footer a:hover::after,
+.back-link:hover::after {
+ transform: scaleX(1);
+}
+
+.error-message,
+.field-error,
+.form-error {
+ color: #ff9aaa !important;
+}
+
+.error-message {
+ background: rgba(60, 5, 18, .86) !important;
+ border-color: rgba(255, 91, 118, .42) !important;
+ box-shadow: 0 0 20px rgba(255,91,118,.12);
+}
+
+.success-message,
+.toast.success {
+ background: rgba(5, 40, 72, .9) !important;
+ border-color: rgba(66,200,255,.38) !important;
+ color: #dff7ff !important;
+}
+
+.toast.error {
+ background: rgba(60, 5, 18, .94) !important;
+ border-color: rgba(255,91,118,.4);
+}
+
+.left-particles span,
+.hero-dots span {
+ background: var(--cyber-gold) !important;
+ box-shadow: 0 0 14px rgba(255,215,107,.9), 0 0 30px rgba(66,200,255,.32) !important;
+ animation: cyberSparkFloat 4.8s ease-in-out infinite;
+}
+
+.gold-orbit,
+.hero-arc {
+ border-color: rgba(255,215,107,.38) !important;
+ box-shadow: inset 0 0 34px rgba(66,200,255,.14), 0 0 48px rgba(255,215,107,.18) !important;
+ animation: futureRing 16s linear infinite, cyberGlitchNudge 6s steps(1, end) infinite;
+}
+
+.medical-cross,
+.hero-cross {
+ filter: drop-shadow(0 0 16px rgba(66,200,255,.46)) drop-shadow(0 0 18px rgba(255,215,107,.18));
+ animation: futureIconBreath 3.2s ease-in-out infinite, cyberGlitchNudge 5.8s steps(1, end) infinite;
+}
+
+.heartbeat-divider span,
+.title-underline,
+.step-line {
+ background: linear-gradient(90deg, transparent, #42c8ff, #ffd76b, transparent) !important;
+ box-shadow: 0 0 16px rgba(66,200,255,.38), 0 0 18px rgba(255,215,107,.24) !important;
+}
+
+.cyber-depth,
+.student-hud {
+ position: absolute;
+ inset: 0;
+ pointer-events: none;
+ overflow: hidden;
+}
+
+.cyber-depth {
+ z-index: 2;
+}
+
+.student-hud {
+ z-index: 1;
+}
+
+.cyber-beam {
+ position: absolute;
+ height: 2px;
+ width: min(46vw, 620px);
+ background: linear-gradient(90deg, transparent, rgba(66,200,255,.92), rgba(255,215,107,.82), transparent);
+ box-shadow: 0 0 18px rgba(66,200,255,.46), 0 0 26px rgba(255,215,107,.24);
+ opacity: .72;
+ animation: cyberBeamRun 6.8s ease-in-out infinite;
+}
+
+.beam-one {
+ left: -18%;
+ top: 28%;
+ transform: rotate(-17deg);
+}
+
+.beam-two {
+ right: -20%;
+ bottom: 22%;
+ transform: rotate(15deg);
+ animation-delay: -3.2s;
+}
+
+.cyber-ring {
+ position: absolute;
+ border-radius: 50%;
+ border: 1px solid rgba(255,215,107,.34);
+ box-shadow:
+  inset 0 0 32px rgba(66,200,255,.14),
+  0 0 46px rgba(255,215,107,.16);
+}
+
+.ring-one {
+ width: 290px;
+ height: 290px;
+ left: 12%;
+ top: 14%;
+ animation: cyberRingSpin 18s linear infinite;
+}
+
+.ring-two {
+ width: 190px;
+ height: 190px;
+ right: 12%;
+ bottom: 15%;
+ border-style: dashed;
+ border-color: rgba(66,200,255,.42);
+ animation: cyberRingSpin 13s linear infinite reverse;
+}
+
+.cyber-ring::before,
+.cyber-ring::after {
+ content: "";
+ position: absolute;
+ inset: 16%;
+ border-radius: inherit;
+ border: 1px solid rgba(66,200,255,.18);
+}
+
+.cyber-ring::after {
+ inset: 34%;
+ border-color: rgba(255,215,107,.18);
+}
+
+.floating-glyph {
+ position: absolute;
+ display: grid;
+ place-items: center;
+ width: 54px;
+ height: 54px;
+ border: 1px solid rgba(255,215,107,.36);
+ border-radius: 16px;
+ color: var(--cyber-gold);
+ background: rgba(3, 12, 38, .46);
+ box-shadow: 0 0 24px rgba(66,200,255,.22), inset 0 0 18px rgba(255,215,107,.08);
+ font-size: 2rem;
+ font-weight: 900;
+ animation: cyberGlyphFloat 5.6s ease-in-out infinite, cyberGlitchNudge 7s steps(1, end) infinite;
+}
+
+.glyph-cross {
+ left: 9%;
+ bottom: 17%;
+}
+
+.glyph-shield {
+ right: 18%;
+ top: 17%;
+ animation-delay: -1.7s;
+}
+
+.glyph-shield::before {
+ content: "";
+ width: 24px;
+ height: 28px;
+ border: 2px solid currentColor;
+ border-top-width: 3px;
+ border-radius: 14px 14px 12px 12px;
+ clip-path: polygon(50% 0, 100% 18%, 86% 82%, 50% 100%, 14% 82%, 0 18%);
+ filter: drop-shadow(0 0 8px rgba(255,215,107,.42));
+}
+
+.glyph-heart {
+ right: 7%;
+ bottom: 34%;
+ animation-delay: -3s;
+}
+
+.glyph-heart::before {
+ content: "";
+ width: 20px;
+ height: 20px;
+ background:
+  radial-gradient(circle at 30% 30%, currentColor 0 34%, transparent 35%),
+  radial-gradient(circle at 70% 30%, currentColor 0 34%, transparent 35%),
+  linear-gradient(135deg, transparent 0 28%, currentColor 29% 72%, transparent 73%);
+ transform: rotate(45deg);
+ filter: drop-shadow(0 0 8px rgba(255,215,107,.42));
+}
+
+.hud-card {
+ position: absolute;
+ min-width: 148px;
+ padding: 14px 16px;
+ border: 1px solid rgba(66,200,255,.34);
+ border-radius: 14px;
+ background: linear-gradient(145deg, rgba(3,12,38,.7), rgba(8,24,68,.46));
+ color: var(--cyber-white);
+ box-shadow: 0 18px 42px rgba(0,0,0,.28), 0 0 24px rgba(66,200,255,.16);
+ backdrop-filter: blur(16px);
+ animation: cyberHudCardIn .8s var(--future-ease) both, futureBentoFloat 6s ease-in-out infinite 1s;
+}
+
+.hud-card span {
+ display: block;
+ margin-bottom: 5px;
+ color: var(--cyber-muted);
+ font-size: .68rem;
+ font-weight: 900;
+ letter-spacing: .08em;
+}
+
+.hud-card strong {
+ display: block;
+ color: var(--cyber-gold);
+ font-size: .9rem;
+ text-shadow: 0 0 12px rgba(255,215,107,.34);
+}
+
+.hud-card-one {
+ left: 34px;
+ top: 26%;
+}
+
+.hud-card-two {
+ right: 38px;
+ bottom: 24%;
+ animation-delay: .14s, -1.8s;
+}
+
+.heartbeat-track {
+ position: absolute;
+ left: 8%;
+ right: 8%;
+ bottom: 13%;
+ height: 46px;
+ border-top: 1px solid rgba(66,200,255,.13);
+ border-bottom: 1px solid rgba(255,215,107,.12);
+ opacity: .82;
+}
+
+.heartbeat-track i {
+ position: absolute;
+ left: -22%;
+ top: 13px;
+ width: 220px;
+ height: 22px;
+ background: linear-gradient(90deg, transparent, #42c8ff, #ffd76b, transparent);
+ clip-path: polygon(0 52%, 18% 52%, 27% 10%, 39% 92%, 51% 26%, 63% 26%, 74% 52%, 100% 52%, 100% 72%, 72% 72%, 62% 46%, 52% 46%, 39% 92%, 28% 30%, 20% 72%, 0 72%);
+ filter: drop-shadow(0 0 10px rgba(66,200,255,.56)) drop-shadow(0 0 12px rgba(255,215,107,.36));
+ animation: cyberHeartbeatTravel 4.8s linear infinite;
+}
+
+.login-form {
+ position: relative;
+ z-index: 2;
+}
+
+.login-button:focus-visible,
+.password-toggle:focus-visible,
+.forgot-link:focus-visible,
+.signup-link:focus-visible,
+.checkbox:focus-visible,
+.form-input:focus-visible {
+ outline: 2px solid var(--cyber-gold);
+ outline-offset: 3px;
+}
+
+@keyframes cyberBeamRun {
+ 0%, 100% { opacity: 0; translate: -18% 0; }
+ 28%, 62% { opacity: .9; }
+ 80% { opacity: 0; translate: 28% 0; }
+}
+
+@keyframes cyberRingSpin {
+ to { transform: rotate(360deg); }
+}
+
+@keyframes cyberGlyphFloat {
+ 0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: .76; }
+ 50% { transform: translate3d(0, -16px, 0) rotate(2deg); opacity: 1; }
+}
+
+@keyframes cyberHudCardIn {
+ from { opacity: 0; transform: translateY(18px) scale(.96); filter: blur(8px); }
+ to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes cyberHeartbeatTravel {
+ to { transform: translateX(calc(100vw + 260px)); }
+}
+
+@keyframes cyberGlowPulse {
+ 0%, 100% { filter: saturate(1) brightness(1); }
+ 50% { filter: saturate(1.12) brightness(1.08); }
+}
+
+@keyframes cyberGridDrift {
+ to { transform: translate3d(58px, 58px, 0); }
+}
+
+@keyframes cyberScanWaves {
+ 0%, 100% { transform: translate3d(-3%, -1%, 0) skewX(0deg); opacity: .72; }
+ 50% { transform: translate3d(4%, 1%, 0) skewX(-2deg); opacity: .96; }
+}
+
+@keyframes cyberHudSlide {
+ to { background-position: 34px 0, 0 34px, 0 0; }
+}
+
+@keyframes cyberScanLines {
+ to { background-position: 0 28px, 0 0, 0 0; }
+}
+
+@keyframes cyberCornerBlink {
+ 0%, 100% { opacity: .42; }
+ 48%, 58% { opacity: .92; }
+}
+
+@keyframes cyberSparkFloat {
+ 0%, 100% { transform: translateY(0) scale(1); opacity: .7; }
+ 50% { transform: translateY(-22px) scale(1.22); opacity: 1; }
+}
+
+@keyframes cyberGlitchNudge {
+ 0%, 91%, 100% { transform: translate(0, 0); opacity: 1; }
+ 92% { transform: translate(2px, -1px); opacity: .88; }
+ 93% { transform: translate(-2px, 1px); opacity: .96; }
+ 94% { transform: translate(1px, 0); opacity: .9; }
+}
+
+@media (max-width: 760px) {
+ body {
+  animation-duration: 18s, 7s;
+ }
+
+ body::before {
+  opacity: .46;
+  background-size: 82px 82px, 82px 82px, 520px 520px, 280px 280px, 340px 340px;
+ }
+
+ body::after {
+  opacity: .52;
+ }
+
+ .form-container,
+ .register-card,
+ .card {
+  box-shadow: 0 20px 54px rgba(0,0,0,.46), 0 0 28px rgba(23,107,255,.2) !important;
+ }
+
+ .left-particles,
+ .hero-dots,
+ .gold-orbit,
+ .hero-arc,
+ .cyber-depth,
+ .student-hud {
+  display: none;
+ }
+}
+
+@media (prefers-reduced-motion: reduce) {
+ *,
+ *::before,
+ *::after {
+  animation-duration: .01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: .01ms !important;
+ }
+}

@@ -25,7 +25,8 @@ if (isset($_SESSION['patient_id'])) {
  <link rel="preconnect" href="https://fonts.googleapis.com">
  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="/NUcare_Health_system/assets/css/forgot_password.css">
+ <link rel="stylesheet" href="/NUcare_Health_system/assets/css/forgot_password.css?v=3">
+ <link rel="stylesheet" href="/NUcare_Health_system/assets/css/auth_future.css?v=2">
 </head>
 <body>
 
@@ -88,7 +89,7 @@ if (isset($_SESSION['patient_id'])) {
  </div>
  </div>
 
- <script src="/NUcare_Health_system/assets/js/forgot_password.js?v=2"></script>
+ <script src="/NUcare_Health_system/assets/js/forgot_password.js?v=3"></script>
 </body>
 </html>
 

@@ -24,7 +24,8 @@ if (isset($_SESSION['patient_id'])) {
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
  <title>NUCARE - Health Management System</title>
  <link rel="icon" type="image/png" href="/NUcare_Health_system/assets/image/nucarelogo.png">
- <link rel="stylesheet" href="/NUcare_Health_system/assets/css/login.css?v=6">
+ <link rel="stylesheet" href="/NUcare_Health_system/assets/css/login.css?v=7">
+ <link rel="stylesheet" href="/NUcare_Health_system/assets/css/auth_future.css?v=3">
 </head>
 <body>
  <div class="login-container">
@@ -198,7 +199,7 @@ if (isset($_SESSION['patient_id'])) {
  </div>
  </div>
 
- <script src="/NUcare_Health_system/assets/js/login.js?v=5"></script>
+ <script src="/NUcare_Health_system/assets/js/login.js?v=7"></script>
 </body>
 </html>
 

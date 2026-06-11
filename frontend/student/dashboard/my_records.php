@@ -59,6 +59,7 @@ $studentName = $_SESSION['patient_name'] ?? 'User';
  .grid{display:grid;grid-template-columns:1fr;gap:14px;}
  @media (min-width:900px){.grid{grid-template-columns:1.1fr .9fr;}}
  </style>
+ <link rel="stylesheet" href="/NUcare_Health_system/assets/css/student_cyber.css?v=2">
 </head>
 <body>
 <div class="app-shell">
@@ -66,6 +67,20 @@ $studentName = $_SESSION['patient_name'] ?? 'User';
 
  <main class="main-content">
  <div class="clinic-wrap">
+ <div class="student-cyber-stage" aria-hidden="true">
+ <span class="cyber-grid-plane"></span>
+ <span class="student-orbit orbit-alpha"></span>
+ <span class="student-orbit orbit-beta"></span>
+ <span class="student-beam beam-alpha"></span>
+ <span class="student-beam beam-beta"></span>
+ <span class="student-glyph glyph-plus">+</span>
+ <span class="student-glyph glyph-id"></span>
+ <span class="student-glyph glyph-care"></span>
+ <span class="student-particle p1"></span>
+ <span class="student-particle p2"></span>
+ <span class="student-particle p3"></span>
+ <span class="student-particle p4"></span>
+ </div>
  <div class="clinic-card">
  <h1 class="clinic-title">My Medical Records</h1>
  <div class="muted">Secure view: only your own clinic history is shown.</div>
